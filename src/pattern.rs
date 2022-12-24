@@ -42,13 +42,13 @@ pub enum Note {
 impl Display for Note {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let str = match self {
-            Note::A => "A",
-            Note::B => "B",
-            Note::C => "C",
-            Note::D => "D",
-            Note::E => "E",
-            Note::F => "F",
-            Note::G => "G",
+            Note::A => "A-",
+            Note::B => "B-",
+            Note::C => "C-",
+            Note::D => "D-",
+            Note::E => "E-",
+            Note::F => "F-",
+            Note::G => "G-",
             Note::CSharp => "C#",
             Note::DSharp => "D#",
             Note::FSharp => "F#",

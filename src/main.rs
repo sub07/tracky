@@ -1,7 +1,10 @@
 #![feature(associated_type_defaults)]
+#![windows_subsystem = "windows"]
 
 use sdl2::event::Event;
+use sdl2::image::LoadSurface;
 use sdl2::keyboard::Scancode;
+use sdl2::surface::Surface;
 
 use crate::draw::Draw;
 use crate::error::Error;
@@ -17,11 +20,13 @@ mod color;
 
 fn main() -> anyhow::Result<()> {
     let sdl = sdl2::init().map_err(|e| Error::SdlError(e))?;
-    let window = sdl.video().unwrap()
+    let mut window = sdl.video().unwrap()
         .window("Tracky", 1920, 1080)
         .position_centered()
         .build()
         .unwrap();
+
+    window.set_icon(Surface::from_file("icon.png").unwrap());
 
     let renderer = window
         .into_canvas()
@@ -32,7 +37,13 @@ fn main() -> anyhow::Result<()> {
     let mut events = sdl.event_pump().unwrap();
     let texture_creator = renderer.texture_creator();
 
-    let mut renderer = Renderer::new(renderer, &texture_creator, "font.ttf", 24, "0123456789-ABCDEFGHIJKLMNOPQRSTUVWXYZ#");
+    let mut renderer = Renderer::new(
+        renderer,
+        &texture_creator,
+        "font.ttf",
+        24,
+        "0123456789-ABCDEFGHIJKLMNOPQRSTUVWXYZ#",
+    );
 
     let mut pattern = Pattern::new(12);
     let mut cursor = 0;
