@@ -21,8 +21,10 @@ mod color;
 fn main() -> anyhow::Result<()> {
     let sdl = sdl2::init().map_err(|e| Error::SdlError(e))?;
     let mut window = sdl.video().unwrap()
-        .window("Tracky", 1920, 1080)
+        .window("Tracky", 1200, 800)
         .position_centered()
+        .resizable()
+        .maximized()
         .build()
         .unwrap();
 
