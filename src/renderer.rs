@@ -28,7 +28,11 @@ impl<'a> Renderer<'a> {
     }
 
     pub fn draw_text<S: AsRef<str>, C: Color>(&mut self, text: S, x: i32, y: i32, color: C, alignment: TextAlignment) {
-        self.font.draw(&mut self.canvas, text, x, y, color.into_sdl_color(), alignment).unwrap();
+        self.font.draw(&mut self.canvas, text, x, y, color.into_sdl_color(), alignment);
+    }
+
+    pub fn draw_text_with_background<S: AsRef<str>, C: Color>(&mut self, text: S, x: i32, y: i32, foreground_color: C, background_color: C, alignment: TextAlignment) {
+        self.font.draw_with_background(&mut self.canvas, text, x, y, foreground_color.into_sdl_color(), background_color.into_sdl_color(), alignment);
     }
 
     pub fn draw_rect<C: Color>(&mut self, x: i32, y: i32, w: u32, h: u32, color: C) {

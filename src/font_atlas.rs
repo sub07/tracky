@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use anyhow::anyhow;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{Texture, TextureCreator, TextureQuery, WindowCanvas};
@@ -39,7 +38,20 @@ impl<'a> FontAtlas<'a> {
         }
     }
 
-    pub fn draw<S: AsRef<str>>(&mut self, renderer: &mut WindowCanvas, text: S, x: i32, y: i32, color: Color, alignment: TextAlignment) -> anyhow::Result<()> {
+    pub fn draw_with_background<S: AsRef<str>>(&mut self, renderer: &mut WindowCanvas, text: S, x: i32, y: i32, foreground_color: Color, background_color: Color, alignment: TextAlignment) {
+        let offset = match alignment {
+            TextAlignment::Left => 0,
+            TextAlignment::Right => (text.as_ref().len() as u32 * self.glyph_width) as i32
+        };
+        let x_offset = x - offset;
+        let width = text.as_ref().len() as u32 * self.glyph_width;
+        let height = self.glyph_height;
+        renderer.set_draw_color(background_color);
+        renderer.fill_rect(Rect::new(x_offset, y, width, height)).unwrap();
+        self.draw(renderer, text, x, y, foreground_color, alignment);
+    }
+
+    pub fn draw<S: AsRef<str>>(&mut self, renderer: &mut WindowCanvas, text: S, x: i32, y: i32, color: Color, alignment: TextAlignment) {
         self.texture.set_color_mod(color.r, color.g, color.b);
         let offset = match alignment {
             TextAlignment::Left => 0,
@@ -51,7 +63,7 @@ impl<'a> FontAtlas<'a> {
                 dest_x += self.glyph_width as i32;
                 continue;
             }
-            let src_x = self.glyph_map.get(&glyph).ok_or(anyhow!("Glyph {glyph} is not supported"))?.clone();
+            let src_x = *self.glyph_map.get(&glyph).expect(&format!("Glyph {glyph} is not supported"));
             renderer.copy(
                 &self.texture,
                 Some(Rect::new(src_x, 0, self.glyph_width, self.glyph_height)),
@@ -59,7 +71,6 @@ impl<'a> FontAtlas<'a> {
             ).unwrap();
             dest_x += self.glyph_width as i32;
         }
-        Ok(())
     }
 
     pub fn glyph_width(&self) -> u32 {

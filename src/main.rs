@@ -1,98 +1,68 @@
 #![feature(associated_type_defaults)]
+#![feature(let_chains)]
 #![windows_subsystem = "windows"]
 
-use sdl2::event::Event;
-use sdl2::image::LoadSurface;
+extern crate core;
+
 use sdl2::keyboard::Scancode;
-use sdl2::surface::Surface;
 
-use crate::draw::Draw;
-use crate::error::Error;
-use crate::pattern::{Note, Pattern};
-use crate::renderer::Renderer;
+use crate::app::{Event, launch};
+use crate::model::{Direction, Note};
+use crate::model::patterns::Patterns;
+use crate::view::Draw;
 
-mod error;
-mod pattern;
 mod font_atlas;
-mod draw;
 mod renderer;
 mod color;
+mod app;
+mod model;
+mod view;
 
-fn main() -> anyhow::Result<()> {
-    let sdl = sdl2::init().map_err(|e| Error::SdlError(e))?;
-    let mut window = sdl.video().unwrap()
-        .window("Tracky", 1200, 800)
-        .position_centered()
-        .resizable()
-        .maximized()
-        .build()
-        .unwrap();
+fn main() {
+    let mut patterns = Patterns::new(6, 15);
+    let mut mouse_pos = (0, 0);
 
-    window.set_icon(Surface::from_file("icon.png").unwrap());
-
-    let renderer = window
-        .into_canvas()
-        .software()
-        .build()
-        .unwrap();
-
-    let mut events = sdl.event_pump().unwrap();
-    let texture_creator = renderer.texture_creator();
-
-    let mut renderer = Renderer::new(
-        renderer,
-        &texture_creator,
-        "font.ttf",
-        24,
-        "0123456789-ABCDEFGHIJKLMNOPQRSTUVWXYZ#",
-    );
-
-    let mut pattern = Pattern::new(12);
-    let mut cursor = 0;
-
-    'gameLoop: loop {
-        if let Some(event) = events.wait_event_timeout(100) {
-            match event {
-                Event::Quit { .. } => {
-                    break 'gameLoop;
-                }
-                Event::KeyDown { scancode, .. } => {
-                    match scancode {
-                        Some(Scancode::Down) => {
-                            cursor = if cursor == pattern.len() - 1 { 0 } else { cursor + 1 };
-                        }
-                        Some(Scancode::Up) => {
-                            cursor = if cursor == 0 { pattern.len() - 1 } else { cursor - 1 };
-                        }
-                        _ => {}
+    launch(|event| {
+        match event {
+            Event::Event(sdl2::event::Event::KeyDown { scancode, .. }) => {
+                match scancode {
+                    Some(Scancode::Down) => {
+                        patterns.move_cursor(Direction::Down)
                     }
-                    let note = match scancode {
-                        Some(Scancode::Q) => Some(Note::C),
-                        Some(Scancode::Num2) => Some(Note::CSharp),
-                        Some(Scancode::W) => Some(Note::D),
-                        Some(Scancode::Num3) => Some(Note::DSharp),
-                        Some(Scancode::E) => Some(Note::E),
-                        Some(Scancode::R) => Some(Note::F),
-                        Some(Scancode::Num5) => Some(Note::FSharp),
-                        Some(Scancode::T) => Some(Note::G),
-                        Some(Scancode::Num6) => Some(Note::GSharp),
-                        Some(Scancode::Y) => Some(Note::A),
-                        Some(Scancode::Num7) => Some(Note::ASharp),
-                        Some(Scancode::U) => Some(Note::B),
-                        _ => None
-                    };
-                    if let Some(note) = note {
-                        pattern.set(cursor, note)?;
+                    Some(Scancode::Up) => {
+                        patterns.move_cursor(Direction::Up)
                     }
+                    Some(Scancode::Left) => {
+                        patterns.move_cursor(Direction::Left)
+                    }
+                    Some(Scancode::Right) => {
+                        patterns.move_cursor(Direction::Right)
+                    }
+                    _ => {}
                 }
-                _ => {}
+                let note = match scancode {
+                    Some(Scancode::Q) => Some(Note::C),
+                    Some(Scancode::Num2) => Some(Note::CSharp),
+                    Some(Scancode::W) => Some(Note::D),
+                    Some(Scancode::Num3) => Some(Note::DSharp),
+                    Some(Scancode::E) => Some(Note::E),
+                    Some(Scancode::R) => Some(Note::F),
+                    Some(Scancode::Num5) => Some(Note::FSharp),
+                    Some(Scancode::T) => Some(Note::G),
+                    Some(Scancode::Num6) => Some(Note::GSharp),
+                    Some(Scancode::Y) => Some(Note::A),
+                    Some(Scancode::Num7) => Some(Note::ASharp),
+                    Some(Scancode::U) => Some(Note::B),
+                    _ => None
+                };
             }
+            Event::Event(sdl2::event::Event::MouseMotion { x, y, .. }) => {
+                mouse_pos = (x, y);
+            }
+            Event::DrawRequest(renderer) => {
+                patterns.draw(renderer, 50, 50, ());
+            }
+            _ => {}
         }
-
-        renderer.clear((20, 20, 20));
-        pattern.draw(&mut renderer, 100, 300, cursor);
-        renderer.present();
-    }
-
-    Ok(())
+    });
 }
