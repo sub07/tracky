@@ -42,13 +42,20 @@ macro_rules! pattern_line_element_auto {
 
         impl $enum_name {
             const ENUM_ARRAY: [$enum_name; count_enum_variant!($($variants )*)] = [$($enum_name::$variants,)*];
+            pub const LINE_LEN: usize = PatternLineElement::line_len();
+            pub const NB_VARIANT: usize = PatternLineElement::nb_elem();
 
-            const fn len(&self) -> usize {
+
+            pub const fn len(&self) -> usize {
                 match self {
                     $(
                         $enum_name::$variants => $len,
                     )*
                 }
+            }
+
+            pub const fn nb_elem() -> usize {
+                PatternLineElement::ENUM_ARRAY.len()
             }
 
             const fn line_len() -> usize {
@@ -71,8 +78,6 @@ pattern_line_element_auto! {
         Velocity => 2,
     }
 }
-
-pub const PATTERN_LINE_LEN: usize = PatternLineElement::line_len();
 
 pub enum Note {
     A,

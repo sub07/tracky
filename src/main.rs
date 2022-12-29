@@ -1,5 +1,6 @@
 #![feature(associated_type_defaults)]
 #![feature(let_chains)]
+#![feature(if_let_guard)]
 #![windows_subsystem = "windows"]
 
 extern crate core;

@@ -11,10 +11,10 @@ pub enum Event<'a, 'b> {
 pub fn launch<F: FnMut(Event)>(mut handle_event: F) {
     let sdl = sdl2::init().unwrap();
     let mut window = sdl.video().unwrap()
-        .window("Tracky", 1200, 800)
+        .window("Tracky", 800, 600)
         .position_centered()
         .resizable()
-        .maximized()
+        // .maximized()
         .build()
         .unwrap();
 
@@ -38,10 +38,10 @@ pub fn launch<F: FnMut(Event)>(mut handle_event: F) {
     );
 
     'gameLoop: loop {
-        let mut events_vec = Vec::new();
-        events_vec.push(events.wait_event());
-        events_vec.extend(events.poll_iter().collect::<Vec<_>>());
-        for event in events_vec {
+        // let mut events_vec = Vec::new();
+        // events_vec.push(events.wait_event());
+        // events_vec.extend(events.poll_iter().collect::<Vec<_>>());
+        for event in events.poll_iter() {
             if let sdl2::event::Event::Quit { .. } = event { break 'gameLoop; } else { handle_event(Event::Event(event)) }
         }
         renderer.clear((20, 20, 20));

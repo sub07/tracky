@@ -6,7 +6,7 @@ use crate::view::Draw;
 
 #[derive(new)]
 pub struct VelocityFieldDrawData {
-    local_x_selected: Option<usize>,
+    local_x_selected: Option<i32>,
 }
 
 impl Draw for VelocityField {
@@ -14,9 +14,8 @@ impl Draw for VelocityField {
 
     fn draw(&self, renderer: &mut Renderer, mut x: i32, y: i32, VelocityFieldDrawData { local_x_selected }: VelocityFieldDrawData) {
         let index = match local_x_selected {
-            Some(x) if x <= 1 => x,
-            None => usize::MAX,
-            Some(x) => panic!("Invalid local index: {x}"),
+            Some(index) => index,
+            None => -1,
         };
         self.digit1.draw(renderer, x, y, index == 0);
         x += renderer.glyph_width() as i32;
