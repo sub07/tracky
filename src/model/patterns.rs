@@ -28,19 +28,21 @@ impl Patterns {
 
     pub fn move_cursor(&mut self, direction: Direction) {
         match direction {
-            Direction::Left => {
-                if self.cursor_x == 0 {
-                    self.cursor_x = self.patterns.len() * PatternLineElement::LINE_LEN - 1;
-                } else {
-                    self.cursor_x -= 1;
-                }
-            }
-            Direction::Right => {
-                if self.cursor_x == self.patterns.len() * PatternLineElement::LINE_LEN - 1 {
+            Direction::Left | Direction::Right => {
+                let current_pattern_index = self.cursor_x / PatternLineElement::LINE_LEN;
+                let local_x_cursor = self.cursor_x % PatternLineElement::LINE_LEN;
+                let cursor_y = self.cursor_y;
+                let new_local_x_cursor = self.patterns[current_pattern_index].move_cursor(local_x_cursor, cursor_y, direction);
+
+                let remaining_local_x_cursor = if self.cursor_x == self.patterns.len() * PatternLineElement::LINE_LEN - 1 && new_local_x_cursor > 0 {
                     self.cursor_x = 0;
-                } else {
-                    self.cursor_x += 1;
-                }
+                    new_local_x_cursor - 1
+                } else if self.cursor_x == 0 && new_local_x_cursor < 0 {
+                    self.cursor_x = self.patterns.len() * PatternLineElement::LINE_LEN - 1;
+                    new_local_x_cursor + 1
+                } else { new_local_x_cursor };
+
+                self.cursor_x = (self.cursor_x as i32 + remaining_local_x_cursor) as usize;
             }
             Direction::Up => {
                 if self.cursor_y == 0 {

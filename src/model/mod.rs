@@ -10,17 +10,6 @@ pub enum Direction {
     Down,
 }
 
-impl Direction {
-    pub fn vec(&self) -> (i32, i32) {
-        match self {
-            Direction::Left => (-1, 0),
-            Direction::Right => (1, 0),
-            Direction::Up => (0, -1),
-            Direction::Down => (0, 1),
-        }
-    }
-}
-
 macro_rules! count_enum_variant {
     () => (0usize);
     ($variant:ident $($variants:ident)*) => (1usize + count_enum_variant!($($variants)*));
