@@ -67,19 +67,3 @@ pattern_line_element_auto! {
         Velocity => 2,
     }
 }
-
-pub enum Note {
-    A,
-    B,
-    C,
-    D,
-    E,
-    F,
-    G,
-    CSharp,
-    DSharp,
-    FSharp,
-    GSharp,
-    ASharp,
-    Empty,
-}
