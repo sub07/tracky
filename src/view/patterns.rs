@@ -9,7 +9,8 @@ use crate::view::Draw;
 use crate::view::pattern::PatternDrawData;
 
 impl Draw for Patterns {
-    fn draw(&self, renderer: &mut Renderer, mut x: i32, y: i32, theme: &Theme, _: ()) {
+    fn draw(&self, renderer: &mut Renderer, mut x: i32, mut y: i32, theme: &Theme, _: ()) {
+        y += renderer.glyph_height() as i32;
         x += (renderer.glyph_width() * 4) as i32;
         for i in 0..self.pattern_len() {
             let y = y + (i as u32 * renderer.glyph_height()) as i32;
@@ -21,6 +22,7 @@ impl Draw for Patterns {
             }
         }
         for (pattern_index, pattern) in self.iter().enumerate() {
+            renderer.draw_text_with_background(format!("{pattern_index}"), x, y - renderer.glyph_height() as i32, theme.text_color(), theme.pattern_background_color(), TextAlignment::Left);
             let local_x_cursor = {
                 let cursor_x = self.cursor_x as i32;
                 let pattern_index = pattern_index as i32;
