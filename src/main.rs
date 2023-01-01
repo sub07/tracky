@@ -14,7 +14,7 @@ use crate::model::pattern::Pattern;
 use crate::theme::Theme;
 use crate::view::Draw;
 
-mod font_atlas;
+mod mono_font_atlas;
 mod renderer;
 mod color;
 mod app;

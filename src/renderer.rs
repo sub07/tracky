@@ -5,16 +5,16 @@ use sdl2::render::{TextureCreator, WindowCanvas};
 use sdl2::video::WindowContext;
 
 use crate::color::Color;
-use crate::font_atlas::{FontAtlas, TextAlignment};
+use crate::mono_font_atlas::{MonoFontAtlas, TextAlignment};
 
 pub struct Renderer<'a> {
     canvas: WindowCanvas,
-    font: FontAtlas<'a>,
+    font: MonoFontAtlas<'a>,
 }
 
 impl<'a> Renderer<'a> {
     pub fn new<P: AsRef<Path>>(canvas: WindowCanvas, texture_creator: &'a TextureCreator<WindowContext>, default_font_path: P, default_font_size: u16, default_font_glyphs: &'static str) -> Renderer<'a> {
-        let font = FontAtlas::new(texture_creator, default_font_path, default_font_size, default_font_glyphs);
+        let font = MonoFontAtlas::new(texture_creator, default_font_path, default_font_size, default_font_glyphs);
 
         Renderer {
             canvas,

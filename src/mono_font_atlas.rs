@@ -11,17 +11,18 @@ pub enum TextAlignment {
     Right,
 }
 
-pub struct FontAtlas<'a> {
+pub struct MonoFontAtlas<'a> {
     texture: Texture<'a>,
     glyph_map: HashMap<char, i32>,
     glyph_width: u32,
     glyph_height: u32,
 }
 
-impl<'a> FontAtlas<'a> {
-    pub fn new<P: AsRef<Path>>(texture_creator: &'a TextureCreator<WindowContext>, path: P, font_size: u16, glyphs: &str) -> FontAtlas<'a> {
+impl<'a> MonoFontAtlas<'a> {
+    pub fn new<P: AsRef<Path>>(texture_creator: &'a TextureCreator<WindowContext>, path: P, font_size: u16, glyphs: &str) -> MonoFontAtlas<'a> {
         let ttf = sdl2::ttf::init().unwrap();
         let font = ttf.load_font(path, font_size).unwrap();
+        assert_eq!(true, font.face_is_fixed_width());
         let font_atlas = font.render(glyphs).blended(Color::RGB(255, 255, 255)).unwrap();
         let texture = texture_creator.create_texture_from_surface(font_atlas).unwrap();
         let TextureQuery { width, height, .. } = texture.query();
@@ -30,7 +31,7 @@ impl<'a> FontAtlas<'a> {
         for (index, glyph) in glyphs.chars().enumerate() {
             glyph_map.insert(glyph, (index * glyph_width as usize) as i32);
         }
-        FontAtlas {
+        MonoFontAtlas {
             texture,
             glyph_map,
             glyph_width,

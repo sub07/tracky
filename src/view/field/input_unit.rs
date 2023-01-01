@@ -1,4 +1,4 @@
-use crate::font_atlas::TextAlignment;
+use crate::mono_font_atlas::TextAlignment;
 use crate::model::field::input_unit::InputUnit;
 use crate::renderer::Renderer;
 use crate::theme::Theme;

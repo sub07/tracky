@@ -1,4 +1,4 @@
-use crate::font_atlas::TextAlignment;
+use crate::mono_font_atlas::TextAlignment;
 use crate::model::ColumnLineElement;
 use crate::model::pattern::Pattern;
 use crate::renderer::Renderer;
