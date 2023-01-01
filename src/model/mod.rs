@@ -1,6 +1,6 @@
-pub mod pattern_line;
+pub mod column_line;
+pub mod column;
 pub mod pattern;
-pub mod patterns;
 pub mod field;
 
 pub enum Direction {
@@ -31,8 +31,8 @@ macro_rules! pattern_line_element_auto {
 
         impl $enum_name {
             const ENUM_ARRAY: [$enum_name; count_enum_variant!($($variants )*)] = [$($enum_name::$variants,)*];
-            pub const LINE_LEN: usize = PatternLineElement::line_len();
-            pub const NB_VARIANT: usize = PatternLineElement::nb_elem();
+            pub const LINE_LEN: usize = $enum_name::line_len();
+            pub const NB_VARIANT: usize = $enum_name::nb_elem();
 
 
             pub const fn len(&self) -> usize {
@@ -44,14 +44,14 @@ macro_rules! pattern_line_element_auto {
             }
 
             pub const fn nb_elem() -> usize {
-                PatternLineElement::ENUM_ARRAY.len()
+                $enum_name::ENUM_ARRAY.len()
             }
 
             const fn line_len() -> usize {
                 let mut sum = 0;
                 let mut i = 0;
-                while i < PatternLineElement::ENUM_ARRAY.len() {
-                    sum += PatternLineElement::ENUM_ARRAY[i].len();
+                while i < $enum_name::ENUM_ARRAY.len() {
+                    sum += $enum_name::ENUM_ARRAY[i].len();
                     i += 1;
                 }
                 sum
@@ -62,7 +62,7 @@ macro_rules! pattern_line_element_auto {
 
 
 pattern_line_element_auto! {
-    pub enum PatternLineElement {
+    pub enum ColumnLineElement {
         Note => 3,
         Velocity => 2,
     }

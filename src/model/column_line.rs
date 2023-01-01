@@ -1,16 +1,16 @@
 use derive_new::new;
 
-use crate::model::{Direction, PatternLineElement};
+use crate::model::{Direction, ColumnLineElement};
 use crate::model::field::note::NoteField;
 use crate::model::field::velocity::VelocityField;
 
 #[derive(new, Default)]
-pub struct PatternLine {
+pub struct ColumnLine {
     pub note: NoteField,
     pub velocity: VelocityField,
 }
 
-impl PatternLine {
+impl ColumnLine {
     pub fn move_cursor(&self, local_x_cursor: usize, direction: Direction) -> i32 {
         match direction {
             Direction::Left => {
@@ -18,7 +18,7 @@ impl PatternLine {
                     0 => 1,
                     1 => panic!("Should not be possible (no cursor on the note alteration)"),
                     2 => 2,
-                    3..=PatternLineElement::LINE_LEN => 1,
+                    3..=ColumnLineElement::LINE_LEN => 1,
                     _ => panic!("Not in pattern range"),
                 }
             }
@@ -26,7 +26,7 @@ impl PatternLine {
                 match local_x_cursor {
                     0 => 2,
                     1 => panic!("Should not be possible (no cursor on the note alteration)"),
-                    2..=PatternLineElement::LINE_LEN => 1,
+                    2..=ColumnLineElement::LINE_LEN => 1,
                     _ => panic!("Not in pattern range"),
                 }
             }

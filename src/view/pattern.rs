@@ -1,28 +1,33 @@
-use derive_new::new;
-
-use crate::model::PatternLineElement;
+use crate::font_atlas::TextAlignment;
+use crate::model::ColumnLineElement;
 use crate::model::pattern::Pattern;
 use crate::renderer::Renderer;
 use crate::theme::Theme;
 use crate::view::Draw;
-use crate::view::pattern_line::PatternLineDrawData;
-
-#[derive(new)]
-pub struct PatternDrawData {
-    local_x_cursor: i32,
-    cursor_y: usize,
-}
+use crate::view::column::ColumnDrawData;
 
 impl Draw for Pattern {
-    type DrawData = PatternDrawData;
-
-    fn draw(&self, renderer: &mut Renderer, x: i32, mut y: i32, theme: &Theme, PatternDrawData { local_x_cursor, cursor_y }: PatternDrawData) {
-        let pattern_background_width = renderer.glyph_width() * (PatternLineElement::LINE_LEN + PatternLineElement::NB_VARIANT - 1) as u32;
-        let pattern_background_height = renderer.glyph_height() * self.len() as u32;
-        renderer.draw_rect(x, y, pattern_background_width, pattern_background_height, theme.pattern_background_color());
-        for (line_index, line) in self.iter().enumerate() {
-            line.draw(renderer, x, y, theme, PatternLineDrawData::new(line_index == cursor_y, local_x_cursor));
-            y += renderer.glyph_height() as i32;
+    fn draw(&self, renderer: &mut Renderer, mut x: i32, mut y: i32, theme: &Theme, _: ()) {
+        y += renderer.glyph_height() as i32;
+        x += (renderer.glyph_width() * 4) as i32;
+        for i in 0..self.pattern_len() {
+            let y = y + (i as u32 * renderer.glyph_height()) as i32;
+            let line = format!("{i} ");
+            if i == self.cursor_y {
+                renderer.draw_text_with_background(line, x, y, theme.text_color(), theme.highlighted_background_color(), TextAlignment::Right);
+            } else {
+                renderer.draw_text(line, x, y, theme.text_color(), TextAlignment::Right);
+            }
+        }
+        for (pattern_index, pattern) in self.iter().enumerate() {
+            renderer.draw_text_with_background(format!("{}", pattern_index + 1), x, y - renderer.glyph_height() as i32, theme.text_color(), theme.pattern_background_color(), TextAlignment::Left);
+            let local_x_cursor = {
+                let cursor_x = self.cursor_x as i32;
+                let pattern_index = pattern_index as i32;
+                cursor_x - pattern_index * ColumnLineElement::LINE_LEN as i32
+            };
+            pattern.draw(renderer, x, y, theme, ColumnDrawData::new(local_x_cursor, self.cursor_y));
+            x += renderer.glyph_width() as i32 * (ColumnLineElement::LINE_LEN + 2) as i32;
         }
     }
 }

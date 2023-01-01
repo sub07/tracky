@@ -1,9 +1,9 @@
 use crate::renderer::Renderer;
 use crate::theme::Theme;
 
-pub mod pattern_line;
+pub mod column_line;
+pub mod column;
 pub mod pattern;
-pub mod patterns;
 pub mod field;
 
 pub trait Draw {

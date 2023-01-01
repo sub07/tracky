@@ -10,7 +10,7 @@ use sdl2::keyboard::{Keycode};
 
 use crate::app::{Event, launch};
 use crate::model::{Direction};
-use crate::model::patterns::Patterns;
+use crate::model::pattern::Pattern;
 use crate::theme::Theme;
 use crate::view::Draw;
 
@@ -24,7 +24,7 @@ mod key_bindings;
 mod theme;
 
 fn main() {
-    let mut patterns = Patterns::new(6, 15);
+    let mut patterns = Pattern::new(6, 15);
     let mut mouse_pos = (0, 0);
     let dark_theme = Theme::default_dark();
 
