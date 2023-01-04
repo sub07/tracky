@@ -1,7 +1,7 @@
 use derive_new::new;
 
-use crate::model::ColumnLineElement;
 use crate::model::column_line::ColumnLine;
+use crate::model::ColumnLineElement;
 use crate::renderer::Renderer;
 use crate::theme::Theme;
 use crate::view::Draw;

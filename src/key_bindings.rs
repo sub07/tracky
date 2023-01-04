@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use sdl2::keyboard::{Keycode};
+use sdl2::keyboard::Keycode;
 
 #[derive(Eq, PartialEq, Hash)]
 pub enum PatternValueAction {

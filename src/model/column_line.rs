@@ -1,6 +1,6 @@
 use derive_new::new;
 
-use crate::model::{Direction, ColumnLineElement};
+use crate::model::{ColumnLineElement, Direction};
 use crate::model::field::note::NoteField;
 use crate::model::field::velocity::VelocityField;
 

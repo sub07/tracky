@@ -1,6 +1,6 @@
 use std::slice::Iter;
 
-use crate::model::{Direction, ColumnLineElement};
+use crate::model::{ColumnLineElement, Direction};
 use crate::model::column::Column;
 
 pub struct Pattern {

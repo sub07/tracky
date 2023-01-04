@@ -9,7 +9,7 @@ extern crate core;
 use sdl2::keyboard::{Keycode, Mod};
 
 use crate::app::{Event, launch};
-use crate::model::{Direction};
+use crate::model::Direction;
 use crate::model::pattern::Pattern;
 use crate::model::patterns::Patterns;
 use crate::theme::Theme;
@@ -32,7 +32,7 @@ fn main() {
 
     launch(|event| {
         match event {
-            Event::Event(sdl2::event::Event::KeyDown { keycode, keymod, .. }) => {
+            Event::Event(sdl2::event::Event::KeyDown { keycode, .. }) => {
                 match keycode {
                     Some(Keycode::Down) => {
                         patterns.move_cursor(Direction::Down)

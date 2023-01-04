@@ -1,4 +1,5 @@
 use derive_new::new;
+
 use crate::model::ColumnLineElement;
 use crate::model::pattern::Pattern;
 use crate::mono_font_atlas::TextAlignment;

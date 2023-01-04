@@ -1,7 +1,7 @@
 use std::slice::Iter;
 
-use crate::model::Direction;
 use crate::model::column_line::ColumnLine;
+use crate::model::Direction;
 
 pub struct Column {
     lines: Vec<ColumnLine>,

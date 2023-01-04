@@ -1,11 +1,11 @@
 use derive_new::new;
 
-use crate::model::ColumnLineElement;
 use crate::model::column::Column;
+use crate::model::ColumnLineElement;
 use crate::renderer::Renderer;
 use crate::theme::Theme;
-use crate::view::Draw;
 use crate::view::column_line::ColumnLineDrawData;
+use crate::view::Draw;
 
 #[derive(new)]
 pub struct ColumnDrawData {

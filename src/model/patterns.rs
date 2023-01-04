@@ -12,7 +12,7 @@ impl Patterns {
     pub fn new(nb_column: usize, column_len: usize) -> Patterns {
         let initial_pattern = Pattern::new(nb_column, column_len);
         Patterns {
-            patterns : vec![initial_pattern],
+            patterns: vec![initial_pattern],
             selected_pattern_index: 0,
             cursor_x: 0,
             cursor_y: 0,
