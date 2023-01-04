@@ -1,6 +1,9 @@
 use std::slice::Iter;
 
-use crate::model::{ColumnLineElement, Direction};
+use sdl2::keyboard::Keycode;
+
+use crate::key_bindings::KeyBindings;
+use crate::model::ColumnLineElement;
 use crate::model::column::Column;
 
 pub struct Pattern {
@@ -21,6 +24,12 @@ impl Pattern {
 
     pub fn column_len(&self) -> usize {
         self.columns[0].len()
+    }
+
+    pub fn handle_input(&mut self, key: Keycode, key_bindings: &KeyBindings, cursor_x: usize, cursor_y: usize) {
+        let current_column_index = cursor_x / ColumnLineElement::LINE_LEN;
+        let local_x_cursor = cursor_x % ColumnLineElement::LINE_LEN;
+        self.columns[current_column_index].handle_input(key, key_bindings, local_x_cursor, cursor_y);
     }
 
     pub fn nb_columns(&self) -> usize { self.columns.len() }

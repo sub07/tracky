@@ -1,5 +1,8 @@
 use std::slice::Iter;
 
+use sdl2::keyboard::Keycode;
+
+use crate::key_bindings::KeyBindings;
 use crate::model::column_line::ColumnLine;
 use crate::model::Direction;
 
@@ -29,5 +32,9 @@ impl Column {
             Direction::Left | Direction::Right => self.lines[cursor_y].move_cursor(local_x_cursor, direction),
             _ => panic!("This function should not be called with this direction")
         }
+    }
+
+    pub fn handle_input(&mut self, key: Keycode, key_bindings: &KeyBindings, local_x_cursor: usize, cursor_y: usize) {
+        self.lines[cursor_y].handle_input(key, key_bindings, local_x_cursor);
     }
 }

@@ -33,6 +33,8 @@ pub enum PatternValueAction {
     HexD,
     HexE,
     HexF,
+
+    ClearUnit,
 }
 
 pub struct KeyBindings {
@@ -45,9 +47,9 @@ impl Default for KeyBindings {
         const PATTERN_VALUE_ACTION_LEN: usize = std::mem::variant_count::<PatternValueAction>();
         let note_mapping = {
             let mut map = HashMap::<Keycode, PatternValueAction>::with_capacity(PATTERN_VALUE_ACTION_LEN);
-            map.insert(Keycode::Q, PatternValueAction::NoteC);
+            map.insert(Keycode::A, PatternValueAction::NoteC);
             map.insert(Keycode::Num2, PatternValueAction::NoteCSharp);
-            map.insert(Keycode::W, PatternValueAction::NoteD);
+            map.insert(Keycode::Z, PatternValueAction::NoteD);
             map.insert(Keycode::Num3, PatternValueAction::NoteDSharp);
             map.insert(Keycode::E, PatternValueAction::NoteE);
             map.insert(Keycode::R, PatternValueAction::NoteF);
@@ -57,6 +59,7 @@ impl Default for KeyBindings {
             map.insert(Keycode::Y, PatternValueAction::NoteA);
             map.insert(Keycode::Num7, PatternValueAction::NoteASharp);
             map.insert(Keycode::U, PatternValueAction::NoteB);
+            map.insert(Keycode::Delete, PatternValueAction::ClearUnit);
             map
         };
 
@@ -79,6 +82,7 @@ impl Default for KeyBindings {
             map.insert(Keycode::D, PatternValueAction::HexD);
             map.insert(Keycode::E, PatternValueAction::HexE);
             map.insert(Keycode::F, PatternValueAction::HexF);
+            map.insert(Keycode::Delete, PatternValueAction::ClearUnit);
             map
         };
 

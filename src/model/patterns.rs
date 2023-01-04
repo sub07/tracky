@@ -1,3 +1,6 @@
+use sdl2::keyboard::Keycode;
+
+use crate::key_bindings::KeyBindings;
 use crate::model::{ColumnLineElement, Direction};
 use crate::model::pattern::Pattern;
 
@@ -29,10 +32,10 @@ impl Patterns {
         let pattern = self.current_pattern();
         match direction {
             Direction::Left | Direction::Right => {
-                let current_pattern_index = self.cursor_x / ColumnLineElement::LINE_LEN;
+                let current_column_index = self.cursor_x / ColumnLineElement::LINE_LEN;
                 let local_x_cursor = self.cursor_x % ColumnLineElement::LINE_LEN;
                 let cursor_y = self.cursor_y;
-                let new_local_x_cursor = pattern.column(current_pattern_index).move_cursor(local_x_cursor, cursor_y, direction);
+                let new_local_x_cursor = pattern.column(current_column_index).move_cursor(local_x_cursor, cursor_y, direction);
 
                 let remaining_local_x_cursor = if self.cursor_x == pattern.nb_columns() * ColumnLineElement::LINE_LEN - 1 && new_local_x_cursor > 0 {
                     self.cursor_x = 0;
@@ -84,5 +87,9 @@ impl Patterns {
         } else {
             self.selected_pattern_index - 1
         }
+    }
+
+    pub fn handle_input(&mut self, key: Keycode, key_bindings: &KeyBindings) {
+        self.patterns[self.selected_pattern_index].handle_input(key, key_bindings, self.cursor_x, self.cursor_y);
     }
 }
