@@ -34,7 +34,7 @@ pub fn launch<F: FnMut(Event)>(mut handle_event: F) {
         &texture_creator,
         "font.ttf",
         24,
-        "0123456789-ABCDEFGHIJKLMNOPQRSTUVWXYZ#",
+        "0123456789-.ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#/",
     );
 
     'gameLoop: loop {

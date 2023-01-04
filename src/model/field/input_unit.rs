@@ -7,6 +7,6 @@ pub struct InputUnit {
 
 impl Default for InputUnit {
     fn default() -> Self {
-        InputUnit::new('-')
+        InputUnit::new('.')
     }
 }

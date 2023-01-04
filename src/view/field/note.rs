@@ -21,7 +21,7 @@ impl Draw for NoteField {
 
         self.note1.draw(renderer, x, y, theme, index == 0 || index == 1);
         x += renderer.glyph_width() as i32;
-        self.note2.draw(renderer, x, y, theme, index == 0 || index == 1);
+        self.note2.draw(renderer, x, y, theme, false);
         x += renderer.glyph_width() as i32;
         self.octave.draw(renderer, x, y, theme, index == 2);
     }

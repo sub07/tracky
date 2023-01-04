@@ -3,12 +3,21 @@ name = "tracky"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "tracky"
+path = "src/main.rs"
+#path = "src/sound_test_main.rs" # Test some sound related stuff
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 thiserror = "1.0"
 inline_tweak = "1.0"
 derive-new = "0.5"
+cpal = "0.14"
+dasp = { version = "0.11", features = ["all"] }
+audrey = "0.3"
+anyhow = "1.0"
 
 ##
 # Sdl on macos with sdl (and extensions) installed with brew
