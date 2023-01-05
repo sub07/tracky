@@ -4,6 +4,7 @@ use crate::model::field::velocity::VelocityField;
 use crate::renderer::Renderer;
 use crate::theme::Theme;
 use crate::view::Draw;
+use crate::view::field::draw_char_input_unit;
 
 #[derive(new)]
 pub struct VelocityFieldDrawData {
@@ -18,8 +19,19 @@ impl Draw for VelocityField {
             Some(index) => index,
             None => -1,
         };
-        self.digit1.draw(renderer, x, y, theme, index == 0);
+
+        let (vel_char_1, vel_char_2) = match self.value {
+            None => ('.', '.'),
+            Some(velocity) => {
+                (
+                    char::from_digit((velocity >> 4) as u32, 16).unwrap().to_ascii_uppercase(),
+                    char::from_digit((velocity & 0x0F) as u32, 16).unwrap().to_ascii_uppercase(),
+                )
+            }
+        };
+
+        draw_char_input_unit(renderer, x, y, theme, index == 0, vel_char_1);
         x += renderer.glyph_width() as i32;
-        self.digit2.draw(renderer, x, y, theme, index == 1);
+        draw_char_input_unit(renderer, x, y, theme, index == 1, vel_char_2);
     }
 }

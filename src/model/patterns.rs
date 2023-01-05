@@ -2,13 +2,20 @@ use sdl2::keyboard::Keycode;
 
 use crate::key_bindings::KeyBindings;
 use crate::model::{ColumnLineElement, Direction};
+use crate::model::field::note::OctaveValue;
 use crate::model::pattern::Pattern;
+
+#[derive(Default)]
+pub struct PatternsContext {
+    pub default_octave: OctaveValue,
+}
 
 pub struct Patterns {
     patterns: Vec<Pattern>,
     pub(crate) selected_pattern_index: usize,
     pub cursor_x: usize,
     pub cursor_y: usize,
+    pub context: PatternsContext,
 }
 
 impl Patterns {
@@ -19,6 +26,7 @@ impl Patterns {
             selected_pattern_index: 0,
             cursor_x: 0,
             cursor_y: 0,
+            context: Default::default(),
         }
     }
 
@@ -90,6 +98,6 @@ impl Patterns {
     }
 
     pub fn handle_input(&mut self, key: Keycode, key_bindings: &KeyBindings) {
-        self.patterns[self.selected_pattern_index].handle_input(key, key_bindings, self.cursor_x, self.cursor_y);
+        self.patterns[self.selected_pattern_index].handle_input(key, key_bindings, self.cursor_x, self.cursor_y, &self.context);
     }
 }

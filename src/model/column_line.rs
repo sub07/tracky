@@ -5,6 +5,7 @@ use crate::key_bindings::KeyBindings;
 use crate::model::{ColumnLineElement, Direction};
 use crate::model::field::note::NoteField;
 use crate::model::field::velocity::VelocityField;
+use crate::model::patterns::PatternsContext;
 
 #[derive(new, Default)]
 pub struct ColumnLine {
@@ -36,11 +37,11 @@ impl ColumnLine {
         }
     }
 
-    pub fn handle_input(&mut self, key: Keycode, key_bindings: &KeyBindings, local_x_cursor: usize) {
+    pub fn handle_input(&mut self, key: Keycode, key_bindings: &KeyBindings, local_x_cursor: usize, patterns_context: &PatternsContext) {
         const MAX_INDEX: usize = ColumnLineElement::LINE_LEN - 1;
         match local_x_cursor {
-            0..=2 => self.note.handle_input(key, key_bindings, local_x_cursor),
-            3..=MAX_INDEX => self.velocity.handle_input(key, key_bindings, local_x_cursor - ColumnLineElement::Note.len()),
+            0..=2 => self.note.handle_input(key, key_bindings, local_x_cursor, patterns_context),
+            3..=MAX_INDEX => self.velocity.handle_input(key, key_bindings, local_x_cursor - ColumnLineElement::Note.len(), patterns_context),
             _ => panic!("Invalid local x cursor : {local_x_cursor}")
         }
     }
