@@ -1,21 +1,17 @@
-use sdl2::keyboard::Keycode;
-
-use crate::key_bindings::KeyBindings;
-use crate::model::{ColumnLineElement, Direction};
+use crate::model::{ColumnLineElement, Direction, PatternInputType};
+use crate::model::column_line::ColumnLine;
 use crate::model::field::note::OctaveValue;
 use crate::model::pattern::Pattern;
 
 #[derive(Default)]
-pub struct PatternsContext {
-    pub default_octave: OctaveValue,
-}
+pub struct PatternsContext {}
 
 pub struct Patterns {
     patterns: Vec<Pattern>,
     pub(crate) selected_pattern_index: usize,
     pub cursor_x: usize,
     pub cursor_y: usize,
-    pub context: PatternsContext,
+    pub default_octave: OctaveValue,
 }
 
 impl Patterns {
@@ -26,12 +22,16 @@ impl Patterns {
             selected_pattern_index: 0,
             cursor_x: 0,
             cursor_y: 0,
-            context: Default::default(),
+            default_octave: OctaveValue::new(5),
         }
     }
 
     pub fn current_pattern(&self) -> &Pattern {
         &self.patterns[self.selected_pattern_index]
+    }
+
+    pub fn current_pattern_mut(&mut self) -> &mut Pattern {
+        &mut self.patterns[self.selected_pattern_index]
     }
 
     pub fn nb_patterns(&self) -> usize { self.patterns.len() }
@@ -81,6 +81,29 @@ impl Patterns {
         self.selected_pattern_index += 1;
     }
 
+    pub fn current_line_mut(&mut self) -> &mut ColumnLine {
+        let current_column_index = self.cursor_x / ColumnLineElement::LINE_LEN;
+        let cursor_y = self.cursor_y;
+        self.current_pattern_mut().column_mut(current_column_index).line_mut(cursor_y)
+    }
+
+    pub fn line_local_x_cursor(&self) -> usize {
+        self.cursor_x % ColumnLineElement::LINE_LEN
+    }
+
+    pub fn cursor_input_type(&self) -> PatternInputType {
+        match self.line_x_cursor() {
+            0 => PatternInputType::Note,
+            2 => PatternInputType::Octave,
+            3 | 4 => PatternInputType::Hex,
+            _ => panic!("Should not happen"),
+        }
+    }
+
+    pub fn line_x_cursor(&self) -> usize {
+        self.cursor_x % ColumnLineElement::LINE_LEN
+    }
+
     pub fn navigate_to_next_pattern(&mut self) {
         self.selected_pattern_index = if self.selected_pattern_index == self.nb_patterns() - 1 {
             0
@@ -95,9 +118,5 @@ impl Patterns {
         } else {
             self.selected_pattern_index - 1
         }
-    }
-
-    pub fn handle_input(&mut self, key: Keycode, key_bindings: &KeyBindings) {
-        self.patterns[self.selected_pattern_index].handle_input(key, key_bindings, self.cursor_x, self.cursor_y, &self.context);
     }
 }

@@ -1,11 +1,6 @@
 use std::slice::Iter;
 
-use sdl2::keyboard::Keycode;
-
-use crate::key_bindings::KeyBindings;
 use crate::model::column::Column;
-use crate::model::ColumnLineElement;
-use crate::model::patterns::PatternsContext;
 
 pub struct Pattern {
     columns: Vec<Column>,
@@ -27,12 +22,6 @@ impl Pattern {
         self.columns[0].len()
     }
 
-    pub fn handle_input(&mut self, key: Keycode, key_bindings: &KeyBindings, cursor_x: usize, cursor_y: usize, patterns_context: &PatternsContext) {
-        let current_column_index = cursor_x / ColumnLineElement::LINE_LEN;
-        let local_x_cursor = cursor_x % ColumnLineElement::LINE_LEN;
-        self.columns[current_column_index].handle_input(key, key_bindings, local_x_cursor, cursor_y, patterns_context);
-    }
-
     pub fn nb_columns(&self) -> usize { self.columns.len() }
 
     pub fn iter(&self) -> Iter<Column> {
@@ -41,5 +30,9 @@ impl Pattern {
 
     pub fn column(&self, index: usize) -> &Column {
         &self.columns[index]
+    }
+
+    pub fn column_mut(&mut self, index: usize) -> &mut Column {
+        &mut self.columns[index]
     }
 }

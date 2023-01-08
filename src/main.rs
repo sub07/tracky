@@ -6,11 +6,9 @@
 
 extern crate core;
 
-use sdl2::keyboard::Keycode;
 
 use crate::app::{Event, launch};
-use crate::key_bindings::KeyBindings;
-use crate::model::Direction;
+use crate::controller::patterns::PatternsController;
 use crate::model::patterns::Patterns;
 use crate::theme::Theme;
 use crate::view::Draw;
@@ -23,51 +21,19 @@ mod model;
 mod view;
 mod key_bindings;
 mod theme;
+mod controller;
 
 fn main() {
-    let mut patterns = Patterns::new(6, 15);
-    let mut mouse_pos = (0, 0);
+    let mut patterns = Patterns::new(9, 64);
+    let controller = PatternsController::default();
     let dark_theme = Theme::default_dark();
-    let key_bindings = KeyBindings::default();
 
     launch(|event| {
         match event {
-            Event::Event(sdl2::event::Event::KeyDown { keycode, .. }) => {
-                match keycode {
-                    Some(Keycode::Down) => {
-                        patterns.move_cursor(Direction::Down);
-                    }
-                    Some(Keycode::Up) => {
-                        patterns.move_cursor(Direction::Up);
-                    }
-                    Some(Keycode::Left) => {
-                        patterns.move_cursor(Direction::Left);
-                    }
-                    Some(Keycode::Right) => {
-                        patterns.move_cursor(Direction::Right);
-                    }
-                    Some(Keycode::Insert) => {
-                        patterns.insert_pattern();
-                    }
-                    Some(Keycode::KpMinus) => {
-                        patterns.navigate_to_previous_pattern();
-                    }
-                    Some(Keycode::KpPlus) => {
-                        patterns.navigate_to_next_pattern();
-                    }
-                    Some(key) => {
-                        patterns.handle_input(key, &key_bindings);
-                    }
-                    _ => {}
-                }
-            }
-            Event::Event(sdl2::event::Event::MouseMotion { x, y, .. }) => {
-                mouse_pos = (x, y);
-            }
+            Event::Event(event) => controller.handle_event(&mut patterns, event),
             Event::DrawRequest(renderer) => {
                 patterns.draw(renderer, 0, 0, &dark_theme, ());
             }
-            _ => {}
         }
     });
 }

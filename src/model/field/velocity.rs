@@ -1,8 +1,24 @@
 use derive_new::new;
-use sdl2::keyboard::Keycode;
 
-use crate::key_bindings::{KeyBindings, PatternInputUnitAction};
-use crate::model::patterns::PatternsContext;
+pub struct HexValue {
+    value: u8,
+}
+
+impl HexValue {
+    pub fn new(value: u8) -> HexValue {
+        if value > 0xF { panic!("Invalid value for an octave : {value}"); }
+        HexValue { value }
+    }
+
+    pub fn value(&self) -> u8 {
+        self.value
+    }
+}
+
+enum HexDigit {
+    First,
+    Second,
+}
 
 #[derive(new, Default)]
 pub struct VelocityField {
@@ -10,64 +26,29 @@ pub struct VelocityField {
 }
 
 impl VelocityField {
-    pub fn handle_input(&mut self, key: Keycode, key_bindings: &KeyBindings, local_x_cursor: usize, _: &PatternsContext) {
-        match key_bindings.hex_mapping.get(&key) {
-            Some(action) => {
-                let value = match action {
-                    PatternInputUnitAction::Hex0 => Some(0u8),
-                    PatternInputUnitAction::Hex1 => Some(1),
-                    PatternInputUnitAction::Hex2 => Some(2),
-                    PatternInputUnitAction::Hex3 => Some(3),
-                    PatternInputUnitAction::Hex4 => Some(4),
-                    PatternInputUnitAction::Hex5 => Some(5),
-                    PatternInputUnitAction::Hex6 => Some(6),
-                    PatternInputUnitAction::Hex7 => Some(7),
-                    PatternInputUnitAction::Hex8 => Some(8),
-                    PatternInputUnitAction::Hex9 => Some(9),
-                    PatternInputUnitAction::HexA => Some(10),
-                    PatternInputUnitAction::HexB => Some(11),
-                    PatternInputUnitAction::HexC => Some(12),
-                    PatternInputUnitAction::HexD => Some(13),
-                    PatternInputUnitAction::HexE => Some(14),
-                    PatternInputUnitAction::HexF => Some(15),
-                    PatternInputUnitAction::ClearUnit => None,
-                    _ => return,
-                };
+    fn set_digit_hex(&mut self, digit: HexDigit, value: HexValue) {
+        let (mask, value) = match digit {
+            HexDigit::First => (0x0F, value.value() << 4),
+            HexDigit::Second => (0xF0, value.value()),
+        };
 
-                match value {
-                    None => {
-                        self.value = None;
-                    }
-                    Some(mut value) => {
-                        let mut current = match self.value {
-                            Some(value) => {
-                                value
-                            }
-                            None => {
-                                0
-                            }
-                        };
+        let mut current_value = self.value.unwrap_or(0);
+        current_value &= mask;
+        current_value |= value;
 
-                        let mask = match local_x_cursor {
-                            0 => {
-                                value <<= 4;
-                                0x0F
-                            }
-                            1 => 0xF0,
-                            _ => panic!("Invalid cursor position: {local_x_cursor}"),
-                        };
+        self.value = Some(current_value);
+    }
 
-                        current &= mask;
-                        current |= value;
+    pub fn set_first_digit_hex(&mut self, value: HexValue) {
+        self.set_digit_hex(HexDigit::First, value);
+    }
 
-                        self.value = Some(current);
-                    }
-                }
-            }
-            None => {
-                println!("Invalid key({key}) binding for this cursor position({local_x_cursor}) for velocity");
-            }
-        }
+    pub fn set_second_digit_hex(&mut self, value: HexValue) {
+        self.set_digit_hex(HexDigit::Second, value);
+    }
+
+    pub fn clear(&mut self) {
+        self.value = None;
     }
 }
 

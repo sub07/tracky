@@ -1,11 +1,7 @@
 use std::slice::Iter;
 
-use sdl2::keyboard::Keycode;
-
-use crate::key_bindings::KeyBindings;
 use crate::model::column_line::ColumnLine;
 use crate::model::Direction;
-use crate::model::patterns::PatternsContext;
 
 pub struct Column {
     lines: Vec<ColumnLine>,
@@ -35,7 +31,7 @@ impl Column {
         }
     }
 
-    pub fn handle_input(&mut self, key: Keycode, key_bindings: &KeyBindings, local_x_cursor: usize, cursor_y: usize, patterns_context: &PatternsContext) {
-        self.lines[cursor_y].handle_input(key, key_bindings, local_x_cursor, patterns_context);
+    pub fn line_mut(&mut self, index: usize) -> &mut ColumnLine {
+        &mut self.lines[index]
     }
 }

@@ -11,11 +11,6 @@ pub enum Direction {
     Down,
 }
 
-macro_rules! count_enum_variant {
-    () => (0usize);
-    ($variant:ident $($variants:ident)*) => (1usize + count_enum_variant!($($variants)*));
-}
-
 macro_rules! pattern_line_element_auto {
     (
         pub enum $enum_name:ident {
@@ -24,6 +19,7 @@ macro_rules! pattern_line_element_auto {
             )*
         }
     ) => {
+        #[derive(PartialEq, Eq, Debug, Hash, Clone, Copy)]
         pub enum $enum_name {
             $(
                 $variants,
@@ -31,10 +27,9 @@ macro_rules! pattern_line_element_auto {
         }
 
         impl $enum_name {
-            const ENUM_ARRAY: [$enum_name; count_enum_variant!($($variants )*)] = [$($enum_name::$variants,)*];
+            const ENUM_ARRAY: [$enum_name; std::mem::variant_count::<$enum_name>()] = [$($enum_name::$variants,)*];
             pub const LINE_LEN: usize = $enum_name::line_len();
-            pub const NB_VARIANT: usize = $enum_name::nb_elem();
-
+            pub const NB_VARIANT: usize = std::mem::variant_count::<$enum_name>();
 
             pub const fn len(&self) -> usize {
                 match self {
@@ -42,10 +37,6 @@ macro_rules! pattern_line_element_auto {
                         $enum_name::$variants => $len,
                     )*
                 }
-            }
-
-            pub const fn nb_elem() -> usize {
-                $enum_name::ENUM_ARRAY.len()
             }
 
             const fn line_len() -> usize {
@@ -67,4 +58,11 @@ pattern_line_element_auto! {
         Note => 3,
         Velocity => 2,
     }
+}
+
+#[derive(PartialEq, Eq, Debug, Hash)]
+pub enum PatternInputType {
+    Note,
+    Octave,
+    Hex,
 }
