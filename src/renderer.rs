@@ -16,10 +16,7 @@ impl<'a> Renderer<'a> {
     pub fn new<P: AsRef<Path>>(canvas: WindowCanvas, texture_creator: &'a TextureCreator<WindowContext>, default_font_path: P, default_font_size: u16, default_font_glyphs: &'static str) -> Renderer<'a> {
         let font = MonoFontAtlas::new(texture_creator, default_font_path, default_font_size, default_font_glyphs);
 
-        Renderer {
-            canvas,
-            font,
-        }
+        Renderer { canvas, font }
     }
 
     pub fn clear<C: Color>(&mut self, color: C) {
@@ -50,5 +47,13 @@ impl<'a> Renderer<'a> {
 
     pub fn glyph_height(&self) -> u32 {
         self.font.glyph_height()
+    }
+
+    pub fn width(&self) -> u32 { self.canvas.logical_size().0 }
+
+    pub fn height(&self) -> u32 { self.canvas.logical_size().1 }
+
+    pub fn set_window_title<S: AsRef<str>>(&mut self, title: S) {
+        self.canvas.window_mut().set_title(title.as_ref()).unwrap();
     }
 }

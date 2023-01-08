@@ -22,6 +22,7 @@ mod view;
 mod key_bindings;
 mod theme;
 mod controller;
+mod game_loop_metrics;
 
 fn main() {
     let mut patterns = Patterns::new(9, 64);
@@ -30,8 +31,10 @@ fn main() {
 
     launch(|event| {
         match event {
-            Event::Event(event) => controller.handle_event(&mut patterns, event),
-            Event::DrawRequest(renderer) => {
+            Event::Event(event, _) => {
+                controller.handle_event(&mut patterns, event);
+            }
+            Event::DrawRequest(renderer, _) => {
                 patterns.draw(renderer, 0, 0, &dark_theme, ());
             }
         }

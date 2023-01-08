@@ -1,11 +1,14 @@
+use std::time::Duration;
+
 use sdl2::image::LoadSurface;
 use sdl2::surface::Surface;
 
+use crate::game_loop_metrics::GameLoopMetrics;
 use crate::renderer::Renderer;
 
 pub enum Event<'a, 'b> {
-    DrawRequest(&'a mut Renderer<'b>),
-    Event(sdl2::event::Event),
+    DrawRequest(&'a mut Renderer<'b>, &'a mut bool),
+    Event(sdl2::event::Event, &'a mut bool),
 }
 
 pub fn launch<F: FnMut(Event)>(mut handle_event: F) {
@@ -14,9 +17,9 @@ pub fn launch<F: FnMut(Event)>(mut handle_event: F) {
         .window("Tracky", 1000, 800)
         .position_centered()
         .resizable()
-        // .maximized()
         .build()
         .unwrap();
+
 
     window.set_icon(Surface::from_file("icon.png").unwrap());
 
@@ -37,15 +40,30 @@ pub fn launch<F: FnMut(Event)>(mut handle_event: F) {
         "0123456789-.ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#/",
     );
 
+    let mut game_loop_metrics = GameLoopMetrics::new(Duration::from_secs(1));
+
+    let mut redraw = false;
+
     'gameLoop: loop {
-        // let mut events_vec = Vec::new();
-        // events_vec.push(events.wait_event());
-        // events_vec.extend(events.poll_iter().collect::<Vec<_>>());
-        for event in events.poll_iter() {
-            if let sdl2::event::Event::Quit { .. } = event { break 'gameLoop; } else { handle_event(Event::Event(event)) }
+        game_loop_metrics.update().unwrap();
+        renderer.set_window_title(format!("FPS: {}", game_loop_metrics.fps()));
+
+        let events = if redraw {
+            redraw = false;
+            events.poll_iter().collect::<Vec<_>>()
+        } else {
+            let mut events_vec = Vec::new();
+            events_vec.push(events.wait_event());
+            events_vec.extend(events.poll_iter().collect::<Vec<_>>());
+            events_vec
+        };
+
+        for event in events {
+            if let sdl2::event::Event::Quit { .. } = event { break 'gameLoop; } else { handle_event(Event::Event(event, &mut redraw)) }
         }
+
         renderer.clear((20, 20, 20));
-        handle_event(Event::DrawRequest(&mut renderer));
+        handle_event(Event::DrawRequest(&mut renderer, &mut redraw));
         renderer.present();
     }
 }

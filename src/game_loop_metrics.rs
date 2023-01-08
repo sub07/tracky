@@ -59,8 +59,4 @@ impl GameLoopMetrics {
     pub fn fps(&self) -> usize {
         self.fps_cache
     }
-
-    pub fn frame_count(&self) -> u128 {
-        self.fps_counter.frame_count
-    }
 }
