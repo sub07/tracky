@@ -49,9 +49,9 @@ impl<'a> Renderer<'a> {
         self.font.glyph_height()
     }
 
-    pub fn width(&self) -> u32 { self.canvas.logical_size().0 }
+    pub fn width(&self) -> u32 { self.canvas.output_size().unwrap().0 }
 
-    pub fn height(&self) -> u32 { self.canvas.logical_size().1 }
+    pub fn height(&self) -> u32 { self.canvas.output_size().unwrap().1 }
 
     pub fn set_window_title<S: AsRef<str>>(&mut self, title: S) {
         self.canvas.window_mut().set_title(title.as_ref()).unwrap();

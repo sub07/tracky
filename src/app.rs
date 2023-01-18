@@ -14,7 +14,7 @@ pub enum Event<'a, 'b> {
 pub fn launch<F: FnMut(Event)>(mut handle_event: F) {
     let sdl = sdl2::init().unwrap();
     let mut window = sdl.video().unwrap()
-        .window("Tracky", 1000, 800)
+        .window("Tracky", 1200, 800)
         .position_centered()
         .resizable()
         .build()
