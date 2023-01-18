@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use rust_utils::hash_map_of;
 
 use sdl2::keyboard::Keycode;
 
@@ -52,16 +53,6 @@ pub enum PatternInputUnitAction {
 
 pub struct KeyBindings {
     pub context_bindings: HashMap<PatternInputType, HashMap<Keycode, PatternInputUnitAction>>,
-}
-
-macro_rules! hash_map_of {
-    ($($key:expr => $value:expr,)+) => {
-        HashMap::from([
-            $(
-                ($key, $value),
-            )+
-        ])
-    };
 }
 
 impl Default for KeyBindings {

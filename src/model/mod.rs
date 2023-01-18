@@ -1,4 +1,4 @@
-use rust_utils::{EnumIter, EnumValue};
+use rust_utils_macro::{EnumIter, EnumValue};
 
 pub mod column_line;
 pub mod column;

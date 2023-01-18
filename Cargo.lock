@@ -805,8 +805,13 @@ checksum = "456c603be3e8d448b072f410900c09faf164fbce2d480456f50eea6e25f9c848"
 
 [[package]]
 name = "rust_utils"
+version = "1.0.0"
+source = "git+https://github.com/sub07/rust-utils#4241a7193e4a8ec70e9c7dc39015fab07695df84"
+
+[[package]]
+name = "rust_utils_macro"
 version = "1.1.0"
-source = "git+https://github.com/sub07/rust-utils#3cd5a516541cbc8b19c032e05686c6ad7041a037"
+source = "git+https://github.com/sub07/rust-utils#4241a7193e4a8ec70e9c7dc39015fab07695df84"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1053,6 +1058,7 @@ dependencies = [
  "derive-new",
  "inline_tweak",
  "rust_utils",
+ "rust_utils_macro",
  "sdl2",
  "thiserror",
 ]
