@@ -19,7 +19,7 @@ impl Draw for ColumnLine {
 
     fn draw(&self, renderer: &mut Renderer, mut x: i32, y: i32, theme: &Theme, ColumnLineDrawData { is_active_line, local_x_cursor }: ColumnLineDrawData) {
         if is_active_line {
-            let gray_highlight_width = renderer.glyph_width() * (ColumnLineElement::LINE_LEN + ColumnLineElement::NB_VARIANT - 1) as u32;
+            let gray_highlight_width = renderer.glyph_width() * (ColumnLineElement::LINE_LEN + ColumnLineElement::SIZE - 1) as u32;
             renderer.draw_rect(x, y, gray_highlight_width, renderer.glyph_height(), theme.highlighted_background_color());
         }
 
