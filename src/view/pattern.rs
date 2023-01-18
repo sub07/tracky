@@ -24,9 +24,9 @@ impl Draw for Pattern {
         y += gh;
         x += gw * 4;
         let below_cursor_y_pix = y + cursor_y as i32 * gh + gh;
-        let from_line = if below_cursor_y_pix > renderer.height() as i32 {
+        let from_line = if below_cursor_y_pix > height {
             let beyond = below_cursor_y_pix - height;
-            (beyond / gh) + 1
+            (beyond / gh)
         } else { 0 };
         let from_line = from_line as usize;
         let mut line_num_y = y;

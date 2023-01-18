@@ -25,7 +25,7 @@ mod controller;
 mod game_loop_metrics;
 
 fn main() {
-    let mut patterns = Patterns::new(9, 64);
+    let mut patterns = Patterns::new(64, 64);
     let controller = PatternsController::default();
     let dark_theme = Theme::default_dark();
 

@@ -53,6 +53,10 @@ impl<'a> Renderer<'a> {
 
     pub fn height(&self) -> u32 { self.canvas.output_size().unwrap().1 }
 
+    pub fn set_size(&mut self, width: u32, height: u32) {
+        self.canvas.window_mut().set_size(width, height).unwrap()
+    }
+
     pub fn set_window_title<S: AsRef<str>>(&mut self, title: S) {
         self.canvas.window_mut().set_title(title.as_ref()).unwrap();
     }

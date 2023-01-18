@@ -11,15 +11,20 @@ pub enum Event<'a, 'b> {
     Event(sdl2::event::Event, &'a mut bool),
 }
 
+const DEFAULT_WIDTH: u32 = 800;
+const DEFAULT_HEIGHT: u32 = 600;
+
+const DEFAULT_CHAR_WIDTH: u32 = 100;
+const DEFAULT_CHAR_HEIGHT: u32 = 30;
+
 pub fn launch<F: FnMut(Event)>(mut handle_event: F) {
     let sdl = sdl2::init().unwrap();
     let mut window = sdl.video().unwrap()
-        .window("Tracky", 1200, 800)
+        .window("Tracky", DEFAULT_WIDTH, DEFAULT_HEIGHT)
         .position_centered()
         .resizable()
         .build()
         .unwrap();
-
 
     window.set_icon(Surface::from_file("icon.png").unwrap());
 
@@ -39,6 +44,8 @@ pub fn launch<F: FnMut(Event)>(mut handle_event: F) {
         22,
         "0123456789-.ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#/",
     );
+
+    renderer.set_size(DEFAULT_CHAR_WIDTH * renderer.glyph_width(), DEFAULT_CHAR_HEIGHT * renderer.glyph_height());
 
     let mut game_loop_metrics = GameLoopMetrics::new(Duration::from_secs(1));
 
