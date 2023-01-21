@@ -82,19 +82,3 @@ impl<'a> MonoFontAtlas<'a> {
         self.glyph_height
     }
 }
-
-pub trait TextureAtlas {
-    fn draw(&self, renderer: &mut WindowCanvas, index: usize, atlas_size: usize, at: (i32, i32));
-}
-
-impl TextureAtlas for Texture<'_> {
-    fn draw(&self, renderer: &mut WindowCanvas, index: usize, atlas_size: usize, at: (i32, i32)) {
-        let TextureQuery { width, height, .. } = self.query();
-        let width = width / atlas_size as u32;
-        renderer.copy(
-            self,
-            Some(Rect::new((width * index as u32) as i32, 0, width, height)),
-            Some(Rect::new(at.0, at.1, width, height)),
-        ).unwrap();
-    }
-}
