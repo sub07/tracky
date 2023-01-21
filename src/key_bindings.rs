@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use rust_utils::hash_map_of;
 
+use rust_utils::hash_map_of;
 use sdl2::keyboard::Keycode;
 
 use crate::model::PatternInputType;

@@ -15,7 +15,6 @@ use crate::view::Draw;
 
 mod mono_font_atlas;
 mod renderer;
-mod color;
 mod app;
 mod model;
 mod view;

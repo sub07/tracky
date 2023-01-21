@@ -1,4 +1,4 @@
-use derive_new::new;
+use rust_utils_macro::New;
 
 pub struct HexValue {
     value: u8,
@@ -20,7 +20,7 @@ enum HexDigit {
     Second,
 }
 
-#[derive(new, Default)]
+#[derive(New, Default)]
 pub struct VelocityField {
     pub value: Option<u8>,
 }

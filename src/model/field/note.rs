@@ -1,4 +1,4 @@
-use derive_new::new;
+use rust_utils_macro::New;
 
 use crate::model::field::Note;
 
@@ -22,13 +22,13 @@ impl OctaveValue {
     pub fn value(&self) -> u8 { self.value }
 }
 
-#[derive(new)]
+#[derive(New)]
 pub struct NoteValue {
     pub note: Note,
     pub octave: OctaveValue,
 }
 
-#[derive(new, Default)]
+#[derive(New, Default)]
 pub struct NoteField {
     pub note: Option<NoteValue>,
 }

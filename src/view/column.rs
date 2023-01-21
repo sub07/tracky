@@ -1,4 +1,4 @@
-use derive_new::new;
+use rust_utils_macro::New;
 
 use crate::model::column::Column;
 use crate::model::ColumnLineElement;
@@ -7,7 +7,7 @@ use crate::theme::Theme;
 use crate::view::column_line::ColumnLineDrawData;
 use crate::view::Draw;
 
-#[derive(new)]
+#[derive(New)]
 pub struct ColumnDrawData {
     local_x_cursor: i32,
     cursor_y: i32,

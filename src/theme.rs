@@ -1,50 +1,66 @@
-macro_rules! declare_theme_struct {
-    ($($field_name:ident,)*) => {
-        #[derive(Debug, Clone, Copy)]
-        pub struct Theme {
-            $(
-                $field_name: sdl2::pixels::Color,
-            )*
-        }
+use rust_utils_macro::{Getter, New};
 
-        impl Theme {
-            pub fn new(
-                $(
-                    $field_name: impl crate::color::Color,
-                )*
-            ) -> Theme {
-                Theme {
-                    $(
-                        $field_name: $field_name.into_sdl_color(),
-                    )*
-                }
-            }
+use crate::mono_font_atlas::{TextAlignment, TextStyle};
 
-            $(
-                pub fn $field_name(&self) -> sdl2::pixels::Color {
-                    self.$field_name
-                }
-            )*
-        }
-    };
+#[derive(New, Getter)]
+pub struct Theme {
+    default_text_color: (u8, u8, u8),
+    selected_text_color: (u8, u8, u8),
+    pattern_background_color: (u8, u8, u8),
+    selected_line_background_color: (u8, u8, u8),
 }
-
-declare_theme_struct!(
-    text_color,
-    selected_text_color,
-    pattern_background_color,
-    selected_background_color,
-    highlighted_background_color,
-);
 
 impl Theme {
     pub fn default_dark() -> Theme {
         Theme::new(
-            255,
-            0,
+            (255, 255, 255),
+            (0, 0, 0),
             (40, 40, 60),
-            255,
             (100, 100, 120),
         )
+    }
+
+    pub fn selected_line_count_style(&self) -> TextStyle {
+        TextStyle::new(
+            self.default_text_color(),
+            None,
+            TextAlignment::Right,
+        )
+    }
+
+    pub fn line_count_style(&self) -> TextStyle {
+        TextStyle::new(
+            self.default_text_color(),
+            None,
+            TextAlignment::Right,
+        )
+    }
+
+    pub fn column_number_style(&self) -> TextStyle {
+        TextStyle::new(
+            self.default_text_color(),
+            Some(self.pattern_background_color()),
+            TextAlignment::Left,
+        )
+    }
+
+    pub fn default_text_style(&self) -> TextStyle {
+        TextStyle::new(
+            self.default_text_color(),
+            None,
+            TextAlignment::Left,
+        )
+    }
+
+    pub fn cursor_text_style(&self) -> TextStyle {
+        TextStyle::new(
+            self.selected_text_color(),
+            Some(self.default_text_color()),
+            TextAlignment::Left,
+        )
+    }
+
+    pub fn pattern_index_style(&self) -> TextStyle {
+        self.column_number_style()
     }
 }

@@ -1,4 +1,4 @@
-use derive_new::new;
+use rust_utils_macro::New;
 
 use crate::model::field::Note;
 use crate::model::field::note::NoteField;
@@ -7,7 +7,7 @@ use crate::theme::Theme;
 use crate::view::Draw;
 use crate::view::field::draw_char_input_unit;
 
-#[derive(new)]
+#[derive(New)]
 pub struct NoteFieldDrawData {
     local_x_selected: Option<i32>,
 }

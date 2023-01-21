@@ -1,14 +1,13 @@
-use derive_new::new;
+use rust_utils_macro::New;
 
 use crate::model::ColumnLineElement;
 use crate::model::pattern::Pattern;
-use crate::mono_font_atlas::TextAlignment;
 use crate::renderer::Renderer;
 use crate::theme::Theme;
 use crate::view::column::ColumnDrawData;
 use crate::view::Draw;
 
-#[derive(new)]
+#[derive(New)]
 pub struct PatternDrawData {
     pub cursor_x: i32,
     pub cursor_y: i32,
@@ -30,16 +29,15 @@ impl Draw for Pattern {
         } else { 0 };
         let mut line_num_y = y;
         for i in from_line..self.column_len() {
-            let line = format!("{i} ");
-            if i == cursor_y {
-                renderer.draw_text_with_background(line, x, line_num_y, theme.text_color(), theme.highlighted_background_color(), TextAlignment::Right);
-            } else {
-                renderer.draw_text(line, x, line_num_y, theme.text_color(), TextAlignment::Right);
-            }
-            line_num_y += renderer.glyph_height();
+            renderer.draw_text(
+                format!("{i} "),
+                x, line_num_y,
+                if i == cursor_y { theme.selected_line_count_style() } else { theme.line_count_style() },
+            );
+            line_num_y += gh;
         }
 
-        let col_width = (ColumnLineElement::LINE_LEN + ColumnLineElement::SIZE as i32) * renderer.glyph_width();
+        let col_width = (ColumnLineElement::LINE_LEN + ColumnLineElement::SIZE as i32) * gw;
         let col_index = cursor_x / ColumnLineElement::LINE_LEN;
         let right_cursor_col = x + col_index * col_width + col_width;
 
@@ -48,14 +46,18 @@ impl Draw for Pattern {
         } else { 0 };
 
         for (pattern_index, column) in self.iter().enumerate().skip(from_col) {
-            renderer.draw_text_with_background(format!("{}", pattern_index + 1), x, y - renderer.glyph_height(), theme.text_color(), theme.pattern_background_color(), TextAlignment::Left);
+            renderer.draw_text(
+                format!("{}", pattern_index + 1),
+                x, y - gh,
+                theme.column_number_style(),
+            );
             let local_x_cursor = {
                 let cursor_x = cursor_x;
                 let pattern_index = pattern_index as i32;
                 cursor_x - pattern_index * ColumnLineElement::LINE_LEN
             };
             column.draw(renderer, x, y, theme, ColumnDrawData::new(local_x_cursor, cursor_y, from_line));
-            x += renderer.glyph_width() * (ColumnLineElement::LINE_LEN + 2);
+            x += gw * (ColumnLineElement::LINE_LEN + 2);
         }
     }
 }

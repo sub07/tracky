@@ -4,8 +4,7 @@ use sdl2::rect::Rect;
 use sdl2::render::{TextureCreator, WindowCanvas};
 use sdl2::video::WindowContext;
 
-use crate::color::Color;
-use crate::mono_font_atlas::{MonoFontAtlas, TextAlignment};
+use crate::mono_font_atlas::{MonoFontAtlas, TextStyle};
 
 pub struct Renderer<'a> {
     canvas: WindowCanvas,
@@ -15,25 +14,20 @@ pub struct Renderer<'a> {
 impl<'a> Renderer<'a> {
     pub fn new<P: AsRef<Path>>(canvas: WindowCanvas, texture_creator: &'a TextureCreator<WindowContext>, default_font_path: P, default_font_size: u16, default_font_glyphs: &'static str) -> Renderer<'a> {
         let font = MonoFontAtlas::new(texture_creator, default_font_path, default_font_size, default_font_glyphs);
-
         Renderer { canvas, font }
     }
 
-    pub fn clear<C: Color>(&mut self, color: C) {
-        self.canvas.set_draw_color(color.into_sdl_color());
+    pub fn clear(&mut self, color: (u8, u8, u8)) {
+        self.canvas.set_draw_color(color);
         self.canvas.clear();
     }
 
-    pub fn draw_text<S: AsRef<str>, C: Color>(&mut self, text: S, x: i32, y: i32, color: C, alignment: TextAlignment) {
-        self.font.draw(&mut self.canvas, text, x, y, color.into_sdl_color(), alignment);
+    pub fn draw_text<S: AsRef<str>>(&mut self, text: S, x: i32, y: i32, text_style: TextStyle) {
+        self.font.draw(&mut self.canvas, text, x, y, text_style);
     }
 
-    pub fn draw_text_with_background<S: AsRef<str>, C1: Color, C2: Color>(&mut self, text: S, x: i32, y: i32, foreground_color: C1, background_color: C2, alignment: TextAlignment) {
-        self.font.draw_with_background(&mut self.canvas, text, x, y, foreground_color.into_sdl_color(), background_color.into_sdl_color(), alignment);
-    }
-
-    pub fn draw_rect<C: Color>(&mut self, x: i32, y: i32, w: i32, h: i32, color: C) {
-        self.canvas.set_draw_color(color.into_sdl_color());
+    pub fn draw_rect(&mut self, x: i32, y: i32, w: i32, h: i32, color: (u8, u8, u8)) {
+        self.canvas.set_draw_color(color);
         self.canvas.fill_rect(Rect::new(x, y, w as u32, h as u32)).unwrap();
     }
 
