@@ -22,13 +22,13 @@ pub enum ColumnLineElement {
 }
 
 impl ColumnLineElement {
-    pub const LINE_LEN: usize = ColumnLineElement::line_len();
+    pub const LINE_LEN: i32 = ColumnLineElement::line_len();
 
-    const fn line_len() -> usize {
+    const fn line_len() -> i32 {
         let mut sum = 0;
         let mut i = 0;
-        while i < ColumnLineElement::size() {
-            sum += ColumnLineElement::VARIANTS[i].len();
+        while i < ColumnLineElement::size() as i32 {
+            sum += ColumnLineElement::VARIANTS[i as usize].len() as i32;
             i += 1;
         }
         sum

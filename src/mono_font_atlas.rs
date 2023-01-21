@@ -22,7 +22,7 @@ impl<'a> MonoFontAtlas<'a> {
     pub fn new<P: AsRef<Path>>(texture_creator: &'a TextureCreator<WindowContext>, path: P, font_size: u16, glyphs: &str) -> MonoFontAtlas<'a> {
         let ttf = sdl2::ttf::init().unwrap();
         let font = ttf.load_font(path, font_size).unwrap();
-        assert_eq!(true, font.face_is_fixed_width());
+        assert!(font.face_is_fixed_width());
         let font_atlas = font.render(glyphs).blended(Color::RGB(255, 255, 255)).unwrap();
         let texture = texture_creator.create_texture_from_surface(font_atlas).unwrap();
         let TextureQuery { width, height, .. } = texture.query();
@@ -64,7 +64,7 @@ impl<'a> MonoFontAtlas<'a> {
                 dest_x += self.glyph_width as i32;
                 continue;
             }
-            let src_x = *self.glyph_map.get(&glyph).expect(&format!("Glyph {glyph} is not supported"));
+            let src_x = *self.glyph_map.get(&glyph).unwrap_or_else(|| panic!("Glyph {glyph} is not supported"));
             renderer.copy(
                 &self.texture,
                 Some(Rect::new(src_x, 0, self.glyph_width, self.glyph_height)),
@@ -74,11 +74,11 @@ impl<'a> MonoFontAtlas<'a> {
         }
     }
 
-    pub fn glyph_width(&self) -> u32 {
-        self.glyph_width
+    pub fn glyph_width(&self) -> i32 {
+        self.glyph_width as i32
     }
 
-    pub fn glyph_height(&self) -> u32 {
-        self.glyph_height
+    pub fn glyph_height(&self) -> i32 {
+        self.glyph_height as i32
     }
 }

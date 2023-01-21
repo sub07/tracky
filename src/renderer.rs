@@ -32,7 +32,7 @@ impl<'a> Renderer<'a> {
         self.font.draw_with_background(&mut self.canvas, text, x, y, foreground_color.into_sdl_color(), background_color.into_sdl_color(), alignment);
     }
 
-    pub fn draw_rect<C: Color>(&mut self, x: i32, y: i32, w: u32, h: u32, color: C) {
+    pub fn draw_rect<C: Color>(&mut self, x: i32, y: i32, w: i32, h: i32, color: C) {
         self.canvas.set_draw_color(color.into_sdl_color());
         self.canvas.fill_rect(Rect::new(x, y, w as u32, h as u32)).unwrap();
     }
@@ -41,20 +41,20 @@ impl<'a> Renderer<'a> {
         self.canvas.present();
     }
 
-    pub fn glyph_width(&self) -> u32 {
+    pub fn glyph_width(&self) -> i32 {
         self.font.glyph_width()
     }
 
-    pub fn glyph_height(&self) -> u32 {
+    pub fn glyph_height(&self) -> i32 {
         self.font.glyph_height()
     }
 
-    pub fn width(&self) -> u32 { self.canvas.output_size().unwrap().0 }
+    pub fn width(&self) -> i32 { self.canvas.output_size().unwrap().0 as i32 }
 
-    pub fn height(&self) -> u32 { self.canvas.output_size().unwrap().1 }
+    pub fn height(&self) -> i32 { self.canvas.output_size().unwrap().1 as i32 }
 
-    pub fn set_size(&mut self, width: u32, height: u32) {
-        self.canvas.window_mut().set_size(width, height).unwrap()
+    pub fn set_size(&mut self, width: i32, height: i32) {
+        self.canvas.window_mut().set_size(width as u32, height as u32).unwrap()
     }
 
     pub fn set_window_title<S: AsRef<str>>(&mut self, title: S) {

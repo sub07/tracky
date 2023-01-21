@@ -45,9 +45,9 @@ impl Draw for NoteField {
             }
         };
         draw_char_input_unit(renderer, x, y, theme, index == 0, note);
-        x += renderer.glyph_width() as i32;
+        x += renderer.glyph_width();
         draw_char_input_unit(renderer, x, y, theme, false, alteration);
-        x += renderer.glyph_width() as i32;
+        x += renderer.glyph_width();
         draw_char_input_unit(renderer, x, y, theme, index == 2, octave);
     }
 }

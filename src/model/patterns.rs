@@ -9,13 +9,13 @@ pub struct PatternsContext {}
 pub struct Patterns {
     patterns: Vec<Pattern>,
     pub(crate) selected_pattern_index: usize,
-    pub cursor_x: usize,
-    pub cursor_y: usize,
+    pub cursor_x: i32,
+    pub cursor_y: i32,
     pub default_octave: OctaveValue,
 }
 
 impl Patterns {
-    pub fn new(nb_column: usize, column_len: usize) -> Patterns {
+    pub fn new(nb_column: i32, column_len: i32) -> Patterns {
         let initial_pattern = Pattern::new(nb_column, column_len);
         Patterns {
             patterns: vec![initial_pattern],
@@ -53,7 +53,7 @@ impl Patterns {
                     new_local_x_cursor + 1
                 } else { new_local_x_cursor };
 
-                self.cursor_x = (self.cursor_x as i32 + remaining_local_x_cursor) as usize;
+                self.cursor_x += remaining_local_x_cursor;
             }
             Direction::Up => {
                 if self.cursor_y == 0 {
@@ -87,7 +87,7 @@ impl Patterns {
         self.current_pattern_mut().column_mut(current_column_index).line_mut(cursor_y)
     }
 
-    pub fn line_local_x_cursor(&self) -> usize {
+    pub fn line_local_x_cursor(&self) -> i32 {
         self.cursor_x % ColumnLineElement::LINE_LEN
     }
 
@@ -100,7 +100,7 @@ impl Patterns {
         }
     }
 
-    pub fn line_x_cursor(&self) -> usize {
+    pub fn line_x_cursor(&self) -> i32 {
         self.cursor_x % ColumnLineElement::LINE_LEN
     }
 

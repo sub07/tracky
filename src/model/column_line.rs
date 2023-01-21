@@ -11,7 +11,7 @@ pub struct ColumnLine {
 }
 
 impl ColumnLine {
-    pub fn move_cursor(&self, local_x_cursor: usize, direction: Direction) -> i32 {
+    pub fn move_cursor(&self, local_x_cursor: i32, direction: Direction) -> i32 {
         match direction {
             Direction::Left => {
                 -match local_x_cursor {

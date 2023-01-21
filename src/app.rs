@@ -14,8 +14,8 @@ pub enum Event<'a, 'b> {
 const DEFAULT_WIDTH: u32 = 800;
 const DEFAULT_HEIGHT: u32 = 600;
 
-const DEFAULT_CHAR_WIDTH: u32 = 100;
-const DEFAULT_CHAR_HEIGHT: u32 = 30;
+const DEFAULT_CHAR_WIDTH: i32 = 100;
+const DEFAULT_CHAR_HEIGHT: i32 = 30;
 
 pub fn launch<F: FnMut(Event)>(mut handle_event: F) {
     let sdl = sdl2::init().unwrap();

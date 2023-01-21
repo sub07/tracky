@@ -15,10 +15,7 @@ impl Draw for VelocityField {
     type DrawData = VelocityFieldDrawData;
 
     fn draw(&self, renderer: &mut Renderer, mut x: i32, y: i32, theme: &Theme, VelocityFieldDrawData { local_x_selected }: VelocityFieldDrawData) {
-        let index = match local_x_selected {
-            Some(index) => index,
-            None => -1,
-        };
+        let index = local_x_selected.unwrap_or(-1);
 
         let (vel_char_1, vel_char_2) = match self.value {
             None => ('.', '.'),
@@ -31,7 +28,7 @@ impl Draw for VelocityField {
         };
 
         draw_char_input_unit(renderer, x, y, theme, index == 0, vel_char_1);
-        x += renderer.glyph_width() as i32;
+        x += renderer.glyph_width();
         draw_char_input_unit(renderer, x, y, theme, index == 1, vel_char_2);
     }
 }

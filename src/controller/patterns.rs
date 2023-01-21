@@ -79,7 +79,7 @@ impl PatternsController {
         }
     }
 
-    fn handle_velocity_input(model: &mut Patterns, hex: Option<u8>, line_local_x_cursor: usize) {
+    fn handle_velocity_input(model: &mut Patterns, hex: Option<u8>, line_local_x_cursor: i32) {
         if let Some(hex) = hex {
             let hex = HexValue::new(hex);
             if line_local_x_cursor == 3 {
