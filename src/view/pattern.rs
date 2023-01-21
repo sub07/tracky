@@ -21,14 +21,13 @@ impl Draw for Pattern {
         let gh = renderer.glyph_height() as i32;
         let gw = renderer.glyph_width() as i32;
         let height = renderer.height() as i32;
+        let width = renderer.width() as i32;
         y += gh;
         x += gw * 4;
         let below_cursor_y_pix = y + cursor_y as i32 * gh + gh;
         let from_line = if below_cursor_y_pix > height {
-            let beyond = below_cursor_y_pix - height;
-            (beyond / gh)
+            ((below_cursor_y_pix - height) / gh)  as usize
         } else { 0 };
-        let from_line = from_line as usize;
         let mut line_num_y = y;
         for i in from_line..self.column_len() {
             let line = format!("{i} ");
@@ -39,7 +38,16 @@ impl Draw for Pattern {
             }
             line_num_y += renderer.glyph_height() as i32;
         }
-        for (pattern_index, column) in self.iter().enumerate() {
+
+        let col_width = ((ColumnLineElement::LINE_LEN + ColumnLineElement::SIZE) as u32 * renderer.glyph_width()) as i32;
+        let col_index = (cursor_x / ColumnLineElement::LINE_LEN) as i32;
+        let right_cursor_col = x + col_index * col_width + col_width;
+
+        let from_col = if right_cursor_col > width {
+            ((right_cursor_col - width) / col_width + 1) as usize
+        } else { 0 };
+
+        for (pattern_index, column) in self.iter().enumerate().skip(from_col) {
             renderer.draw_text_with_background(format!("{}", pattern_index + 1), x, y - renderer.glyph_height() as i32, theme.text_color(), theme.pattern_background_color(), TextAlignment::Left);
             let local_x_cursor = {
                 let cursor_x = cursor_x as i32;
