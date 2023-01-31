@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use rust_utils::hash_map_of;
 use sdl2::keyboard::Keycode;
 
-use crate::model::PatternInputType;
+use crate::model::pattern::PatternInputType;
 
 #[derive(Eq, PartialEq, Hash, Copy, Clone, Debug)]
 pub enum PatternInputUnitAction {

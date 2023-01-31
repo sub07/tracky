@@ -1,7 +1,7 @@
 use rust_utils_macro::New;
 
-use crate::model::field::Note;
-use crate::model::field::note::NoteField;
+use crate::model::pattern::field::Note;
+use crate::model::pattern::field::note::NoteField;
 use crate::renderer::Renderer;
 use crate::theme::Theme;
 use crate::view::Draw;

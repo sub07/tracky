@@ -12,10 +12,11 @@ use std::ops::DerefMut;
 use std::rc::Rc;
 use crate::app::{Event, launch};
 use crate::controller::patterns::PatternsController;
-use crate::model::patterns::Patterns;
+use crate::model::camera::PatternsCamera;
+use crate::model::pattern::patterns::Patterns;
 use crate::theme::Theme;
 use crate::view::Draw;
-use crate::view::patterns::PatternsView;
+use crate::view::patterns::{PatternsDrawData};
 
 mod mono_font_atlas;
 mod renderer;
@@ -28,19 +29,18 @@ mod controller;
 mod game_loop_metrics;
 
 fn main() {
-    let patterns = Rc::new(RefCell::new(Patterns::new(64, 64)));
-    let pattern_view = PatternsView::new(patterns.clone());
+    let mut patterns = Patterns::new(64, 64);
+    let camera = PatternsCamera::new();
     let controller = PatternsController::default();
     let dark_theme = Theme::default_dark();
 
     launch(|event| {
         match event {
             Event::Event(event, _) => {
-                let mut model = patterns.borrow_mut();
-                controller.handle_event(model.deref_mut(), event);
+                controller.handle_event(&mut patterns, event);
             }
             Event::DrawRequest(renderer, _) => {
-                pattern_view.draw(renderer, 0, 0, &dark_theme, ());
+                patterns.draw(renderer, 0, 0, &dark_theme, PatternsDrawData::new(camera));
             }
         }
     });

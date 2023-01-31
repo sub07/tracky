@@ -1,6 +1,6 @@
 use std::slice::Iter;
 
-use crate::model::column::Column;
+use crate::model::pattern::column::Column;
 
 pub struct Pattern {
     columns: Vec<Column>,

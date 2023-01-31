@@ -1,7 +1,7 @@
-use crate::model::{ColumnLineElement, Direction, PatternInputType};
-use crate::model::column_line::ColumnLine;
-use crate::model::field::note::OctaveValue;
-use crate::model::pattern::Pattern;
+use crate::model::pattern::{ColumnLineElement, Direction, PatternInputType};
+use crate::model::pattern::column_line::ColumnLine;
+use crate::model::pattern::field::note::OctaveValue;
+use crate::model::pattern::pattern::Pattern;
 
 #[derive(Default)]
 pub struct PatternsContext {}

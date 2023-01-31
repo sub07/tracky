@@ -1,6 +1,6 @@
 use rust_utils_macro::New;
 
-use crate::model::field::velocity::VelocityField;
+use crate::model::pattern::field::velocity::VelocityField;
 use crate::renderer::Renderer;
 use crate::theme::Theme;
 use crate::view::Draw;

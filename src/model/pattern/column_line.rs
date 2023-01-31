@@ -1,8 +1,8 @@
 use rust_utils_macro::New;
 
-use crate::model::{ColumnLineElement, Direction};
-use crate::model::field::note::NoteField;
-use crate::model::field::velocity::VelocityField;
+use crate::model::pattern::{ColumnLineElement, Direction};
+use crate::model::pattern::field::note::NoteField;
+use crate::model::pattern::field::velocity::VelocityField;
 
 #[derive(New, Default)]
 pub struct ColumnLine {

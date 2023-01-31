@@ -1,6 +1,6 @@
 use rust_utils_macro::New;
 
-use crate::model::field::Note;
+use crate::model::pattern::field::Note;
 
 #[derive(Copy, Clone)]
 pub struct OctaveValue {

@@ -2,10 +2,10 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
 use crate::key_bindings::{KeyBindings, PatternInputUnitAction};
-use crate::model::{Direction, PatternInputType};
-use crate::model::field::note::OctaveValue;
-use crate::model::field::velocity::HexValue;
-use crate::model::patterns::Patterns;
+use crate::model::pattern::{Direction, PatternInputType};
+use crate::model::pattern::field::note::OctaveValue;
+use crate::model::pattern::field::velocity::HexValue;
+use crate::model::pattern::patterns::Patterns;
 
 #[derive(Default)]
 pub struct PatternsController {

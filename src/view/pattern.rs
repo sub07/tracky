@@ -1,7 +1,7 @@
 use rust_utils_macro::New;
 
-use crate::model::ColumnLineElement;
-use crate::model::pattern::Pattern;
+use crate::model::pattern::ColumnLineElement;
+use crate::model::pattern::pattern::Pattern;
 use crate::renderer::Renderer;
 use crate::theme::Theme;
 use crate::view::column::ColumnDrawData;
