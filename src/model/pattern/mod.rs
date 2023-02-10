@@ -1,5 +1,7 @@
 use rust_utils_macro::{EnumIter, EnumValue};
 
+use crate::key_bindings::Action;
+
 pub mod column_line;
 pub mod column;
 pub mod pattern;
@@ -11,6 +13,18 @@ pub enum Direction {
     Right,
     Up,
     Down,
+}
+
+impl Direction {
+    pub fn from_action(action: &Action) -> Direction {
+        match action {
+            Action::MoveRight => Direction::Right,
+            Action::MoveLeft => Direction::Left,
+            Action::MoveUp => Direction::Up,
+            Action::MoveDown => Direction::Down,
+            _ => panic!("Should not attempt to convert action {action:?} to direction"),
+        }
+    }
 }
 
 #[derive(EnumIter, EnumValue)]
@@ -33,11 +47,4 @@ impl ColumnLineElement {
         }
         sum
     }
-}
-
-#[derive(PartialEq, Eq, Debug, Hash)]
-pub enum PatternInputType {
-    Note,
-    Octave,
-    Hex,
 }

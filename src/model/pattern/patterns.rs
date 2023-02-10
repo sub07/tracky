@@ -1,4 +1,5 @@
-use crate::model::pattern::{ColumnLineElement, Direction, PatternInputType};
+use crate::key_bindings::PatternInputType;
+use crate::model::pattern::{ColumnLineElement, Direction};
 use crate::model::pattern::column_line::ColumnLine;
 use crate::model::pattern::field::note::OctaveValue;
 use crate::model::pattern::pattern::Pattern;

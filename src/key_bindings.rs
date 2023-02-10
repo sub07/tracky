@@ -3,10 +3,8 @@ use std::collections::HashMap;
 use rust_utils::hash_map_of;
 use sdl2::keyboard::Keycode;
 
-use crate::model::pattern::PatternInputType;
-
 #[derive(Eq, PartialEq, Hash, Copy, Clone, Debug)]
-pub enum PatternInputUnitAction {
+pub enum Action {
     NoteA,
     NoteB,
     NoteC,
@@ -49,66 +47,89 @@ pub enum PatternInputUnitAction {
     Octave9,
 
     ClearUnit,
+
+    MoveDown,
+    MoveUp,
+    MoveLeft,
+    MoveRight,
+    InsertPattern,
+    NextPattern,
+    PreviousPattern,
+}
+
+#[derive(PartialEq, Eq, Debug, Hash)]
+pub enum PatternInputType {
+    Note,
+    Octave,
+    Hex,
+    Global,
 }
 
 pub struct KeyBindings {
-    pub context_bindings: HashMap<PatternInputType, HashMap<Keycode, PatternInputUnitAction>>,
+    pub context_bindings: HashMap<PatternInputType, HashMap<Keycode, Action>>,
 }
 
 impl Default for KeyBindings {
     fn default() -> Self {
         let context_bindings = hash_map_of!(
             PatternInputType::Note => hash_map_of!(
-                Keycode::A => PatternInputUnitAction::NoteC,
-                Keycode::Num2 => PatternInputUnitAction::NoteCSharp,
-                Keycode::Z => PatternInputUnitAction::NoteD,
-                Keycode::Num3 => PatternInputUnitAction::NoteDSharp,
-                Keycode::E => PatternInputUnitAction::NoteE,
-                Keycode::R => PatternInputUnitAction::NoteF,
-                Keycode::Num5 => PatternInputUnitAction::NoteFSharp,
-                Keycode::T => PatternInputUnitAction::NoteG,
-                Keycode::Num6 => PatternInputUnitAction::NoteGSharp,
-                Keycode::Y => PatternInputUnitAction::NoteA,
-                Keycode::Num7 => PatternInputUnitAction::NoteASharp,
-                Keycode::U => PatternInputUnitAction::NoteB,
-                Keycode::Delete => PatternInputUnitAction::ClearUnit,
+                Keycode::A => Action::NoteC,
+                Keycode::Num2 => Action::NoteCSharp,
+                Keycode::Z => Action::NoteD,
+                Keycode::Num3 => Action::NoteDSharp,
+                Keycode::E => Action::NoteE,
+                Keycode::R => Action::NoteF,
+                Keycode::Num5 => Action::NoteFSharp,
+                Keycode::T => Action::NoteG,
+                Keycode::Num6 => Action::NoteGSharp,
+                Keycode::Y => Action::NoteA,
+                Keycode::Num7 => Action::NoteASharp,
+                Keycode::U => Action::NoteB,
+                Keycode::Delete => Action::ClearUnit,
             ),
             PatternInputType::Octave => hash_map_of!(
-                Keycode::Num0 => PatternInputUnitAction::Octave0,
-                Keycode::Num1 => PatternInputUnitAction::Octave1,
-                Keycode::Num2 => PatternInputUnitAction::Octave2,
-                Keycode::Num3 => PatternInputUnitAction::Octave3,
-                Keycode::Num4 => PatternInputUnitAction::Octave4,
-                Keycode::Num5 => PatternInputUnitAction::Octave5,
-                Keycode::Num6 => PatternInputUnitAction::Octave6,
-                Keycode::Num7 => PatternInputUnitAction::Octave7,
-                Keycode::Num8 => PatternInputUnitAction::Octave8,
-                Keycode::Num9 => PatternInputUnitAction::Octave9,
-                Keycode::Delete => PatternInputUnitAction::ClearUnit,
+                Keycode::Num0 => Action::Octave0,
+                Keycode::Num1 => Action::Octave1,
+                Keycode::Num2 => Action::Octave2,
+                Keycode::Num3 => Action::Octave3,
+                Keycode::Num4 => Action::Octave4,
+                Keycode::Num5 => Action::Octave5,
+                Keycode::Num6 => Action::Octave6,
+                Keycode::Num7 => Action::Octave7,
+                Keycode::Num8 => Action::Octave8,
+                Keycode::Num9 => Action::Octave9,
+                Keycode::Delete => Action::ClearUnit,
             ),
             PatternInputType::Hex => hash_map_of!(
-                Keycode::Num0 => PatternInputUnitAction::Hex0,
-                Keycode::Num1 => PatternInputUnitAction::Hex1,
-                Keycode::Num2 => PatternInputUnitAction::Hex2,
-                Keycode::Num3 => PatternInputUnitAction::Hex3,
-                Keycode::Num4 => PatternInputUnitAction::Hex4,
-                Keycode::Num5 => PatternInputUnitAction::Hex5,
-                Keycode::Num6 => PatternInputUnitAction::Hex6,
-                Keycode::Num7 => PatternInputUnitAction::Hex7,
-                Keycode::Num8 => PatternInputUnitAction::Hex8,
-                Keycode::Num9 => PatternInputUnitAction::Hex9,
-                Keycode::A => PatternInputUnitAction::HexA,
-                Keycode::B => PatternInputUnitAction::HexB,
-                Keycode::C => PatternInputUnitAction::HexC,
-                Keycode::D => PatternInputUnitAction::HexD,
-                Keycode::E => PatternInputUnitAction::HexE,
-                Keycode::F => PatternInputUnitAction::HexF,
-                Keycode::Delete => PatternInputUnitAction::ClearUnit,
+                Keycode::Num0 => Action::Hex0,
+                Keycode::Num1 => Action::Hex1,
+                Keycode::Num2 => Action::Hex2,
+                Keycode::Num3 => Action::Hex3,
+                Keycode::Num4 => Action::Hex4,
+                Keycode::Num5 => Action::Hex5,
+                Keycode::Num6 => Action::Hex6,
+                Keycode::Num7 => Action::Hex7,
+                Keycode::Num8 => Action::Hex8,
+                Keycode::Num9 => Action::Hex9,
+                Keycode::A => Action::HexA,
+                Keycode::B => Action::HexB,
+                Keycode::C => Action::HexC,
+                Keycode::D => Action::HexD,
+                Keycode::E => Action::HexE,
+                Keycode::F => Action::HexF,
+                Keycode::Delete => Action::ClearUnit,
+            ),
+            PatternInputType::Global => hash_map_of!(
+                Keycode::Down => Action::MoveDown,
+                Keycode::Up => Action::MoveUp,
+                Keycode::Left => Action::MoveLeft,
+                Keycode::Right => Action::MoveRight,
+                Keycode::Insert => Action::InsertPattern,
+                Keycode::KpPlus => Action::NextPattern,
+                Keycode::KpMinus => Action::PreviousPattern,
             ),
         );
 
-        KeyBindings {
-            context_bindings
-        }
+        KeyBindings { context_bindings }
     }
 }

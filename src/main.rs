@@ -6,17 +6,14 @@
 
 extern crate core;
 
+use rust_utils::vector::Vector;
 
-use std::cell::RefCell;
-use std::ops::DerefMut;
-use std::rc::Rc;
 use crate::app::{Event, launch};
 use crate::controller::patterns::PatternsController;
-use crate::model::camera::PatternsCamera;
 use crate::model::pattern::patterns::Patterns;
 use crate::theme::Theme;
 use crate::view::Draw;
-use crate::view::patterns::{PatternsDrawData};
+use crate::view::patterns::PatternsDrawData;
 
 mod mono_font_atlas;
 mod renderer;
@@ -28,19 +25,23 @@ mod theme;
 mod controller;
 mod game_loop_metrics;
 
+type Vec2 = Vector<i32, 2>;
+
 fn main() {
     let mut patterns = Patterns::new(64, 64);
-    let camera = PatternsCamera::new();
     let controller = PatternsController::default();
     let dark_theme = Theme::default_dark();
+    let pattern_x = 0;
+    let pattern_y = 0;
 
     launch(|event| {
         match event {
-            Event::Event(event, _) => {
+            Event::Event(event, _, _) => {
                 controller.handle_event(&mut patterns, event);
             }
-            Event::DrawRequest(renderer, _) => {
-                patterns.draw(renderer, 0, 0, &dark_theme, PatternsDrawData::new(camera));
+            Event::DrawRequest(renderer, redraw) => {
+                *redraw = true;
+                patterns.draw(renderer, pattern_x, pattern_y, &dark_theme, PatternsDrawData::new());
             }
         }
     });

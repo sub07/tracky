@@ -1,4 +1,4 @@
-use crate::key_bindings::PatternInputUnitAction;
+use crate::key_bindings::Action;
 
 pub mod note;
 pub mod velocity;
@@ -18,23 +18,23 @@ pub enum Note {
     ASharp,
 }
 
-impl TryFrom<PatternInputUnitAction> for Note {
+impl TryFrom<Action> for Note {
     type Error = ();
 
-    fn try_from(value: PatternInputUnitAction) -> Result<Self, Self::Error> {
+    fn try_from(value: Action) -> Result<Self, Self::Error> {
         match value {
-            PatternInputUnitAction::NoteA => Ok(Note::A),
-            PatternInputUnitAction::NoteB => Ok(Note::B),
-            PatternInputUnitAction::NoteC => Ok(Note::C),
-            PatternInputUnitAction::NoteD => Ok(Note::D),
-            PatternInputUnitAction::NoteE => Ok(Note::E),
-            PatternInputUnitAction::NoteF => Ok(Note::F),
-            PatternInputUnitAction::NoteG => Ok(Note::G),
-            PatternInputUnitAction::NoteCSharp => Ok(Note::CSharp),
-            PatternInputUnitAction::NoteDSharp => Ok(Note::DSharp),
-            PatternInputUnitAction::NoteFSharp => Ok(Note::FSharp),
-            PatternInputUnitAction::NoteGSharp => Ok(Note::GSharp),
-            PatternInputUnitAction::NoteASharp => Ok(Note::ASharp),
+            Action::NoteA => Ok(Note::A),
+            Action::NoteB => Ok(Note::B),
+            Action::NoteC => Ok(Note::C),
+            Action::NoteD => Ok(Note::D),
+            Action::NoteE => Ok(Note::E),
+            Action::NoteF => Ok(Note::F),
+            Action::NoteG => Ok(Note::G),
+            Action::NoteCSharp => Ok(Note::CSharp),
+            Action::NoteDSharp => Ok(Note::DSharp),
+            Action::NoteFSharp => Ok(Note::FSharp),
+            Action::NoteGSharp => Ok(Note::GSharp),
+            Action::NoteASharp => Ok(Note::ASharp),
             _ => Err(()),
         }
     }

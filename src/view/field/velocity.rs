@@ -1,7 +1,7 @@
 use rust_utils_macro::New;
 
 use crate::model::pattern::field::velocity::VelocityField;
-use crate::renderer::Renderer;
+use crate::renderer::WindowRenderer;
 use crate::theme::Theme;
 use crate::view::Draw;
 use crate::view::field::draw_char_input_unit;
@@ -14,7 +14,7 @@ pub struct VelocityFieldDrawData {
 impl Draw for VelocityField {
     type DrawData = VelocityFieldDrawData;
 
-    fn draw(&self, renderer: &mut Renderer, mut x: i32, y: i32, theme: &Theme, VelocityFieldDrawData { local_x_selected }: VelocityFieldDrawData) {
+    fn draw<Renderer: WindowRenderer>(&self, renderer: &mut Renderer, mut x: i32, y: i32, theme: &Theme, VelocityFieldDrawData { local_x_selected }: VelocityFieldDrawData) {
         let index = local_x_selected.unwrap_or(-1);
 
         let (vel_char_1, vel_char_2) = match self.value {

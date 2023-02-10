@@ -2,7 +2,7 @@ use rust_utils_macro::New;
 
 use crate::model::pattern::field::Note;
 use crate::model::pattern::field::note::NoteField;
-use crate::renderer::Renderer;
+use crate::renderer::WindowRenderer;
 use crate::theme::Theme;
 use crate::view::Draw;
 use crate::view::field::draw_char_input_unit;
@@ -15,7 +15,7 @@ pub struct NoteFieldDrawData {
 impl Draw for NoteField {
     type DrawData = NoteFieldDrawData;
 
-    fn draw(&self, renderer: &mut Renderer, mut x: i32, y: i32, theme: &Theme, NoteFieldDrawData { local_x_selected }: NoteFieldDrawData) {
+    fn draw<Renderer: WindowRenderer>(&self, renderer: &mut Renderer, mut x: i32, y: i32, theme: &Theme, NoteFieldDrawData { local_x_selected }: NoteFieldDrawData) {
         let index = match local_x_selected {
             None => -1,
             Some(index) if index == 1 => panic!("Cannot put cursor on not sharp"),
