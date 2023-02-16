@@ -32,8 +32,3 @@ pub trait View : Bound {
 pub trait Bound {
     fn size(&self) -> Vec2;
 }
-
-pub fn test<State>(root: &mut ViewInner<State>) {
-    for c in root.children {
-    }
-}
