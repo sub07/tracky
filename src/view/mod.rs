@@ -15,20 +15,3 @@ pub trait Draw {
     type DrawData = ();
     fn draw<Renderer: WindowRenderer>(&self, renderer: &mut Renderer, x: i32, y: i32, theme: &Theme, data: Self::DrawData);
 }
-
-#[derive(New, Default)]
-pub struct ViewInner<ViewState> {
-    position: Option<Vec2>,
-    size: Option<Vec2>,
-    state: Option<ViewState>,
-    children: Vec<Box<dyn Any>>,
-}
-
-pub trait View : Bound {
-    fn init<R: WindowRenderer>(&mut self, renderer: &R);
-    fn draw<R: WindowRenderer>(&self, renderer: &mut R, theme: &Theme);
-}
-
-pub trait Bound {
-    fn size(&self) -> Vec2;
-}
