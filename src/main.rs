@@ -25,7 +25,8 @@ mod theme;
 mod controller;
 mod game_loop_metrics;
 
-type Vec2 = Vector<i32, 2>;
+type Scalar = i32;
+type Vec2 = Vector<Scalar, 2>;
 
 fn main() {
     let mut patterns = Patterns::new(64, 64);

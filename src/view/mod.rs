@@ -1,9 +1,7 @@
 use std::any::Any;
-use rust_utils_macro::New;
-use sdl2::keyboard::Keycode::V;
-use crate::renderer::WindowRenderer;
+
+use crate::renderer::Renderer;
 use crate::theme::Theme;
-use crate::Vec2;
 
 pub mod column_line;
 pub mod column;
@@ -13,5 +11,5 @@ pub mod patterns;
 
 pub trait Draw {
     type DrawData = ();
-    fn draw<Renderer: WindowRenderer>(&self, renderer: &mut Renderer, x: i32, y: i32, theme: &Theme, data: Self::DrawData);
+    fn draw<R: Renderer>(&self, renderer: &mut R, x: i32, y: i32, theme: &Theme, data: Self::DrawData);
 }

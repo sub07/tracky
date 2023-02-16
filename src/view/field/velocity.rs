@@ -1,9 +1,8 @@
 use rust_utils_macro::New;
 
 use crate::model::pattern::field::velocity::VelocityField;
-use crate::renderer::WindowRenderer;
+use crate::renderer::Renderer;
 use crate::theme::Theme;
-use crate::Vec2;
 use crate::view::Draw;
 use crate::view::field::draw_char_input_unit;
 
@@ -15,7 +14,7 @@ pub struct VelocityFieldDrawData {
 impl Draw for VelocityField {
     type DrawData = VelocityFieldDrawData;
 
-    fn draw<Renderer: WindowRenderer>(&self, renderer: &mut Renderer, mut x: i32, y: i32, theme: &Theme, VelocityFieldDrawData { local_x_selected }: VelocityFieldDrawData) {
+    fn draw<R: Renderer>(&self, renderer: &mut R, mut x: i32, y: i32, theme: &Theme, VelocityFieldDrawData { local_x_selected }: VelocityFieldDrawData) {
         let index = local_x_selected.unwrap_or(-1);
 
         let (vel_char_1, vel_char_2) = match self.value {
@@ -28,8 +27,8 @@ impl Draw for VelocityField {
             }
         };
 
-        draw_char_input_unit(renderer, Vec2::new(x, y), theme, index == 0, vel_char_1);
+        draw_char_input_unit(renderer, x, y, theme, index == 0, vel_char_1);
         x += renderer.glyph_width();
-        draw_char_input_unit(renderer, Vec2::new(x, y), theme, index == 1, vel_char_2);
+        draw_char_input_unit(renderer, x, y, theme, index == 1, vel_char_2);
     }
 }

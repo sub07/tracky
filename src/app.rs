@@ -3,22 +3,23 @@ use std::time::Duration;
 use sdl2::image::LoadSurface;
 use sdl2::surface::Surface;
 
+use crate::Scalar;
 use crate::game_loop_metrics::GameLoopMetrics;
-use crate::renderer::{RendererProxy, SdlRenderer, WindowRenderer};
-use crate::Vec2;
+use crate::renderer::{Renderer, SdlRenderer};
 
-pub enum Event<'a, Renderer: WindowRenderer> {
-    Init(&'a Renderer),
-    DrawRequest(&'a mut Renderer, &'a mut bool),
-    Event(sdl2::event::Event, &'a mut bool, &'a Renderer),
+pub enum Event<'a, R: Renderer> {
+    Init(&'a R),
+    DrawRequest(&'a mut R, &'a mut bool),
+    Event(sdl2::event::Event, &'a mut bool, &'a R),
 }
 
 const DEFAULT_WIDTH: u32 = 800;
 const DEFAULT_HEIGHT: u32 = 600;
 
-const DEFAULT_SIZE_IN_CHAR: Vec2 = Vec2::new(100, 30);
+const DEFAULT_SIZE_IN_CHAR_WIDTH: Scalar = 100;
+const DEFAULT_SIZE_IN_CHAR_HEIGHT: Scalar = 30;
 
-pub fn launch<F: FnMut(Event<RendererProxy<'_, SdlRenderer>>)>(mut handle_event: F) {
+pub fn launch<F: FnMut(Event<SdlRenderer>)>(mut handle_event: F) {
     let sdl = sdl2::init().unwrap();
     let mut window = sdl.video().unwrap()
         .window("Tracky", DEFAULT_WIDTH, DEFAULT_HEIGHT)
@@ -46,18 +47,16 @@ pub fn launch<F: FnMut(Event<RendererProxy<'_, SdlRenderer>>)>(mut handle_event:
         "0123456789-.ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#/",
     );
 
-    renderer.set_size(DEFAULT_SIZE_IN_CHAR * Vec2::new(renderer.glyph_width(), renderer.glyph_height()));
-
-    let mut renderer_proxy = RendererProxy::new(&mut renderer);
+    renderer.set_window_size(DEFAULT_SIZE_IN_CHAR_WIDTH * renderer.glyph_width(), DEFAULT_SIZE_IN_CHAR_HEIGHT * renderer.glyph_height());
 
     let mut game_loop_metrics = GameLoopMetrics::new(Duration::from_secs(1));
     let mut redraw = false;
 
-    handle_event(Event::Init(&renderer_proxy));
+    handle_event(Event::Init(&renderer));
 
     'gameLoop: loop {
         game_loop_metrics.update().unwrap();
-        renderer_proxy.set_window_title(format!("FPS: {}", game_loop_metrics.fps()));
+        renderer.set_window_title(&format!("FPS: {}", game_loop_metrics.fps()));
 
         let events = if redraw {
             redraw = false;
@@ -70,11 +69,11 @@ pub fn launch<F: FnMut(Event<RendererProxy<'_, SdlRenderer>>)>(mut handle_event:
         };
 
         for event in events {
-            if let sdl2::event::Event::Quit { .. } = event { break 'gameLoop; } else { handle_event(Event::Event(event, &mut redraw, &renderer_proxy)) }
+            if let sdl2::event::Event::Quit { .. } = event { break 'gameLoop; } else { handle_event(Event::Event(event, &mut redraw, &renderer)) }
         }
 
-        renderer_proxy.clear((20, 20, 20));
-        handle_event(Event::DrawRequest(&mut renderer_proxy, &mut redraw));
-        renderer_proxy.present();
+        renderer.clear((20, 20, 20));
+        handle_event(Event::DrawRequest(&mut renderer, &mut redraw));
+        renderer.present();
     }
 }

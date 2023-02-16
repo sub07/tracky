@@ -2,9 +2,8 @@ use rust_utils_macro::New;
 
 use crate::model::pattern::ColumnLineElement;
 use crate::model::pattern::pattern::Pattern;
-use crate::renderer::WindowRenderer;
+use crate::renderer::Renderer;
 use crate::theme::Theme;
-use crate::Vec2;
 use crate::view::column::ColumnDrawData;
 use crate::view::Draw;
 
@@ -19,7 +18,7 @@ pub struct PatternDrawData {
 impl Draw for Pattern {
     type DrawData = PatternDrawData;
 
-    fn draw<Renderer: WindowRenderer>(&self, renderer: &mut Renderer, mut x: i32, mut y: i32, theme: &Theme, PatternDrawData { cursor_x, cursor_y, line_offset, column_offset }: PatternDrawData) {
+    fn draw<R: Renderer>(&self, renderer: &mut R, mut x: i32, mut y: i32, theme: &Theme, PatternDrawData { cursor_x, cursor_y, line_offset, column_offset }: PatternDrawData) {
         let gh = renderer.glyph_height();
         let gw = renderer.glyph_width();
         y += gh;
@@ -27,8 +26,8 @@ impl Draw for Pattern {
         let mut line_num_y = y;
         for i in line_offset..self.column_len() {
             renderer.draw_text(
-                format!("{i} "),
-                Vec2::new(x, line_num_y),
+                &format!("{i} "),
+                x, line_num_y,
                 theme.line_count_style(),
             );
             line_num_y += gh;
@@ -36,8 +35,8 @@ impl Draw for Pattern {
 
         for (pattern_index, column) in self.iter().enumerate().skip(column_offset as usize) {
             renderer.draw_text(
-                format!("{}", pattern_index + 1),
-                Vec2::new(x, y - gh),
+                &format!("{}", pattern_index + 1),
+                x, y - gh,
                 theme.column_number_style(),
             );
             let local_x_cursor = {

@@ -2,9 +2,8 @@ use rust_utils_macro::New;
 
 use crate::model::pattern::field::Note;
 use crate::model::pattern::field::note::NoteField;
-use crate::renderer::WindowRenderer;
+use crate::renderer::Renderer;
 use crate::theme::Theme;
-use crate::Vec2;
 use crate::view::Draw;
 use crate::view::field::draw_char_input_unit;
 
@@ -16,7 +15,7 @@ pub struct NoteFieldDrawData {
 impl Draw for NoteField {
     type DrawData = NoteFieldDrawData;
 
-    fn draw<Renderer: WindowRenderer>(&self, renderer: &mut Renderer, mut x: i32, y: i32, theme: &Theme, NoteFieldDrawData { local_x_selected }: NoteFieldDrawData) {
+    fn draw<R: Renderer>(&self, renderer: &mut R, mut x: i32, y: i32, theme: &Theme, NoteFieldDrawData { local_x_selected }: NoteFieldDrawData) {
         let index = match local_x_selected {
             None => -1,
             Some(index) if index == 1 => panic!("Cannot put cursor on not sharp"),
@@ -45,10 +44,10 @@ impl Draw for NoteField {
                 (note, alteration, octave_char)
             }
         };
-        draw_char_input_unit(renderer, Vec2::new(x, y), theme, index == 0, note);
+        draw_char_input_unit(renderer, x, y, theme, index == 0, note);
         x += renderer.glyph_width();
-        draw_char_input_unit(renderer, Vec2::new(x, y), theme, false, alteration);
+        draw_char_input_unit(renderer, x, y, theme, false, alteration);
         x += renderer.glyph_width();
-        draw_char_input_unit(renderer, Vec2::new(x, y), theme, index == 2, octave);
+        draw_char_input_unit(renderer, x, y, theme, index == 2, octave);
     }
 }
