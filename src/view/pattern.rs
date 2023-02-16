@@ -2,7 +2,7 @@ use rust_utils_macro::New;
 
 use crate::model::pattern::ColumnLineElement;
 use crate::model::pattern::pattern::Pattern;
-use crate::renderer::{WindowRenderer};
+use crate::renderer::WindowRenderer;
 use crate::theme::Theme;
 use crate::Vec2;
 use crate::view::column::ColumnDrawData;
@@ -29,7 +29,7 @@ impl Draw for Pattern {
             renderer.draw_text(
                 format!("{i} "),
                 Vec2::new(x, line_num_y),
-                if i == cursor_y { theme.selected_line_count_style() } else { theme.line_count_style() },
+                theme.line_count_style(),
             );
             line_num_y += gh;
         }

@@ -6,8 +6,8 @@ use crate::model::pattern::field::velocity::VelocityField;
 
 #[derive(New, Default)]
 pub struct ColumnLine {
-    pub note: NoteField,
-    pub velocity: VelocityField,
+    pub note_field: NoteField,
+    pub velocity_field: VelocityField,
 }
 
 impl ColumnLine {

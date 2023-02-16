@@ -21,7 +21,11 @@ impl PatternsController {
                     .get(&keycode).copied();
                 if let Some(action) = action {
                     match action {
-                        Action::MoveDown | Action::MoveUp => {}
+                        Action::MoveDown | Action::MoveUp => {
+                            let direction = Direction::from_action(&action);
+
+                            model.move_cursor(direction);
+                        }
                         Action::MoveLeft | Action::MoveRight => {
                             let direction = Direction::from_action(&action);
 
@@ -91,12 +95,12 @@ impl PatternsController {
         if let Some(hex) = hex {
             let hex = HexValue::new(hex);
             if line_local_x_cursor == 3 {
-                model.current_line_mut().velocity.set_first_digit_hex(hex)
+                model.current_line_mut().velocity_field.set_first_digit_hex(hex)
             } else {
-                model.current_line_mut().velocity.set_second_digit_hex(hex)
+                model.current_line_mut().velocity_field.set_second_digit_hex(hex)
             }
         } else {
-            model.current_line_mut().velocity.clear();
+            model.current_line_mut().velocity_field.clear();
         }
     }
 
@@ -118,18 +122,18 @@ impl PatternsController {
 
         if let Some(octave) = octave {
             let octave = OctaveValue::new(octave);
-            model.current_line_mut().note.set_octave(octave);
+            model.current_line_mut().note_field.set_octave(octave);
         } else {
-            model.current_line_mut().note.clear();
+            model.current_line_mut().note_field.clear();
         }
     }
 
     fn handle_note_input(model: &mut Patterns, action: Action) {
         match action {
-            Action::ClearUnit => model.current_line_mut().note.clear(),
+            Action::ClearUnit => model.current_line_mut().note_field.clear(),
             action if let Ok(note) = action.try_into() => {
                 let default_octave = model.default_octave;
-                model.current_line_mut().note.set_note(note, default_octave);
+                model.current_line_mut().note_field.set_note(note, default_octave);
             }
             _ => panic!("Should not happen")
         }

@@ -4,6 +4,7 @@ use crate::model::pattern::field::Note;
 use crate::model::pattern::field::note::NoteField;
 use crate::renderer::WindowRenderer;
 use crate::theme::Theme;
+use crate::Vec2;
 use crate::view::Draw;
 use crate::view::field::draw_char_input_unit;
 
@@ -44,10 +45,10 @@ impl Draw for NoteField {
                 (note, alteration, octave_char)
             }
         };
-        draw_char_input_unit(renderer, x, y, theme, index == 0, note);
+        draw_char_input_unit(renderer, Vec2::new(x, y), theme, index == 0, note);
         x += renderer.glyph_width();
-        draw_char_input_unit(renderer, x, y, theme, false, alteration);
+        draw_char_input_unit(renderer, Vec2::new(x, y), theme, false, alteration);
         x += renderer.glyph_width();
-        draw_char_input_unit(renderer, x, y, theme, index == 2, octave);
+        draw_char_input_unit(renderer, Vec2::new(x, y), theme, index == 2, octave);
     }
 }

@@ -31,17 +31,15 @@ fn main() {
     let mut patterns = Patterns::new(64, 64);
     let controller = PatternsController::default();
     let dark_theme = Theme::default_dark();
-    let pattern_x = 0;
-    let pattern_y = 0;
 
     launch(|event| {
         match event {
+            Event::Init(_) => {}
             Event::Event(event, _, _) => {
                 controller.handle_event(&mut patterns, event);
             }
-            Event::DrawRequest(renderer, redraw) => {
-                *redraw = true;
-                patterns.draw(renderer, pattern_x, pattern_y, &dark_theme, PatternsDrawData::new());
+            Event::DrawRequest(renderer, _) => {
+                patterns.draw(renderer, 0, 0, &dark_theme, PatternsDrawData::new());
             }
         }
     });

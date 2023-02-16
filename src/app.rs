@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use inline_tweak::{tweak};
 use sdl2::image::LoadSurface;
 use sdl2::surface::Surface;
 
@@ -9,6 +8,7 @@ use crate::renderer::{RendererProxy, SdlRenderer, WindowRenderer};
 use crate::Vec2;
 
 pub enum Event<'a, Renderer: WindowRenderer> {
+    Init(&'a Renderer),
     DrawRequest(&'a mut Renderer, &'a mut bool),
     Event(sdl2::event::Event, &'a mut bool, &'a Renderer),
 }
@@ -53,11 +53,12 @@ pub fn launch<F: FnMut(Event<RendererProxy<'_, SdlRenderer>>)>(mut handle_event:
     let mut game_loop_metrics = GameLoopMetrics::new(Duration::from_secs(1));
     let mut redraw = false;
 
+    handle_event(Event::Init(&renderer_proxy));
+
     'gameLoop: loop {
         game_loop_metrics.update().unwrap();
         renderer_proxy.set_window_title(format!("FPS: {}", game_loop_metrics.fps()));
 
-        renderer_proxy.set_draw_origin(Vec2::new(tweak!(10), tweak!(50)));
         let events = if redraw {
             redraw = false;
             events.poll_iter().collect::<Vec<_>>()
