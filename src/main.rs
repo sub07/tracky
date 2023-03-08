@@ -24,6 +24,7 @@ mod key_bindings;
 mod theme;
 mod controller;
 mod game_loop_metrics;
+mod audio;
 
 type Scalar = i32;
 type Vec2 = Vector<Scalar, 2>;
