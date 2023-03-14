@@ -1,6 +1,4 @@
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-
+use winit::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
 use crate::key_bindings::{Action, KeyBindings, PatternInputType};
 use crate::model::pattern::Direction;
 use crate::model::pattern::field::note::OctaveValue;
@@ -13,38 +11,38 @@ pub struct PatternsController {
 }
 
 impl PatternsController {
-    pub fn handle_event(&self, model: &mut Patterns, event: Event) {
+    pub fn handle_event(&self, model: &mut Patterns, event: WindowEvent) {
         match event {
-            Event::KeyDown { keycode, .. } if let Some(keycode) = keycode => {
+            WindowEvent::KeyboardInput { input, .. } if input.state == ElementState::Pressed && let Some(keycode) = input.virtual_keycode => {
                 let action = self.key_bindings.context_bindings
-                    .get(&PatternInputType::Global).expect("Missing global from keybindings context")
-                    .get(&keycode).copied();
-                if let Some(action) = action {
-                    match action {
-                        Action::MoveDown | Action::MoveUp => {
-                            let direction = Direction::from_action(&action);
+                        .get(&PatternInputType::Global).expect("Missing global from keybindings context")
+                        .get(&keycode).copied();
+                    if let Some(action) = action {
+                        match action {
+                            Action::MoveDown | Action::MoveUp => {
+                                let direction = Direction::from_action(&action);
 
-                            model.move_cursor(direction);
-                        }
-                        Action::MoveLeft | Action::MoveRight => {
-                            let direction = Direction::from_action(&action);
+                                model.move_cursor(direction);
+                            }
+                            Action::MoveLeft | Action::MoveRight => {
+                                let direction = Direction::from_action(&action);
 
-                            model.move_cursor(direction);
+                                model.move_cursor(direction);
+                            }
+                            Action::InsertPattern => model.insert_pattern(),
+                            Action::NextPattern => model.navigate_to_next_pattern(),
+                            Action::PreviousPattern => model.navigate_to_previous_pattern(),
+                            _ => todo!()
                         }
-                        Action::InsertPattern => model.insert_pattern(),
-                        Action::NextPattern => model.navigate_to_next_pattern(),
-                        Action::PreviousPattern => model.navigate_to_previous_pattern(),
-                        _ => todo!()
+                    } else {
+                        self.handle_other_keycode(model, keycode)
                     }
-                } else {
-                    self.handle_other_keycode(model, keycode)
-                }
             }
             _ => {}
         }
     }
 
-    fn handle_other_keycode(&self, model: &mut Patterns, keycode: Keycode) {
+    fn handle_other_keycode(&self, model: &mut Patterns, keycode: VirtualKeyCode) {
         let input_type = model.cursor_input_type();
         let action = self.key_bindings.context_bindings
             .get(&input_type).expect("Wrong key binding context")

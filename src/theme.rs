@@ -1,6 +1,6 @@
 use rust_utils_macro::New;
 
-use crate::mono_font_atlas::{TextAlignment, TextStyle};
+use crate::rendering::font::{TextAlignment, TextStyle};
 
 #[derive(New)]
 pub struct Theme {

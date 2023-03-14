@@ -1,7 +1,8 @@
 use std::time::Duration;
 use crate::audio::sound::Sound;
 
-mod sound;
+pub mod sound;
+pub mod stream;
 
 fn resample(src: &Sound, target_sr: f64) -> Sound {
     if src.speed == target_sr {

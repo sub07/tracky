@@ -1,7 +1,8 @@
 use rust_utils_macro::New;
 
 use crate::model::pattern::field::velocity::VelocityField;
-use crate::renderer::Renderer;
+use crate::rendering::renderer::Renderer;
+
 use crate::theme::Theme;
 use crate::view::Draw;
 use crate::view::field::draw_char_input_unit;
@@ -28,7 +29,7 @@ impl Draw for VelocityField {
         };
 
         draw_char_input_unit(renderer, x, y, theme, index == 0, vel_char_1);
-        x += renderer.glyph_width();
+        x += renderer.glyph_size().w();
         draw_char_input_unit(renderer, x, y, theme, index == 1, vel_char_2);
     }
 }

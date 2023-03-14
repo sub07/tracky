@@ -2,22 +2,22 @@
 #![feature(let_chains)]
 #![feature(if_let_guard)]
 #![feature(variant_count)]
+#![feature(slice_as_chunks)]
 #![windows_subsystem = "windows"]
 
 extern crate core;
 
 use rust_utils::vector::Vector;
 
-use crate::app::{Event, launch};
+use crate::audio::sound::Sound;
+use crate::audio::stream::AudioStream;
 use crate::controller::patterns::PatternsController;
 use crate::model::pattern::patterns::Patterns;
+use crate::rendering::app::{AppEvent, launch};
 use crate::theme::Theme;
 use crate::view::Draw;
 use crate::view::patterns::PatternsDrawData;
 
-mod mono_font_atlas;
-mod renderer;
-mod app;
 mod model;
 mod view;
 mod key_bindings;
@@ -25,24 +25,32 @@ mod theme;
 mod controller;
 mod game_loop_metrics;
 mod audio;
+mod rendering;
 
 type Scalar = i32;
 type Vec2 = Vector<Scalar, 2>;
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let mut patterns = Patterns::new(64, 64);
     let controller = PatternsController::default();
     let dark_theme = Theme::default_dark();
 
-    launch(|event| {
+    // let piano_sound = Sound::from_wav("piano.wav").unwrap();
+    // let mut stream = AudioStream::new().unwrap();
+    // stream.volume = 0.1;
+    // stream.add_sound(&piano_sound);
+
+    launch(move |event| {
         match event {
-            Event::Init(_) => {}
-            Event::Event(event, _, _) => {
-                controller.handle_event(&mut patterns, event);
-            }
-            Event::DrawRequest(renderer, _) => {
+            AppEvent::Init(_) => {}
+            AppEvent::DrawRequest(renderer) => {
                 patterns.draw(renderer, 0, 0, &dark_theme, PatternsDrawData::new());
+            }
+            AppEvent::Event(event, _) => {
+                controller.handle_event(&mut patterns, event);
             }
         }
     });
+
+    Ok(())
 }

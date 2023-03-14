@@ -1,6 +1,6 @@
 use std::any::Any;
+use crate::rendering::renderer::Renderer;
 
-use crate::renderer::Renderer;
 use crate::theme::Theme;
 
 pub mod column_line;

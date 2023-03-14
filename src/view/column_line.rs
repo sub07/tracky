@@ -2,7 +2,7 @@ use rust_utils_macro::New;
 
 use crate::model::pattern::column_line::ColumnLine;
 use crate::model::pattern::ColumnLineElement;
-use crate::renderer::Renderer;
+use crate::rendering::renderer::Renderer;
 use crate::theme::Theme;
 use crate::view::Draw;
 use crate::view::field::note::NoteFieldDrawData;
@@ -19,13 +19,13 @@ impl Draw for ColumnLine {
 
     fn draw<R: Renderer>(&self, renderer: &mut R, mut x: i32, y: i32, theme: &Theme, ColumnLineDrawData { is_active_line, local_x_cursor }: ColumnLineDrawData) {
         if is_active_line {
-            let gray_highlight_width = renderer.glyph_width() * (ColumnLineElement::LINE_LEN + ColumnLineElement::SIZE as i32 - 1);
-            renderer.draw_rect(x, y, gray_highlight_width, renderer.glyph_height(), theme.selected_line_background_color, true);
+            let gray_highlight_width = renderer.glyph_size().w() * (ColumnLineElement::LINE_LEN + ColumnLineElement::SIZE as i32 - 1);
+            renderer.draw_rect([x, y].into(), [gray_highlight_width, renderer.glyph_size().h()].into(), theme.selected_line_background_color, true);
         }
 
         self.note_field.draw(renderer, x, y, theme, NoteFieldDrawData::new(if is_active_line { Some(local_x_cursor) } else { None }));
 
-        x += renderer.glyph_width() * (ColumnLineElement::Note.len() + 1) as i32;
+        x += renderer.glyph_size().w() * (ColumnLineElement::Note.len() + 1) as i32;
 
         self.velocity_field.draw(renderer, x, y, theme, VelocityFieldDrawData::new(if is_active_line { Some(local_x_cursor - 3) } else { None }));
     }

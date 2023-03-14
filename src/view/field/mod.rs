@@ -1,12 +1,13 @@
 use crate::Scalar;
-use crate::renderer::Renderer;
+use crate::rendering::renderer::Renderer;
+
 use crate::theme::Theme;
 
 pub mod note;
 pub mod velocity;
 
 pub fn draw_char_input_unit<R: Renderer>(renderer: &mut R, x: Scalar, y: Scalar, theme: &Theme, selected: bool, c: char) {
-    renderer.draw_text(&format!("{c}"), x, y, if selected { theme.cursor_text_style() } else { theme.default_text_style() });
+    renderer.draw_text(&format!("{c}"), [x, y].into(), if selected { theme.cursor_text_style() } else { theme.default_text_style() });
 }
 
 pub fn draw_input_unit<R: Renderer>(renderer: &mut R, theme: &Theme, c: char, selected: bool, on_selected_line: bool) {
@@ -17,5 +18,5 @@ pub fn draw_input_unit<R: Renderer>(renderer: &mut R, theme: &Theme, c: char, se
         (true, true) => theme.pattern_selected_unit_text_style(),
         (false, true) => theme.pattern_selected_line_text_style(),
     };
-    renderer.draw_text(&text, 0, 0, theme);
+    renderer.draw_text(&text, [0, 0].into(), theme);
 }

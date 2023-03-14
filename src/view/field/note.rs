@@ -2,7 +2,8 @@ use rust_utils_macro::New;
 
 use crate::model::pattern::field::Note;
 use crate::model::pattern::field::note::NoteField;
-use crate::renderer::Renderer;
+use crate::rendering::renderer::Renderer;
+
 use crate::theme::Theme;
 use crate::view::Draw;
 use crate::view::field::draw_char_input_unit;
@@ -45,9 +46,9 @@ impl Draw for NoteField {
             }
         };
         draw_char_input_unit(renderer, x, y, theme, index == 0, note);
-        x += renderer.glyph_width();
+        x += renderer.glyph_size().w();
         draw_char_input_unit(renderer, x, y, theme, false, alteration);
-        x += renderer.glyph_width();
+        x += renderer.glyph_size().w();
         draw_char_input_unit(renderer, x, y, theme, index == 2, octave);
     }
 }
