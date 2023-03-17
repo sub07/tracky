@@ -33,7 +33,7 @@ pub trait Renderer {
 #[derive(New)]
 pub struct SkiaRenderer {
     pub(super) window: Window,
-    window_surface: Surface,
+    pub(super) window_surface: Surface,
     pub(super) screen: Pixmap,
     font: Font,
 }
@@ -77,11 +77,17 @@ impl Renderer for SkiaRenderer {
             }
         }
 
-        self.window_surface.set_buffer(
-            u8_to_u32(self.screen.data()).unwrap(),
-            self.screen.width() as u16,
-            self.screen.height() as u16,
-        );
+        let mut window_buffer = self.window_surface.buffer_mut().unwrap();
+        for pixel in window_buffer.iter_mut() {
+            *pixel = 0x00FF0000;
+        }
+        window_buffer.present().unwrap();
+
+        // self.window_surface.set_buffer(
+        //     u8_to_u32(self.screen.data()).unwrap(),
+        //     self.screen.width() as u16,
+        //     self.screen.height() as u16,
+        // );
     }
 
     fn window_size(&self) -> Vec2 {
@@ -95,7 +101,8 @@ impl Renderer for SkiaRenderer {
 
     fn set_window_size(&mut self, size: Vec2) {
         let [w, h] = *size.as_slice();
-        self.window.set_inner_size(PhysicalSize::new(w, h))
+        self.window.set_inner_size(PhysicalSize::new(w, h));
+        self.window_surface.resize(w as u32, h as u32).unwrap();
     }
 
     fn set_window_title(&mut self, title: &str) {

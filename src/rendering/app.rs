@@ -52,7 +52,7 @@ pub fn launch<F: FnMut(AppEvent<SkiaRenderer>) + 'static>(mut handle_event: F) {
         match e {
             Event::RedrawRequested(_) => {
                 renderer.clear((20, 20, 20));
-                handle_event(AppEvent::DrawRequest(&mut renderer));
+                // handle_event(AppEvent::DrawRequest(&mut renderer));
                 renderer.present(); // Slows down window
             }
             Event::WindowEvent { event: window_event, .. } => {
@@ -61,6 +61,7 @@ pub fn launch<F: FnMut(AppEvent<SkiaRenderer>) + 'static>(mut handle_event: F) {
                     WindowEvent::Resized(size) => {
                         if let Some(pixmap) = Pixmap::new(size.width, size.height) {
                             renderer.screen = pixmap;
+                            renderer.window_surface.resize(size.width, size.height).unwrap();
                         }
                         handle_event(AppEvent::Event(WindowEvent::Resized(size), &renderer));
                     }

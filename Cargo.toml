@@ -24,4 +24,4 @@ tiny-skia = "0.8.3"
 tiny-skia-path = "0.8.3"
 fontdue = "0.7.2"
 winit = "0.28"
-softbuffer = { git = "https://github.com/sub07/softbuffer.git" }
+softbuffer = { git = "https://github.com/sub07/softbuffer.git", branch = "owned-buffer" }
