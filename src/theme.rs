@@ -9,8 +9,7 @@ pub struct Theme {
     pub selected_text_color: (u8, u8, u8),
     pub pattern_background_color: (u8, u8, u8),
     pub selected_line_background_color: (u8, u8, u8),
-    #[cfg(debug_assertions)]
-    pub debug_bound_color: (u8, u8, u8),
+    #[cfg(debug_assertions)] pub debug_bound_color: (u8, u8, u8),
 }
 
 macro_rules! define_text_style {
@@ -42,7 +41,7 @@ impl Theme {
             (0, 0, 0),
             (40, 40, 60),
             (100, 100, 120),
-            (10, 255, 30),
+            #[cfg(debug_assertions)] (10, 255, 30),
         )
     }
 

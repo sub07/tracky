@@ -68,26 +68,17 @@ impl Renderer for SkiaRenderer {
     }
 
     fn present(&mut self) {
-        fn u8_to_u32(arr: &[u8]) -> Option<&[u32]> {
-            if arr.len() % 4 != 0 { return None; }
-            let len = arr.len() / 4;
-            let ptr = arr.as_ptr() as *const u32;
-            unsafe {
-                Some(std::slice::from_raw_parts(ptr, len))
-            }
-        }
-
         let mut window_buffer = self.window_surface.buffer_mut().unwrap();
+        let mut screen_pix_iter = self.screen.data().as_chunks::<4>().0.iter();
+
         for pixel in window_buffer.iter_mut() {
-            *pixel = 0x00FF0000;
+            let [r, g, b, a] = screen_pix_iter.next().unwrap();
+            let r = *r as u32;
+            let g = *g as u32;
+            let b = *b as u32;
+            *pixel = (r << 16) | (g << 8) | b;
         }
         window_buffer.present().unwrap();
-
-        // self.window_surface.set_buffer(
-        //     u8_to_u32(self.screen.data()).unwrap(),
-        //     self.screen.width() as u16,
-        //     self.screen.height() as u16,
-        // );
     }
 
     fn window_size(&self) -> Vec2 {

@@ -52,7 +52,7 @@ pub fn launch<F: FnMut(AppEvent<SkiaRenderer>) + 'static>(mut handle_event: F) {
         match e {
             Event::RedrawRequested(_) => {
                 renderer.clear((20, 20, 20));
-                // handle_event(AppEvent::DrawRequest(&mut renderer));
+                handle_event(AppEvent::DrawRequest(&mut renderer));
                 renderer.present(); // Slows down window
             }
             Event::WindowEvent { event: window_event, .. } => {
