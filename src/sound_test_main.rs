@@ -250,9 +250,7 @@ pub fn note_to_multiplier(semitone: i32) -> f64 {
 }
 
 fn main() -> anyhow::Result<()> {
-    let args = args().collect::<Vec<_>>();
-    assert!(args.len() > 1);
-    let original = StereoPcm::from_wav(&args[1])?;
+    let original = StereoPcm::from_wav("piano.wav")?;
 
     let host = cpal::default_host();
 

@@ -7,6 +7,7 @@
 
 extern crate core;
 
+use std::time::Duration;
 use rust_utils::vector::Vector;
 
 use crate::audio::sound::Sound;
@@ -31,26 +32,27 @@ type Scalar = i32;
 type Vec2 = Vector<Scalar, 2>;
 
 fn main() -> anyhow::Result<()> {
-    let mut patterns = Patterns::new(64, 64);
-    let controller = PatternsController::default();
-    let dark_theme = Theme::default_dark();
+    // let mut patterns = Patterns::new(64, 64);
+    // let controller = PatternsController::default();
+    // let dark_theme = Theme::default_dark();
 
-    // let piano_sound = Sound::from_wav("piano.wav").unwrap();
-    // let mut stream = AudioStream::new().unwrap();
-    // stream.volume = 0.1;
-    // stream.add_sound(&piano_sound);
+    let piano_sound = Sound::from_wav("piano.wav").unwrap();
+    let mut stream = AudioStream::new().unwrap();
+    stream.add_sound(&piano_sound);
 
-    launch(move |event| {
-        match event {
-            AppEvent::Init(_) => {}
-            AppEvent::DrawRequest(renderer) => {
-                patterns.draw(renderer, 0, 0, &dark_theme, PatternsDrawData::new());
-            }
-            AppEvent::Event(event, _) => {
-                controller.handle_event(&mut patterns, event);
-            }
-        }
-    });
+    std::thread::sleep(Duration::from_secs(5));
+
+    // launch(move |event| {
+    //     match event {
+    //         AppEvent::Init(_) => {}
+    //         AppEvent::DrawRequest(renderer) => {
+    //             patterns.draw(renderer, 0, 0, &dark_theme, PatternsDrawData::new());
+    //         }
+    //         AppEvent::Event(event, _) => {
+    //             controller.handle_event(&mut patterns, event);
+    //         }
+    //     }
+    // });
 
     Ok(())
 }

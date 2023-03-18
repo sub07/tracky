@@ -3,6 +3,10 @@ name = "tracky"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release-with-debug]
+inherits = "release"
+debug = true
+
 [[bin]]
 name = "tracky"
 path = "src/main.rs"

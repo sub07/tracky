@@ -4,19 +4,22 @@ use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use std::thread::JoinHandle;
+use std::time::Duration;
 
-use anyhow::{anyhow, bail};
-use cpal::SampleRate;
+use anyhow::{anyhow, bail, Error};
+use cpal::{DefaultStreamConfigError, Device, SampleRate, SupportedStreamConfig};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use rust_utils_macro::New;
 
 use crate::audio::resample;
 use crate::audio::sound::Sound;
+use crate::audio::value_object::Volume;
 
-#[derive(Default)]
+#[derive(New, Default)]
 struct StreamData {
-    volume_left: f32,
-    volume_right: f32,
+    volume_left: Volume,
+    volume_right: Volume,
+    #[new_default]
     queue: VecDeque<QueueBuffer>,
 }
 
@@ -39,10 +42,15 @@ enum StreamCommand {
     Stop,
 }
 
+#[derive(Debug, PartialEq)]
+enum StreamCreationMessage {
+    Info { sample_rate: u32, nb_channel: u32 },
+    Done,
+}
+
 pub struct AudioStream {
     pub sample_rate: f64,
-    pub nb_channel: usize,
-    pub volume: f64,
+    pub nb_channel: u32,
     stream_data: Arc<Mutex<StreamData>>,
     stream_thread: JoinHandle<()>,
     stream_commands_sender: Sender<StreamCommand>,
@@ -50,21 +58,38 @@ pub struct AudioStream {
 
 impl AudioStream {
     pub fn new() -> anyhow::Result<AudioStream> {
-        let host = cpal::default_host();
-        let device = host.default_output_device().ok_or(anyhow!("Could not find default output device"))?;
-        let config = device.default_output_config()?;
-        let SampleRate(sample_rate) = config.sample_rate();
-        let nb_channel = config.channels() as usize;
-
         let stream_data = Arc::new(Mutex::new(StreamData::default()));
         let stream_data_clone = stream_data.clone();
 
         let (stream_commands_sender, stream_commands_receiver) = channel();
-        let (stream_ok_sender, stream_ok_receiver) = channel();
+        let (stream_creation_sender, stream_creation_receiver) = channel();
 
         let stream_command_sender_stream_thread = stream_commands_sender.clone();
 
         let stream_thread = thread::spawn(move || {
+            let host = cpal::default_host();
+
+            let device = match host.default_output_device().ok_or(anyhow!("Could not find default output device")) {
+                Ok(device) => device,
+                Err(e) => {
+                    stream_creation_sender.send(Err(e)).unwrap();
+                    return;
+                }
+            };
+
+            let config = match device.default_output_config().map_err(|e| anyhow!("Could not get default output config: {e:?}")) {
+                Ok(config) => config,
+                Err(e) => {
+                    stream_creation_sender.send(Err(e)).unwrap();
+                    return;
+                }
+            };
+
+            let SampleRate(sample_rate) = config.sample_rate();
+            let nb_channel = config.channels() as u32;
+
+            stream_creation_sender.send(Ok(StreamCreationMessage::Info { sample_rate, nb_channel })).unwrap();
+
             let error_callback = |err| eprintln!("An error occurred on audio stream: {}", err);
             match device.build_output_stream(
                 &config.into(),
@@ -90,15 +115,15 @@ impl AudioStream {
                     }
 
                     for sample in data.chunks_mut(2) {
-                        sample[0] *= stream_data.volume_left;
-                        sample[1] *= stream_data.volume_right;
+                        sample[0] *= stream_data.volume_left.value();
+                        sample[1] *= stream_data.volume_right.value();
                     }
                 },
                 error_callback,
                 None,
-            ) {
+            ).map_err(|e| anyhow!("Failed to create output stream {e:?}")) {
                 Ok(stream) => {
-                    stream_ok_sender.send(None).unwrap();
+                    stream_creation_sender.send(Ok(StreamCreationMessage::Done)).unwrap();
                     while let Ok(command) = stream_commands_receiver.recv() {
                         match command {
                             StreamCommand::Pause => stream.pause().unwrap(),
@@ -108,19 +133,28 @@ impl AudioStream {
                     }
                 }
                 Err(e) => {
-                    stream_ok_sender.send(Some(e)).unwrap();
+                    stream_creation_sender.send(Err(e)).unwrap();
                 }
             }
         });
 
-        if let Some(error) = stream_ok_receiver.recv().unwrap() {
-            bail!("Failed to create audio stream: {}", error);
-        }
+        let message = stream_creation_receiver.recv()??;
+        let (sample_rate, nb_channel) = if let StreamCreationMessage::Info { sample_rate, nb_channel } = message {
+            (sample_rate, nb_channel)
+        } else {
+            bail!("Stream infos were not returned: {message:?}");
+        };
+
+
+        let message = stream_creation_receiver.recv()??;
+
+        if message != StreamCreationMessage::Done {
+            bail!("Stream done message was not returned: {message:?}");
+        };
 
         Ok(AudioStream {
             sample_rate: sample_rate as f64,
             nb_channel,
-            volume: 1.0,
             stream_commands_sender,
             stream_data,
             stream_thread,

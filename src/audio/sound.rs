@@ -43,4 +43,13 @@ impl Sound {
         let frame_index = self.frame_index_at_time(time);
         (self.samples[frame_index * 2], self.samples[frame_index * 2 + 1])
     }
+
+    pub fn energy(&self) -> f32 {
+        let sum = self.samples
+            .as_chunks::<2>().0.iter()
+            .map(|[l, r]| ((l + r) / 2.0) * ((l + r) / 2.0))
+            .sum::<f32>();
+
+        f32::sqrt(sum / (self.samples.len() as f32 / 2.0))
+    }
 }

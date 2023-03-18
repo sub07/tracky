@@ -3,6 +3,7 @@ use crate::audio::sound::Sound;
 
 pub mod sound;
 pub mod stream;
+mod value_object;
 
 fn resample(src: &Sound, target_sr: f64) -> Sound {
     if src.speed == target_sr {
