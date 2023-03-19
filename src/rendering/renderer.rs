@@ -72,7 +72,7 @@ impl Renderer for SkiaRenderer {
         let mut screen_pix_iter = self.screen.data().as_chunks::<4>().0.iter();
 
         for pixel in window_buffer.iter_mut() {
-            let [r, g, b, a] = screen_pix_iter.next().unwrap();
+            let [r, g, b, _] = screen_pix_iter.next().unwrap();
             let r = *r as u32;
             let g = *g as u32;
             let b = *b as u32;

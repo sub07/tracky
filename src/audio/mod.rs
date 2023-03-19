@@ -1,19 +1,22 @@
 use std::time::Duration;
 use crate::audio::sound::Sound;
+use crate::audio::value_object::SampleRate;
 
 pub mod sound;
 pub mod stream;
 mod value_object;
 
-fn resample(src: &Sound, target_sr: f32) -> Sound {
-    if src.speed == target_sr {
+fn resample(src: &Sound, target: SampleRate) -> Sound {
+    if src.sample_rate == target {
         return Sound {
             samples: src.samples.clone(),
-            speed: target_sr,
+            sample_rate: target,
         };
     }
 
+
     let src_duration = src.duration();
+    let target_sr = target.value();
 
     let target_nb_sample = ((src_duration.as_secs_f32() * target_sr.round()) as usize) * src.nb_channel();
 
@@ -29,7 +32,7 @@ fn resample(src: &Sound, target_sr: f32) -> Sound {
     }
 
     Sound {
-        speed: target_sr,
+        sample_rate: target,
         samples,
     }
 }

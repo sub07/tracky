@@ -4,7 +4,7 @@ use winit::event::{Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 
-use crate::{Scalar, Vec2};
+use crate::{Vec2};
 use crate::rendering::font::Font;
 use crate::rendering::renderer::{Renderer, SkiaRenderer};
 

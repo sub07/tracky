@@ -1,4 +1,4 @@
-use winit::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, VirtualKeyCode, WindowEvent};
 use crate::key_bindings::{Action, KeyBindings, PatternInputType};
 use crate::model::pattern::Direction;
 use crate::model::pattern::field::note::OctaveValue;

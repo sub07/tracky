@@ -1,4 +1,7 @@
 macro_rules! define_value_object {
+    ($vis:vis $name:ident, $ty:ty, $default:expr) => {
+        define_value_object!($vis $name, $ty, $default, |_v| -> bool { true });
+    };
     ($vis:vis $name:ident, $ty:ty, $default:expr, |$value:ident| -> bool $validation_body:block) => {
         #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
         $vis struct $name($ty);
@@ -21,10 +24,10 @@ macro_rules! define_value_object {
         }
 
         impl TryFrom<$ty> for $name {
-            type Error = &'static str;
+            type Error = anyhow::Error;
 
             fn try_from(value: f32) -> Result<Self, Self::Error> {
-                $name::new(value).ok_or("Provided default value is invalid regarding the validation for value object")
+                $name::new(value).ok_or(anyhow::anyhow!("Provided default value is invalid regarding the validation for value object"))
             }
         }
 
@@ -39,5 +42,6 @@ macro_rules! define_value_object {
 }
 
 define_value_object!(pub Volume, f32, 1.0, |v| -> bool { v >= 0.0 && v <= 1.0 });
+define_value_object!(pub SampleRate, f32, 44100.0);
 
 

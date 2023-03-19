@@ -3,12 +3,14 @@ use std::time::Duration;
 
 use anyhow::bail;
 use rust_utils::iter::zip_self::ZipSelf;
+use crate::audio::resample;
+use crate::audio::value_object::SampleRate;
 
 const NB_CHANNEL: usize = 2;
 
 pub struct Sound {
     pub samples: Vec<f32>,
-    pub speed: f32,
+    pub sample_rate: SampleRate,
 }
 
 impl Sound {
@@ -21,12 +23,12 @@ impl Sound {
         let samples = wav.samples().map(Result::unwrap).collect::<Vec<_>>();
         Ok(Self {
             samples: if desc.channel_count() == 1 { samples.into_iter().zip_self(2).collect() } else { samples },
-            speed: desc.sample_rate() as f32,
+            sample_rate: SampleRate::try_from(desc.sample_rate() as f32)?,
         })
     }
 
     pub fn duration(&self) -> Duration {
-        Duration::from_secs_f32((self.samples.len() / self.nb_channel()) as f32 / self.speed as f32)
+        Duration::from_secs_f32((self.samples.len() / self.nb_channel()) as f32 / self.sample_rate.value())
     }
 
     #[inline]
@@ -35,7 +37,7 @@ impl Sound {
     }
 
     fn frame_index_at_time(&self, time: Duration) -> (usize, f32) {
-        let index = time.as_secs_f32() * self.speed;
+        let index = time.as_secs_f32() * self.sample_rate.value();
         (index as usize, index.fract())
     }
 
@@ -74,5 +76,9 @@ impl Sound {
             .sum::<f32>();
 
         f32::sqrt(sum / (self.samples.len() as f32 / 2.0))
+    }
+
+    pub fn resample(&self, target: SampleRate) -> Sound {
+        resample(self, target)
     }
 }
