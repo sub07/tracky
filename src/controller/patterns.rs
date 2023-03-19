@@ -11,7 +11,7 @@ pub struct PatternsController {
 }
 
 impl PatternsController {
-    pub fn handle_event(&self, model: &mut Patterns, event: WindowEvent) {
+    pub fn handle_event(&self, model: &mut Patterns, event: &WindowEvent) {
         match event {
             WindowEvent::KeyboardInput { input, .. } if input.state == ElementState::Pressed && let Some(keycode) = input.virtual_keycode => {
                 let action = self.key_bindings.context_bindings

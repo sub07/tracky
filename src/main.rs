@@ -8,6 +8,8 @@
 extern crate core;
 
 use rust_utils::vector::Vector;
+use winit::event::ElementState;
+use winit::event::WindowEvent::KeyboardInput;
 
 use crate::audio::sound::Sound;
 use crate::audio::stream::AudioStream;
@@ -40,7 +42,6 @@ fn main() -> anyhow::Result<()> {
 
     stream.add_sound(&piano_sound).unwrap();
     stream.add_sound(&piano_sound).unwrap();
-    stream.add_sound(&piano_sound).unwrap();
 
     launch(move |event| {
         match event {
@@ -49,7 +50,10 @@ fn main() -> anyhow::Result<()> {
                 patterns.draw(renderer, 0, 0, &dark_theme, PatternsDrawData::new());
             }
             AppEvent::Event(event, _) => {
-                controller.handle_event(&mut patterns, event);
+                controller.handle_event(&mut patterns, &event);
+                if let KeyboardInput { input, .. } = event && input.state == ElementState::Pressed {
+                    stream.add_sound(&piano_sound).unwrap();
+                }
             }
         }
     });
