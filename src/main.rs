@@ -38,7 +38,7 @@ fn main() -> anyhow::Result<()> {
 
     let piano_sound = Sound::from_wav("piano.wav").unwrap();
     let mut stream = AudioStream::new().unwrap();
-    stream.add_sound(&piano_sound);
+    stream.add_sound(&piano_sound).unwrap();
 
     std::thread::sleep(Duration::from_secs(5));
 

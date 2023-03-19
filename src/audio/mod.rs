@@ -5,7 +5,7 @@ pub mod sound;
 pub mod stream;
 mod value_object;
 
-fn resample(src: &Sound, target_sr: f64) -> Sound {
+fn resample(src: &Sound, target_sr: f32) -> Sound {
     if src.speed == target_sr {
         return Sound {
             samples: src.samples.clone(),
@@ -15,14 +15,14 @@ fn resample(src: &Sound, target_sr: f64) -> Sound {
 
     let src_duration = src.duration();
 
-    let target_nb_sample = ((src_duration.as_secs_f64() * target_sr.round()) as usize) * src.nb_channel();
+    let target_nb_sample = ((src_duration.as_secs_f32() * target_sr.round()) as usize) * src.nb_channel();
 
     let mut time = Duration::ZERO;
-    let period = Duration::from_secs_f64(1.0 / target_sr);
+    let period = Duration::from_secs_f32(1.0 / target_sr);
     let mut samples = Vec::with_capacity(target_nb_sample);
 
     while time < src_duration {
-        let (l, r) = src.sample_at_time(time);
+        let (l, r) = src.interpolate_at_time(time);
         samples.push(l);
         samples.push(r);
         time += period;

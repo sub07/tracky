@@ -49,7 +49,7 @@ enum StreamCreationMessage {
 }
 
 pub struct AudioStream {
-    pub sample_rate: f64,
+    pub sample_rate: f32,
     pub nb_channel: u32,
     stream_data: Arc<Mutex<StreamData>>,
     stream_thread: JoinHandle<()>,
@@ -153,7 +153,7 @@ impl AudioStream {
         };
 
         Ok(AudioStream {
-            sample_rate: sample_rate as f64,
+            sample_rate: sample_rate as f32,
             nb_channel,
             stream_commands_sender,
             stream_data,
@@ -161,12 +161,13 @@ impl AudioStream {
         })
     }
 
-    pub fn add_sound(&mut self, sound: &Sound) {
+    pub fn add_sound(&mut self, sound: &Sound) -> anyhow::Result<()> {
         let resampled = if sound.speed == self.sample_rate { None } else {
             Some(resample(sound, self.sample_rate))
         };
         self.stream_data.lock().unwrap().queue.push_back(QueueBuffer::from_sound(resampled.as_ref().get_or_insert(sound)));
-        self.stream_commands_sender.send(StreamCommand::Play).unwrap();
+        self.stream_commands_sender.send(StreamCommand::Play)?;
+        Ok(())
     }
 }
 
