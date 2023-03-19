@@ -41,7 +41,6 @@ fn main() -> anyhow::Result<()> {
     let piano_sound = Sound::from_wav("piano.wav").unwrap().resample(stream.sample_rate);
 
     stream.add_sound(&piano_sound).unwrap();
-    stream.add_sound(&piano_sound).unwrap();
 
     launch(move |event| {
         match event {

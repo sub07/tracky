@@ -11,12 +11,12 @@ use rust_utils_macro::New;
 
 use crate::audio::resample;
 use crate::audio::sound::Sound;
-use crate::audio::value_object::{SampleRate, Volume};
+use crate::audio::value_object::{Pan, SampleRate, Volume};
 
 #[derive(New, Default)]
 struct StreamData {
-    volume_left: Volume,
-    volume_right: Volume,
+    volume: Volume,
+    pan: Pan,
     #[new_default]
     queue: VecDeque<Peekable<IntoIter<f32>>>,
 }
@@ -85,8 +85,11 @@ impl AudioStream {
                         return;
                     }
 
-                    let volume_left = stream_data.volume_left.value();
-                    let volume_right = stream_data.volume_right.value();
+                    let pan = stream_data.pan.value();
+                    let volume = stream_data.volume.value();
+
+                    let left_volume = (1.0 - pan.clamp(0.0, 1.0)) * volume;
+                    let right_volume = (1.0 + pan.clamp(-1.0, 0.0)) * volume;
 
                     let mut out = data.iter_mut().peekable();
 
@@ -96,8 +99,8 @@ impl AudioStream {
                             None => return,
                         };
                         let (l, r) = (current_iter.next().unwrap(), current_iter.next().unwrap());
-                        *out.next().unwrap() = l * volume_left;
-                        *out.next().unwrap() = r * volume_right;
+                        *out.next().unwrap() = l * left_volume;
+                        *out.next().unwrap() = r * right_volume;
                         if current_iter.peek().is_none() {
                             stream_data.queue.pop_front();
                         }

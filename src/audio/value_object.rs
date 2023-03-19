@@ -41,7 +41,8 @@ macro_rules! define_value_object {
     };
 }
 
-define_value_object!(pub Volume, f32, 1.0, |v| -> bool { v >= 0.0 && v <= 1.0 });
+define_value_object!(pub Volume, f32, 1.0, |v| -> bool { (0.0..=1.0).contains(&v) });
+define_value_object!(pub Pan, f32, 0.0, |v| -> bool { (-1.0..=1.0).contains(&v) });
 define_value_object!(pub SampleRate, f32, 44100.0);
 
 
