@@ -80,7 +80,7 @@ impl AudioStream {
                 move |data: &mut [f32], _| {
                     let mut stream_data = stream_data_clone.lock().unwrap();
 
-                    if stream_data.queue.len() == 0 {
+                    if stream_data.queue.is_empty() {
                         stream_command_sender_stream_thread.send(StreamCommand::Pause).unwrap();
                         return;
                     }
