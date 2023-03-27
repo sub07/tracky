@@ -202,32 +202,6 @@ fn resample(src: &StereoPcm, target_sr: f64) -> StereoPcm {
     }
 }
 
-fn pitch_shift(src: &StereoPcm, target_speed: f64) -> StereoPcm {
-    let src_speed = src.speed as f64;
-    let src_len = src.data.len() as f64;
-    let ratio = target_speed / src_speed;
-    let multiplier = 1.0 / ratio;
-    let dest_nb_sample = src.data.len() as f64 * multiplier;
-    // dbg!(src_speed, target_speed, ratio, multiplier, src.data.len(), dest_nb_sample);
-
-    let mut dest_data = Vec::with_capacity(dest_nb_sample.round() as usize);
-    let mut src_index = 0.0;
-
-    while src_index < src_len {
-        let (l, r) = src.sample_at(src_index / src_len);
-        dest_data.push(l);
-        dest_data.push(r);
-        src_index += ratio * 2.0;
-    }
-
-    // dbg!(dest_data.len());
-
-    StereoPcm {
-        data: dest_data,
-        speed: target_speed,
-    }
-}
-
 #[derive(EnumIter, Debug)]
 pub enum Note {
     C,
@@ -267,10 +241,8 @@ fn main() -> anyhow::Result<()> {
     let mut resampled = resample(&original, sample_rate as f64);
 
     let mut sec = 0.5;
-    let mut semitone = 0;
-    for note in Note::VARIANTS {
-        channel.add(&resampled.pitch_shifted(resampled.speed * note_to_multiplier(semitone)), Duration::from_secs_f64(sec));
-        semitone += 1;
+    for (semitone, note) in Note::VARIANTS.into_iter().enumerate() {
+        channel.add(&resampled.pitch_shifted(resampled.speed * note_to_multiplier(semitone as i32)), Duration::from_secs_f64(sec));
         sec += 0.25;
     }
 

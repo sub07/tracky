@@ -1270,7 +1270,7 @@ dependencies = [
 [[package]]
 name = "softbuffer"
 version = "0.2.0"
-source = "git+https://github.com/sub07/softbuffer.git?branch=owned-buffer#8d35f0e704d591d92cea44f41f439e896a750ea4"
+source = "git+https://github.com/rust-windowing/softbuffer.git?branch=owned-buffer#8d35f0e704d591d92cea44f41f439e896a750ea4"
 dependencies = [
  "bytemuck",
  "cfg_aliases",

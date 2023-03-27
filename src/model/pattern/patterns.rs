@@ -4,9 +4,6 @@ use crate::model::pattern::column_line::ColumnLine;
 use crate::model::pattern::field::note::OctaveValue;
 use crate::model::pattern::pattern::Pattern;
 
-#[derive(Default)]
-pub struct PatternsContext {}
-
 pub struct Patterns {
     patterns: Vec<Pattern>,
     pub(crate) selected_pattern_index: usize,

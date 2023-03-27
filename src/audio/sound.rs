@@ -3,37 +3,89 @@ use std::time::Duration;
 
 use anyhow::bail;
 use rust_utils::iter::zip_self::ZipSelf;
-use crate::audio::resample;
-use crate::audio::value_object::SampleRate;
 
-const NB_CHANNEL: usize = 2;
+use crate::audio::{resample, SampleRate};
 
+#[derive(Clone)]
 pub struct Sound {
-    pub samples: Vec<f32>,
+    pub frames: Vec<(f32, f32)>,
     pub sample_rate: SampleRate,
 }
 
+pub struct PitchShiftedSoundIterator<'a> {
+    sound: &'a Sound,
+    duration_increment: Duration,
+    current_duration: Duration,
+    src_duration: Duration,
+    output_size: usize,
+}
+
+impl<'a> PitchShiftedSoundIterator<'a> {
+    pub fn new(sound: &'a Sound, multiplier: f32) -> PitchShiftedSoundIterator<'a> {
+        let duration_increment = Duration::from_secs_f32((multiplier * sound.duration().as_secs_f32()) / sound.frames.len() as f32);
+
+        PitchShiftedSoundIterator {
+            sound,
+            duration_increment,
+            current_duration: Duration::ZERO,
+            src_duration: sound.duration(),
+            output_size: (sound.frames.len() as f32 / multiplier) as usize,
+        }
+    }
+}
+
+impl Iterator for PitchShiftedSoundIterator<'_> {
+    type Item = (f32, f32);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_duration >= self.src_duration { return None; }
+        let frame = self.sound.interpolate_frame_at_time(self.current_duration);
+        self.current_duration += self.duration_increment;
+        Some(frame)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.output_size, Some(self.output_size))
+    }
+}
+
 impl Sound {
-    pub fn from_wav<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
-        let mut wav = audrey::open(path)?;
-        let desc = wav.description();
+    pub fn from_path<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+        let mut audio_file = audrey::open(path)?;
+        let desc = audio_file.description();
         if desc.channel_count() > 2 {
             bail!("Invalid number of channel: {}", desc.channel_count());
         }
-        let samples = wav.samples().map(Result::unwrap).collect::<Vec<_>>();
+        let samples = audio_file.samples().map(Result::unwrap).collect::<Vec<f32>>();
+        let samples = if desc.channel_count() == 1 {
+            samples.into_iter().zip_self(2).collect::<Vec<_>>()
+        } else {
+            samples
+        };
+        let samples = samples.into_iter().array_chunks::<2>().map(|[l, r]| (l, r)).collect();
         Ok(Self {
-            samples: if desc.channel_count() == 1 { samples.into_iter().zip_self(2).collect() } else { samples },
+            frames: samples,
             sample_rate: SampleRate::try_from(desc.sample_rate() as f32)?,
         })
     }
 
-    pub fn duration(&self) -> Duration {
-        Duration::from_secs_f32((self.samples.len() / self.nb_channel()) as f32 / self.sample_rate.value())
+    pub fn from_frames(frames: Vec<(f32, f32)>, sample_rate: SampleRate) -> Sound {
+        Sound {
+            frames,
+            sample_rate,
+        }
     }
 
-    #[inline]
-    pub fn nb_channel(&self) -> usize {
-        NB_CHANNEL // Only stereo sound right now
+    pub fn from_duration(duration: Duration, sample_rate: SampleRate) -> Self {
+        let nb_frame = duration.as_secs_f32() * sample_rate.value();
+        Sound {
+            frames: vec![(0.0, 0.0); nb_frame.round() as usize],
+            sample_rate,
+        }
+    }
+
+    pub fn duration(&self) -> Duration {
+        Duration::from_secs_f32(self.frames.len() as f32 / self.sample_rate.value())
     }
 
     fn frame_index_at_time(&self, time: Duration) -> (usize, f32) {
@@ -41,44 +93,43 @@ impl Sound {
         (index as usize, index.fract())
     }
 
-    pub fn nb_frame(&self) -> usize {
-        self.samples.len() / self.nb_channel()
-    }
-
-    pub fn sample_at_time(&self, time: Duration) -> (f32, f32) {
-        if time > self.duration() { return (0.0, 0.0); }
-        let (frame_index, _) = self.frame_index_at_time(time);
-        (self.samples[frame_index * 2], self.samples[frame_index * 2 + 1])
-    }
-
-    pub fn interpolate_at_time(&self, time: Duration) -> (f32, f32) {
+    pub fn interpolate_frame_at_time(&self, time: Duration) -> (f32, f32) {
         if time > self.duration() { return (0.0, 0.0); }
         let (frame_index, rem) = self.frame_index_at_time(time);
-        if frame_index == self.nb_frame() - 1 && let [.., l, r] = self.samples.as_slice() { return (*l, *r); }
-        let next_frame_index = frame_index + 1;
+        if frame_index == self.frames.len() - 1 && let [.., last_frame] = self.frames.as_slice() { return *last_frame; }
 
-        let l1 = self.samples[frame_index * 2];
-        let l2 = self.samples[next_frame_index * 2];
+        let (l1, r1) = self.frames[frame_index];
+        let (l2, r2) = self.frames[frame_index + 1];
 
-        let r1 = self.samples[frame_index * 2 + 1];
-        let r2 = self.samples[next_frame_index * 2 + 1];
+        let interpolated_left = l1 * (1.0 - rem) + l2 * rem;
+        let interpolated_right = r1 * (1.0 - rem) + r2 * rem;
 
-        let sampled_left = l1 * (1.0 - rem) + l2 * rem;
-        let sampled_right = r1 * (1.0 - rem) + r2 * rem;
+        (interpolated_left, interpolated_right)
+    }
 
-        (sampled_left, sampled_right)
+    pub fn set_frame_at_time(&mut self, time: Duration, frame: (f32, f32)) {
+        let (frame_index, _) = self.frame_index_at_time(time);
+        self.frames[frame_index] = frame;
     }
 
     pub fn energy(&self) -> f32 {
-        let sum = self.samples
-            .as_chunks::<2>().0.iter()
-            .map(|[l, r]| ((l + r) / 2.0) * ((l + r) / 2.0))
+        let sum = self.frames.iter()
+            .map(|(l, r)| ((l + r) / 2.0) * ((l + r) / 2.0))
             .sum::<f32>();
 
-        f32::sqrt(sum / (self.samples.len() as f32 / 2.0))
+        f32::sqrt(sum / (self.frames.len() as f32 / 2.0))
     }
 
     pub fn resample(&self, target: SampleRate) -> Sound {
         resample(self, target)
+    }
+
+    pub fn pitch_shift_iter(&self, multiplier: f32) -> PitchShiftedSoundIterator<'_> {
+        PitchShiftedSoundIterator::new(self, multiplier)
+    }
+
+    pub fn pitch_shifted(&self, multiplier: f32) -> Sound {
+        let frames = self.pitch_shift_iter(multiplier).collect::<Vec<_>>();
+        Sound::from_frames(frames, self.sample_rate)
     }
 }

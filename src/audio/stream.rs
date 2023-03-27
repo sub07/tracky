@@ -9,16 +9,15 @@ use anyhow::{anyhow, bail};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use rust_utils_macro::New;
 
-use crate::audio::resample;
+use crate::audio::{Pan, resample, SampleRate, Volume};
 use crate::audio::sound::Sound;
-use crate::audio::value_object::{Pan, SampleRate, Volume};
 
 #[derive(New, Default)]
 struct StreamData {
     volume: Volume,
     pan: Pan,
     #[new_default]
-    queue: VecDeque<Peekable<IntoIter<f32>>>,
+    queue: VecDeque<Peekable<IntoIter<(f32, f32)>>>,
 }
 
 enum StreamCommand {
@@ -81,7 +80,9 @@ impl AudioStream {
                     let mut stream_data = stream_data_clone.lock().unwrap();
 
                     if stream_data.queue.is_empty() {
-                        stream_command_sender_stream_thread.send(StreamCommand::Pause).unwrap();
+                        // TODO Introduce delay between last samples and pause to avoid clicks
+                        // stream_command_sender_stream_thread.send(StreamCommand::Pause).unwrap();
+                        data.fill(0.0);
                         return;
                     }
 
@@ -98,7 +99,7 @@ impl AudioStream {
                             Some(front) => front,
                             None => return,
                         };
-                        let (l, r) = (current_iter.next().unwrap(), current_iter.next().unwrap());
+                        let (l, r) = current_iter.next().unwrap();
                         *out.next().unwrap() = l * left_volume;
                         *out.next().unwrap() = r * right_volume;
                         if current_iter.peek().is_none() {
@@ -148,10 +149,7 @@ impl AudioStream {
     }
 
     pub fn add_sound(&mut self, sound: &Sound) -> anyhow::Result<()> {
-        let resampled = if sound.sample_rate == self.sample_rate { None } else {
-            Some(resample(sound, self.sample_rate))
-        };
-        self.stream_data.lock().unwrap().queue.push_back(resampled.as_ref().get_or_insert(sound).samples.clone().into_iter().peekable());
+        self.stream_data.lock().unwrap().queue.push_back(sound.frames.clone().into_iter().peekable());
         self.stream_commands_sender.send(StreamCommand::Play)?;
         Ok(())
     }

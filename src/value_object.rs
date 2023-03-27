@@ -1,8 +1,9 @@
+#[macro_export]
 macro_rules! define_value_object {
     ($vis:vis $name:ident, $ty:ty, $default:expr) => {
-        define_value_object!($vis $name, $ty, $default, |_v| -> bool { true });
+        define_value_object!($vis $name, $ty, $default, |_v| { true });
     };
-    ($vis:vis $name:ident, $ty:ty, $default:expr, |$value:ident| -> bool $validation_body:block) => {
+    ($vis:vis $name:ident, $ty:ty, $default:expr, |$value:ident| $validation_body:block) => {
         #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
         $vis struct $name($ty);
 
@@ -12,6 +13,7 @@ macro_rules! define_value_object {
             }
 
             pub fn new(value: $ty) -> Option<Self> {
+                #[allow(clippy::redundant_closure_call)]
                 let valid = (|$value: $ty| $validation_body)(value);
                 if valid { Some($name(value)) } else { None }
             }
@@ -19,7 +21,7 @@ macro_rules! define_value_object {
 
         impl Default for $name {
             fn default() -> Self {
-                ($default).try_into().unwrap()
+                ($default).try_into().expect("Invalid default value {}")
             }
         }
 
@@ -27,7 +29,7 @@ macro_rules! define_value_object {
             type Error = anyhow::Error;
 
             fn try_from(value: f32) -> Result<Self, Self::Error> {
-                $name::new(value).ok_or(anyhow::anyhow!("Provided default value is invalid regarding the validation for value object"))
+                $name::new(value).ok_or(anyhow::anyhow!("Invalid value: {}", value))
             }
         }
 
@@ -40,9 +42,3 @@ macro_rules! define_value_object {
         }
     };
 }
-
-define_value_object!(pub Volume, f32, 1.0, |v| -> bool { (0.0..=1.0).contains(&v) });
-define_value_object!(pub Pan, f32, 0.0, |v| -> bool { (-1.0..=1.0).contains(&v) });
-define_value_object!(pub SampleRate, f32, 44100.0);
-
-

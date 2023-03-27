@@ -1,38 +1,34 @@
 use std::time::Duration;
 use crate::audio::sound::Sound;
-use crate::audio::value_object::SampleRate;
+use crate::define_value_object;
 
 pub mod sound;
 pub mod stream;
-mod value_object;
+pub mod channel;
+
+define_value_object!(pub Volume, f32, 1.0, |v| { (0.0..=1.0).contains(&v) });
+define_value_object!(pub Pan, f32, 0.0, |v| { (-1.0..=1.0).contains(&v) });
+define_value_object!(pub SampleRate, f32, 44100.0);
 
 fn resample(src: &Sound, target: SampleRate) -> Sound {
-    if src.sample_rate == target {
-        return Sound {
-            samples: src.samples.clone(),
-            sample_rate: target,
-        };
-    }
-
+    if src.sample_rate == target { return src.clone(); }
 
     let src_duration = src.duration();
     let target_sr = target.value();
 
-    let target_nb_sample = ((src_duration.as_secs_f32() * target_sr.round()) as usize) * src.nb_channel();
+    let target_nb_sample = (src_duration.as_secs_f32() * target_sr.round()) as usize;
 
     let mut time = Duration::ZERO;
     let period = Duration::from_secs_f32(1.0 / target_sr);
-    let mut samples = Vec::with_capacity(target_nb_sample);
+    let mut frames = Vec::with_capacity(target_nb_sample);
 
     while time < src_duration {
-        let (l, r) = src.interpolate_at_time(time);
-        samples.push(l);
-        samples.push(r);
+        frames.push(src.interpolate_frame_at_time(time));
         time += period;
     }
 
     Sound {
         sample_rate: target,
-        samples,
+        frames,
     }
 }

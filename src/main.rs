@@ -3,6 +3,7 @@
 #![feature(if_let_guard)]
 #![feature(variant_count)]
 #![feature(slice_as_chunks)]
+#![feature(iter_array_chunks)]
 #![windows_subsystem = "windows"]
 
 extern crate core;
@@ -11,6 +12,7 @@ use rust_utils::vector::Vector;
 use winit::event::ElementState;
 use winit::event::WindowEvent::KeyboardInput;
 
+use crate::audio::{SampleRate, Volume};
 use crate::audio::sound::Sound;
 use crate::audio::stream::AudioStream;
 use crate::controller::patterns::PatternsController;
@@ -28,6 +30,7 @@ mod controller;
 mod game_loop_metrics;
 mod audio;
 mod rendering;
+mod value_object;
 
 type Scalar = i32;
 type Vec2 = Vector<Scalar, 2>;
@@ -37,10 +40,10 @@ fn main() -> anyhow::Result<()> {
     let controller = PatternsController::default();
     let dark_theme = Theme::default_dark();
 
-    let mut stream = AudioStream::new().unwrap();
-    let piano_sound = Sound::from_wav("piano.wav").unwrap().resample(stream.sample_rate);
+    let mut stream = AudioStream::new()?;
+    let piano_sound = Sound::from_path("piano.wav")?.resample(stream.sample_rate);
 
-    stream.add_sound(&piano_sound).unwrap();
+    stream.add_sound(&piano_sound)?;
 
     launch(move |event| {
         match event {
