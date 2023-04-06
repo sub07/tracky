@@ -71,6 +71,9 @@ impl Renderer for SkiaRenderer {
         let mut window_buffer = self.window_surface.buffer_mut().unwrap();
         let mut screen_pix_iter = self.screen.data().as_chunks::<4>().0.iter();
 
+        dbg!(window_buffer.len());
+        dbg!(self.screen.data().len());
+
         for pixel in window_buffer.iter_mut() {
             let [r, g, b, _] = screen_pix_iter.next().unwrap();
             let r = *r as u32;
@@ -94,6 +97,7 @@ impl Renderer for SkiaRenderer {
         let [w, h] = *size.as_slice();
         self.window.set_inner_size(PhysicalSize::new(w, h));
         self.window_surface.resize(w as u32, h as u32).unwrap();
+        self.screen = Pixmap::new(w as u32, h as u32).unwrap()
     }
 
     fn set_window_title(&mut self, title: &str) {
