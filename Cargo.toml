@@ -1,0 +1,12 @@
+[package]
+name = "iced-test"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+iced = { version = "0.9", features = ["debug"] }
+iced_native = "0.10"
+rust-utils-macro = { git = "https://github.com/sub07/rust-utils" }
+iter_tools = "0.1"
