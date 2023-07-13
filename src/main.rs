@@ -1,3 +1,4 @@
+use iced::application::StyleSheet;
 use iced::event::Event;
 use iced::keyboard::KeyCode;
 use iced::widget::Row;
@@ -11,6 +12,7 @@ use rust_utils_macro::New;
 use crate::widget::input_unit::input_unit;
 
 mod widget;
+mod model;
 
 pub fn main() -> iced::Result {
     Tracky::run(Settings {
@@ -61,7 +63,6 @@ impl Application for Tracky {
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        dbg!(self.column);
         Row::with_children(
             (1..5)
                 .map(|i| {

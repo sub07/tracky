@@ -1,5 +1,5 @@
 [package]
-name = "iced-test"
+name = "tracky"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,3 +10,5 @@ iced = { version = "0.9", features = ["debug"] }
 iced_native = "0.10"
 rust-utils-macro = { git = "https://github.com/sub07/rust-utils" }
 iter_tools = "0.1"
+anyhow = "1.0"
+thiserror = "1.0"

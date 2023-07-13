@@ -54,6 +54,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.71"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c7d0618f0e0b7e8ff11427422b64564d5fb0be1940354bfe2e0529b18a9d9b8"
+
+[[package]]
 name = "approx"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -982,16 +988,6 @@ dependencies = [
  "iced_wgpu",
  "iced_winit",
  "thiserror",
-]
-
-[[package]]
-name = "iced-test"
-version = "0.1.0"
-dependencies = [
- "iced",
- "iced_native",
- "iter_tools",
- "rust-utils-macro",
 ]
 
 [[package]]
@@ -2145,6 +2141,18 @@ dependencies = [
  "indexmap 2.0.0",
  "toml_datetime",
  "winnow",
+]
+
+[[package]]
+name = "tracky"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "iced",
+ "iced_native",
+ "iter_tools",
+ "rust-utils-macro",
+ "thiserror",
 ]
 
 [[package]]
