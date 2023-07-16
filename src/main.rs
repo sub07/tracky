@@ -1,18 +1,21 @@
-use iced::application::StyleSheet;
 use iced::event::Event;
 use iced::keyboard::KeyCode;
-use iced::widget::Row;
 use iced::{
     executor, subscription, Application, Command, Element, Renderer, Sandbox, Settings,
     Subscription, Theme,
 };
+
 use iter_tools::Itertools;
+use model::pattern::Pattern;
 use rust_utils_macro::New;
+use view::component::column::column_component;
+use view::component::pattern::pattern_component;
 
-use crate::widget::input_unit::input_unit;
+use crate::model::pattern::{Column, ColumnLineElement};
+use crate::view::component::column_line::column_line_component;
 
-mod widget;
 mod model;
+mod view;
 
 pub fn main() -> iced::Result {
     Tracky::run(Settings {
@@ -23,7 +26,9 @@ pub fn main() -> iced::Result {
 
 #[derive(Default, New)]
 struct Tracky {
-    column: i32,
+    pattern: Pattern,
+    cursor_x: i32,
+    cursor_y: i32,
 }
 
 #[derive(Debug, Clone)]
@@ -37,8 +42,14 @@ impl Application for Tracky {
     type Theme = Theme;
     type Flags = ();
 
-    fn new(flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        (Tracky::new(1), Command::none())
+    fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
+        let model = Tracky {
+            pattern: Pattern {
+                columns: vec![Column::default(); 5],
+            },
+            ..Default::default()
+        };
+        (model, Command::none())
     }
 
     fn title(&self) -> String {
@@ -52,26 +63,22 @@ impl Application for Tracky {
         })) = message
         {
             match key_code {
-                KeyCode::Left => self.column -= 1,
-                KeyCode::Right => self.column += 1,
+                KeyCode::Left => self.cursor_x -= 1,
+                KeyCode::Right => self.cursor_x += 1,
+                KeyCode::Up => self.cursor_y -= 1,
+                KeyCode::Down => self.cursor_y += 1,
                 _ => {}
             }
-            self.column = self.column.clamp(1, 4);
+            self.cursor_x = i32::rem_euclid(self.cursor_x, ColumnLineElement::LINE_LEN * self.pattern.columns.len() as i32);
+            self.cursor_y =
+                i32::rem_euclid(self.cursor_y, self.pattern.columns[0].lines.len() as i32);
         }
 
         Command::none()
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        Row::with_children(
-            (1..5)
-                .map(|i| {
-                    let selected = self.column == i;
-                    input_unit(Some('5'), selected).into()
-                })
-                .collect_vec(),
-        )
-        .into()
+        pattern_component(self.pattern.clone(), self.cursor_x, self.cursor_y).into()
     }
 
     fn theme(&self) -> Self::Theme {

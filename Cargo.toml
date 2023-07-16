@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 iced = { version = "0.9", features = ["debug"] }
 iced_native = "0.10"
+iced_lazy = "0.6"
 rust-utils-macro = { git = "https://github.com/sub07/rust-utils" }
 iter_tools = "0.1"
 anyhow = "1.0"

@@ -43,12 +43,23 @@ impl ColumnLineElement {
     }
 }
 
+#[derive(Clone)]
 pub struct Column {
-    lines: Vec<ColumnLine>,
+    pub lines: Vec<ColumnLine>,
 }
 
+const DEFAULT_COLUMN_LEN: usize = 64;
+
+impl Default for Column {
+    fn default() -> Self {
+        let lines = vec![ColumnLine::default(); DEFAULT_COLUMN_LEN];
+        Column { lines }
+    }
+}
+
+#[derive(Default, Clone)]
 pub struct Pattern {
-    columns: Vec<Column>,
+    pub columns: Vec<Column>,
 }
 
 pub struct Patterns {

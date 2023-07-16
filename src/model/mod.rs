@@ -21,7 +21,7 @@ pub enum Note {
 }
 
 #[derive(Copy, Clone, Default)]
-pub struct OctaveValue(u8);
+pub struct OctaveValue(pub u8);
 
 impl OctaveValue {
     pub fn new(value: u8) -> Result<OctaveValue> {
@@ -52,7 +52,7 @@ pub struct NoteField {
 }
 
 #[derive(Default, Copy, Clone)]
-pub struct HexValue(u8);
+pub struct HexValue(pub u8);
 
 impl HexValue {
     pub fn new(value: u8) -> Result<HexValue> {

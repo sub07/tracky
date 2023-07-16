@@ -1,5 +1,5 @@
 use iced::alignment::Vertical;
-use iced::{Background, Color, Element, Font, Length, Point, Rectangle, Size, Theme};
+use iced::{Background, Color, Element, Length, Point, Rectangle, Size, Theme};
 use iced_native::alignment::Horizontal;
 use iced_native::layout::{Limits, Node};
 use iced_native::renderer::{BorderRadius, Quad, Style};
@@ -21,7 +21,7 @@ const DEFAULT_SIZE: f32 = 30.0;
 
 impl<Message, Renderer> Widget<Message, Renderer> for InputUnitWidget
 where
-    Renderer: text::Renderer<Font = Font, Theme = Theme>,
+    Renderer: text::Renderer<Theme = Theme>,
 {
     fn width(&self) -> Length {
         Length::Shrink
@@ -36,7 +36,7 @@ where
         let (w, h) = renderer.measure(
             self.value().encode_utf8(&mut str_buf),
             DEFAULT_SIZE,
-            Font::default(),
+            Renderer::Font::default(),
             limits.max(),
         );
         Node::new(Size::new(w, h))
@@ -44,13 +44,13 @@ where
 
     fn draw(
         &self,
-        state: &Tree,
+        _state: &Tree,
         renderer: &mut Renderer,
         theme: &Renderer::Theme,
-        style: &Style,
+        _style: &Style,
         layout: Layout<'_>,
-        cursor_position: Point,
-        viewport: &Rectangle,
+        _cursor_position: Point,
+        _viewport: &Rectangle,
     ) {
         let (text_color, background_color) = if self.selected {
             (theme.palette().background, theme.palette().text)
@@ -71,7 +71,7 @@ where
 
         let mut str_buf = [0; 4];
         let text = text::Text {
-            font: Font::default(),
+            font: Renderer::Font::default(),
             size: DEFAULT_SIZE,
             bounds: layout.bounds(),
             content: self.value().encode_utf8(&mut str_buf),
@@ -85,7 +85,7 @@ where
 
 impl<'a, Message, Renderer> From<InputUnitWidget> for Element<'a, Message, Renderer>
 where
-    Renderer: text::Renderer<Font = Font, Theme = Theme>,
+    Renderer: text::Renderer<Theme = Theme>,
 {
     fn from(v: InputUnitWidget) -> Self {
         Self::new(v)
@@ -94,4 +94,11 @@ where
 
 pub fn input_unit(value: Option<char>, selected: bool) -> InputUnitWidget {
     InputUnitWidget { value, selected }
+}
+
+pub fn input_unit_spacer() -> InputUnitWidget {
+    InputUnitWidget {
+        value: Some(' '),
+        selected: false,
+    }
 }
