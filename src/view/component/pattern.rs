@@ -27,11 +27,11 @@ where
 
     type Event = ();
 
-    fn update(&mut self, state: &mut Self::State, event: Self::Event) -> Option<M> {
+    fn update(&mut self, _state: &mut Self::State, _event: Self::Event) -> Option<M> {
         None
     }
 
-    fn view(&self, state: &Self::State) -> iced_native::Element<'_, Self::Event, R> {
+    fn view(&self, _state: &Self::State) -> iced_native::Element<'_, Self::Event, R> {
         let columns = self
             .pattern
             .columns

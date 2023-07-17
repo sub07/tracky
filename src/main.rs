@@ -1,18 +1,16 @@
 use iced::event::Event;
 use iced::keyboard::KeyCode;
 use iced::{
-    executor, subscription, Application, Command, Element, Renderer, Sandbox, Settings,
+    executor, subscription, Application, Command, Element, Renderer, Settings,
     Subscription, Theme,
 };
 
-use iter_tools::Itertools;
 use model::pattern::Pattern;
 use rust_utils_macro::New;
-use view::component::column::column_component;
+
 use view::component::pattern::pattern_component;
 
 use crate::model::pattern::{Column, ColumnLineElement};
-use crate::view::component::column_line::column_line_component;
 
 mod model;
 mod view;
@@ -69,7 +67,10 @@ impl Application for Tracky {
                 KeyCode::Down => self.cursor_y += 1,
                 _ => {}
             }
-            self.cursor_x = i32::rem_euclid(self.cursor_x, ColumnLineElement::LINE_LEN * self.pattern.columns.len() as i32);
+            self.cursor_x = i32::rem_euclid(
+                self.cursor_x,
+                ColumnLineElement::LINE_LEN * self.pattern.columns.len() as i32,
+            );
             self.cursor_y =
                 i32::rem_euclid(self.cursor_y, self.pattern.columns[0].lines.len() as i32);
         }

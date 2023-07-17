@@ -1,6 +1,6 @@
 use iced::Element;
 use iced_lazy::Component;
-use iced::{Theme, widget::container, Color};
+use iced::{Theme, widget::container};
 use iced_native::text;
 use iter_tools::Itertools;
 use rust_utils_macro::New;
@@ -27,11 +27,11 @@ where
     type State = ();
     type Event = ();
 
-    fn update(&mut self, state: &mut Self::State, event: Self::Event) -> Option<M> {
+    fn update(&mut self, _state: &mut Self::State, _event: Self::Event) -> Option<M> {
         None
     }
 
-    fn view(&self, state: &Self::State) -> iced_native::Element<'_, Self::Event, R> {
+    fn view(&self, _state: &Self::State) -> iced_native::Element<'_, Self::Event, R> {
         let lines = self
             .column
             .lines
