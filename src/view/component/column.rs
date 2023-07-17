@@ -10,17 +10,17 @@ use crate::model::pattern::Column;
 use super::column_line::column_line_component;
 
 #[derive(New)]
-pub struct ColumnComponent {
-    column: Column,
+pub struct ColumnComponent<'a> {
+    column: &'a Column,
     cursor_x: Option<i32>,
     cursor_y: i32,
 }
 
-pub fn column_component(column: Column, cursor_x: Option<i32>, cursor_y: i32) -> ColumnComponent {
+pub fn column_component<'a>(column: &'a Column, cursor_x: Option<i32>, cursor_y: i32) -> ColumnComponent<'a> {
     ColumnComponent::new(column, cursor_x, cursor_y)
 }
 
-impl<M, R> Component<M, R> for ColumnComponent
+impl<'a, M, R> Component<M, R> for ColumnComponent<'a>
 where
     R: text::Renderer<Theme = Theme> + 'static,
 {
@@ -39,7 +39,7 @@ where
             .enumerate()
             .map(|(line_index, line)| {
                 column_line_component(
-                    *line,
+                    line,
                     self.cursor_x.filter(|_| line_index as i32 == self.cursor_y),
                 )
                 .into()
@@ -49,12 +49,13 @@ where
     }
 }
 
-impl<'a, Message, Renderer> From<ColumnComponent> for Element<'a, Message, Renderer>
+impl<'a, 'm, Message, Renderer> From<ColumnComponent<'a>> for Element<'m, Message, Renderer>
 where
-    Message: 'a,
+    Message: 'm,
     Renderer: 'static + text::Renderer<Theme = Theme>,
+    'a: 'm,
 {
-    fn from(column: ColumnComponent) -> Self {
+    fn from(column: ColumnComponent<'a>) -> Self {
         iced_lazy::component(column)
     }
 }

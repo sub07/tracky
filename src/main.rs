@@ -1,10 +1,10 @@
 use iced::event::Event;
 use iced::keyboard::KeyCode;
 use iced::{
-    executor, subscription, Application, Command, Element, Renderer, Settings,
-    Subscription, Theme,
+    executor, subscription, Application, Command, Element, Renderer, Settings, Subscription, Theme,
 };
 
+use iced_native::widget::scrollable::Properties;
 use model::pattern::Pattern;
 use rust_utils_macro::New;
 
@@ -43,7 +43,7 @@ impl Application for Tracky {
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
         let model = Tracky {
             pattern: Pattern {
-                columns: vec![Column::default(); 5],
+                columns: vec![Column::default(); 10],
             },
             ..Default::default()
         };
@@ -79,7 +79,13 @@ impl Application for Tracky {
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        pattern_component(self.pattern.clone(), self.cursor_x, self.cursor_y).into()
+        iced::widget::scrollable(pattern_component(
+            &self.pattern,
+            self.cursor_x,
+            self.cursor_y,
+        ))
+        .horizontal_scroll(Properties::default())
+        .into()
     }
 
     fn theme(&self) -> Self::Theme {

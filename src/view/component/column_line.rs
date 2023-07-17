@@ -8,16 +8,19 @@ use crate::model::{Note, OctaveValue};
 use crate::view::widget::input_unit::{input_unit, input_unit_spacer};
 
 #[derive(New)]
-pub struct ColumnLineComponent {
-    line: ColumnLine,
+pub struct ColumnLineComponent<'a> {
+    line: &'a ColumnLine,
     cursor_x: Option<i32>,
 }
 
-pub fn column_line_component(model: ColumnLine, cursor_x: Option<i32>) -> ColumnLineComponent {
+pub fn column_line_component<'a>(
+    model: &'a ColumnLine,
+    cursor_x: Option<i32>,
+) -> ColumnLineComponent<'a> {
     ColumnLineComponent::new(model, cursor_x)
 }
 
-impl<M, R> Component<M, R> for ColumnLineComponent
+impl<'a, M, R> Component<M, R> for ColumnLineComponent<'a>
 where
     R: text::Renderer<Theme = Theme> + 'static,
 {
@@ -80,12 +83,13 @@ where
     }
 }
 
-impl<'a, Message, Renderer> From<ColumnLineComponent> for Element<'a, Message, Renderer>
+impl<'a, 'm, Message, Renderer> From<ColumnLineComponent<'a>> for Element<'m, Message, Renderer>
 where
-    Message: 'a,
+    Message: 'm,
     Renderer: 'static + text::Renderer<Theme = Theme>,
+    'a: 'm
 {
-    fn from(column_line: ColumnLineComponent) -> Self {
+    fn from(column_line: ColumnLineComponent<'a>) -> Self {
         iced_lazy::component(column_line)
     }
 }

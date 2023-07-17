@@ -1,6 +1,6 @@
 use iced::{widget::Row, Element};
 use iced_lazy::Component;
-use iced_native::{text, Theme};
+use iced_native::{text, Theme, Length};
 use iter_tools::Itertools;
 use rust_utils_macro::New;
 
@@ -9,17 +9,17 @@ use crate::model::pattern::{ColumnLineElement, Pattern};
 use super::column::column_component;
 
 #[derive(New)]
-pub struct PatternComponent {
-    pattern: Pattern,
+pub struct PatternComponent<'a> {
+    pattern: &'a Pattern,
     cursor_x: i32,
     cursor_y: i32,
 }
 
-pub fn pattern_component(pattern: Pattern, cursor_x: i32, cursor_y: i32) -> PatternComponent {
+pub fn pattern_component<'a>(pattern: &'a Pattern, cursor_x: i32, cursor_y: i32) -> PatternComponent<'a> {
     PatternComponent::new(pattern, cursor_x, cursor_y)
 }
 
-impl<M, R> Component<M, R> for PatternComponent
+impl<'a, M, R> Component<M, R> for PatternComponent<'a>
 where
     R: text::Renderer<Theme = Theme> + 'static,
 {
@@ -45,19 +45,20 @@ where
                 } else {
                     None
                 };
-                column_component(column.clone(), cursor_x, self.cursor_y).into()
+                column_component(column, cursor_x, self.cursor_y).into()
             })
             .collect_vec();
         Row::with_children(columns).spacing(8).into()
     }
 }
 
-impl<'a, Message, Renderer> From<PatternComponent> for Element<'a, Message, Renderer>
+impl<'a, 'm, Message, Renderer> From<PatternComponent<'a>> for Element<'m, Message, Renderer>
 where
-    Message: 'a,
+    Message: 'm,
     Renderer: 'static + text::Renderer<Theme = Theme>,
+    'a: 'm,
 {
-    fn from(pattern: PatternComponent) -> Self {
+    fn from(pattern: PatternComponent<'a>) -> Self {
         iced_lazy::component(pattern)
     }
 }

@@ -15,7 +15,7 @@ impl VelocityField {
     }
 }
 
-#[derive(New, Default, Copy, Clone)]
+#[derive(New, Default, Clone)]
 pub struct ColumnLine {
     pub note_field: NoteField,
     pub velocity_field: VelocityField,
