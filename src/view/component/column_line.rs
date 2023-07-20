@@ -87,7 +87,7 @@ impl<'a, 'm, Message, Renderer> From<ColumnLineComponent<'a>> for Element<'m, Me
 where
     Message: 'm,
     Renderer: 'static + text::Renderer<Theme = Theme>,
-    'a: 'm
+    'a: 'm,
 {
     fn from(column_line: ColumnLineComponent<'a>) -> Self {
         iced_lazy::component(column_line)

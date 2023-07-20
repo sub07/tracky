@@ -1,6 +1,6 @@
 use iced::Element;
+use iced::{widget::container, Theme};
 use iced_lazy::Component;
-use iced::{Theme, widget::container};
 use iced_native::text;
 use iter_tools::Itertools;
 use rust_utils_macro::New;
@@ -16,7 +16,11 @@ pub struct ColumnComponent<'a> {
     cursor_y: i32,
 }
 
-pub fn column_component<'a>(column: &'a Column, cursor_x: Option<i32>, cursor_y: i32) -> ColumnComponent<'a> {
+pub fn column_component<'a>(
+    column: &'a Column,
+    cursor_x: Option<i32>,
+    cursor_y: i32,
+) -> ColumnComponent<'a> {
     ColumnComponent::new(column, cursor_x, cursor_y)
 }
 
@@ -45,7 +49,10 @@ where
                 .into()
             })
             .collect_vec();
-        container(iced::widget::Column::with_children(lines)).padding(8).style(iced::theme::Container::Box).into()
+        container(iced::widget::Column::with_children(lines))
+            .padding(8)
+            .style(iced::theme::Container::Box)
+            .into()
     }
 }
 

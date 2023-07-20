@@ -1,6 +1,6 @@
 use iced::{widget::Row, Element};
-use iced_lazy::Component;
-use iced_native::{text, Theme, Length};
+use iced_lazy::{lazy, Component};
+use iced_native::{text, Length, Theme};
 use iter_tools::Itertools;
 use rust_utils_macro::New;
 
@@ -15,7 +15,11 @@ pub struct PatternComponent<'a> {
     cursor_y: i32,
 }
 
-pub fn pattern_component<'a>(pattern: &'a Pattern, cursor_x: i32, cursor_y: i32) -> PatternComponent<'a> {
+pub fn pattern_component<'a>(
+    pattern: &'a Pattern,
+    cursor_x: i32,
+    cursor_y: i32,
+) -> PatternComponent<'a> {
     PatternComponent::new(pattern, cursor_x, cursor_y)
 }
 
@@ -32,14 +36,14 @@ where
     }
 
     fn view(&self, _state: &Self::State) -> iced_native::Element<'_, Self::Event, R> {
+        let cursor_column_index = self.cursor_x / ColumnLineElement::LINE_LEN;
+        let cursor_column_local = self.cursor_x % ColumnLineElement::LINE_LEN;
         let columns = self
             .pattern
             .columns
             .iter()
             .enumerate()
             .map(|(column_index, column)| {
-                let cursor_column_index = self.cursor_x / ColumnLineElement::LINE_LEN;
-                let cursor_column_local = self.cursor_x % ColumnLineElement::LINE_LEN;
                 let cursor_x = if column_index as i32 == cursor_column_index {
                     Some(cursor_column_local)
                 } else {
