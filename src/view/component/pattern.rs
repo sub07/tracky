@@ -1,6 +1,9 @@
-use iced::{widget::Row, Element};
+use iced::{
+    widget::{container, scrollable, Row},
+    Element,
+};
 use iced_lazy::{lazy, Component};
-use iced_native::{text, Length, Theme};
+use iced_native::{text, widget::scrollable::Properties, Length, Theme};
 use iter_tools::Itertools;
 use rust_utils_macro::New;
 
@@ -52,7 +55,7 @@ where
                 column_component(column, cursor_x, self.cursor_y).into()
             })
             .collect_vec();
-        Row::with_children(columns).spacing(8).into()
+        container(Row::with_children(columns)).padding(4).into()
     }
 }
 

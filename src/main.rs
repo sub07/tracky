@@ -1,10 +1,14 @@
+use std::default;
+
 use iced::event::Event;
 use iced::keyboard::KeyCode;
 use iced::{
     executor, subscription, Application, Command, Element, Renderer, Settings, Subscription, Theme,
 };
 
-use iced_native::widget::scrollable::Properties;
+use iced_native::theme::Scrollable;
+use iced_native::widget::scrollable::{self, Properties};
+use iter_tools::Either;
 use model::pattern::Pattern;
 use rust_utils_macro::New;
 
@@ -22,16 +26,63 @@ pub fn main() -> iced::Result {
     })
 }
 
-#[derive(Default, New)]
+#[derive(New)]
 struct Tracky {
     pattern: Pattern,
     cursor_x: i32,
     cursor_y: i32,
+    scroll_id: scrollable::Id,
+}
+
+impl Default for Tracky {
+    fn default() -> Self {
+        Self {
+            pattern: Default::default(),
+            cursor_x: Default::default(),
+            cursor_y: Default::default(),
+            scroll_id: scrollable::Id::unique(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
 enum Message {
     EventOccurred(Event),
+    MoveCursor((i32, i32)),
+}
+
+fn convert_event_to_message(event: Event) -> Option<Message> {
+    match event {
+        Event::Keyboard(kb_event) => match kb_event {
+            iced_native::keyboard::Event::KeyPressed {
+                key_code,
+                modifiers,
+            } => {
+                let mut cursor_x = 0;
+                let mut cursor_y = 0;
+                match key_code {
+                    KeyCode::Left => cursor_x -= 1,
+                    KeyCode::Right => cursor_x += 1,
+                    KeyCode::Up => cursor_y -= 1,
+                    KeyCode::Down => cursor_y += 1,
+                    _ => {}
+                }
+                if cursor_x != 0 || cursor_y != 0 {
+                    return Some(Message::MoveCursor((cursor_x, cursor_y)));
+                }
+            }
+            iced_native::keyboard::Event::KeyReleased {
+                key_code,
+                modifiers,
+            } => {}
+            iced_native::keyboard::Event::CharacterReceived(_) => {}
+            iced_native::keyboard::Event::ModifiersChanged(_) => {}
+        },
+        Event::Mouse(_) => {}
+        Event::Window(_) => {}
+        Event::Touch(_) => {}
+    }
+    None
 }
 
 impl Application for Tracky {
@@ -43,7 +94,7 @@ impl Application for Tracky {
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
         let model = Tracky {
             pattern: Pattern {
-                columns: vec![Column::default(); 10],
+                columns: vec![Column::default(); 15],
             },
             ..Default::default()
         };
@@ -55,26 +106,38 @@ impl Application for Tracky {
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
-        if let Message::EventOccurred(Event::Keyboard(iced::keyboard::Event::KeyPressed {
-            key_code,
-            ..
-        })) = message
-        {
-            match key_code {
-                KeyCode::Left => self.cursor_x -= 1,
-                KeyCode::Right => self.cursor_x += 1,
-                KeyCode::Up => self.cursor_y -= 1,
-                KeyCode::Down => self.cursor_y += 1,
-                _ => {}
+        match message {
+            Message::EventOccurred(event) => {
+                if let Some(message) = convert_event_to_message(event) {
+                    return self.update(message);
+                }
             }
-            self.cursor_x = i32::rem_euclid(
-                self.cursor_x,
-                ColumnLineElement::LINE_LEN * self.pattern.columns.len() as i32,
-            );
-            self.cursor_y =
-                i32::rem_euclid(self.cursor_y, self.pattern.columns[0].lines.len() as i32);
-        }
+            Message::MoveCursor((x, y)) => {
+                self.cursor_x += x;
+                self.cursor_y += y;
 
+                self.cursor_x = i32::rem_euclid(
+                    self.cursor_x,
+                    ColumnLineElement::LINE_LEN * self.pattern.columns.len() as i32,
+                );
+                self.cursor_y =
+                    i32::rem_euclid(self.cursor_y, self.pattern.columns[0].lines.len() as i32);
+
+                let cursor_x_column_index = self.cursor_x / ColumnLineElement::LINE_LEN;
+
+                return scrollable::snap_to(
+                    self.scroll_id.clone(),
+                    scrollable::RelativeOffset {
+                        x: dbg!(
+                            cursor_x_column_index as f32 / (self.pattern.columns.len() - 1) as f32
+                        ),
+                        y: dbg!(
+                            self.cursor_y as f32 / (self.pattern.columns[0].lines.len() - 1) as f32
+                        ),
+                    },
+                );
+            }
+        }
         Command::none()
     }
 
@@ -84,7 +147,9 @@ impl Application for Tracky {
             self.cursor_x,
             self.cursor_y,
         ))
+        .id(self.scroll_id.clone())
         .horizontal_scroll(Properties::default())
+        .vertical_scroll(Properties::default())
         .into()
     }
 

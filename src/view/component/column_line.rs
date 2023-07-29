@@ -1,6 +1,7 @@
 use iced::Theme;
+use iced::widget::text;
 use iced_lazy::Component;
-use iced_native::{row, text, Element};
+use iced_native::{row, Element};
 use rust_utils_macro::New;
 
 use crate::model::pattern::ColumnLine;
@@ -22,7 +23,7 @@ pub fn column_line_component<'a>(
 
 impl<'a, M, R> Component<M, R> for ColumnLineComponent<'a>
 where
-    R: text::Renderer<Theme = Theme> + 'static,
+    R: iced_native::text::Renderer<Theme = Theme> + 'static,
 {
     type State = ();
     type Event = ();
@@ -71,6 +72,20 @@ where
             (None, None)
         };
 
+        // let text_buffer = format!(
+        //     "{}{}{} {}{}",
+        //     note_char_1.unwrap_or('.'),
+        //     note_char_2.unwrap_or('.'),
+        //     octave_char.unwrap_or('.'),
+        //     vel_char_1.unwrap_or('.'),
+        //     vel_char_2.unwrap_or('.'),
+        // );
+
+        // text(text_buffer)
+        //     .size(30.0)
+        //     .font(R::Font::default())
+        //     .into()
+
         row![
             input_unit(note_char_1, self.cursor_x.is_some_and(|x| x == 0)),
             input_unit(note_char_2, self.cursor_x.is_some_and(|x| x == 1)),
@@ -86,7 +101,7 @@ where
 impl<'a, 'm, Message, Renderer> From<ColumnLineComponent<'a>> for Element<'m, Message, Renderer>
 where
     Message: 'm,
-    Renderer: 'static + text::Renderer<Theme = Theme>,
+    Renderer: 'static + iced_native::text::Renderer<Theme = Theme>,
     'a: 'm,
 {
     fn from(column_line: ColumnLineComponent<'a>) -> Self {

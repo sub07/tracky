@@ -49,10 +49,13 @@ where
                 .into()
             })
             .collect_vec();
-        container(iced::widget::Column::with_children(lines))
-            .padding(8)
-            .style(iced::theme::Container::Box)
-            .into()
+        container(
+            container(iced::widget::Column::with_children(lines))
+                .padding(8)
+                .style(iced::theme::Container::Box),
+        )
+        .padding(4)
+        .into()
     }
 }
 
