@@ -1,9 +1,9 @@
 use iced::{
-    widget::{container, scrollable, Row},
+    widget::{container, Row},
     Element,
 };
-use iced_lazy::{lazy, Component};
-use iced_native::{text, widget::scrollable::Properties, Length, Theme};
+use iced_lazy::{Component};
+use iced_native::{text, Theme};
 use iter_tools::Itertools;
 use rust_utils_macro::New;
 

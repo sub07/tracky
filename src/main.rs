@@ -1,4 +1,4 @@
-use std::default;
+
 
 use iced::event::Event;
 use iced::keyboard::KeyCode;
@@ -6,9 +6,9 @@ use iced::{
     executor, subscription, Application, Command, Element, Renderer, Settings, Subscription, Theme,
 };
 
-use iced_native::theme::Scrollable;
+
 use iced_native::widget::scrollable::{self, Properties};
-use iter_tools::Either;
+
 use model::pattern::Pattern;
 use rust_utils_macro::New;
 
@@ -56,7 +56,7 @@ fn convert_event_to_message(event: Event) -> Option<Message> {
         Event::Keyboard(kb_event) => match kb_event {
             iced_native::keyboard::Event::KeyPressed {
                 key_code,
-                modifiers,
+                modifiers: _,
             } => {
                 let mut cursor_x = 0;
                 let mut cursor_y = 0;
@@ -72,8 +72,8 @@ fn convert_event_to_message(event: Event) -> Option<Message> {
                 }
             }
             iced_native::keyboard::Event::KeyReleased {
-                key_code,
-                modifiers,
+                key_code: _,
+                modifiers: _,
             } => {}
             iced_native::keyboard::Event::CharacterReceived(_) => {}
             iced_native::keyboard::Event::ModifiersChanged(_) => {}

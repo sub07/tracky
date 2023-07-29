@@ -1,4 +1,4 @@
-use iced::widget::text;
+
 use iced::Theme;
 use iced_lazy::Component;
 use iced_native::{row, Element};
