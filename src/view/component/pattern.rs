@@ -2,8 +2,12 @@ use iced::{
     widget::{container, Row},
     Element,
 };
-use iced_lazy::{Component};
-use iced_native::{text, Theme};
+use iced_lazy::Component;
+use iced_native::{
+    text,
+    widget::{scrollable::Properties, Operation},
+    Theme,
+};
 use iter_tools::Itertools;
 use rust_utils_macro::New;
 
@@ -16,14 +20,16 @@ pub struct PatternComponent<'a> {
     pattern: &'a Pattern,
     cursor_x: i32,
     cursor_y: i32,
+    scroll_id: iced::widget::scrollable::Id,
 }
 
 pub fn pattern_component<'a>(
     pattern: &'a Pattern,
     cursor_x: i32,
     cursor_y: i32,
+    scroll_id: iced::widget::scrollable::Id,
 ) -> PatternComponent<'a> {
-    PatternComponent::new(pattern, cursor_x, cursor_y)
+    PatternComponent::new(pattern, cursor_x, cursor_y, scroll_id)
 }
 
 impl<'a, M, R> Component<M, R> for PatternComponent<'a>
@@ -55,7 +61,11 @@ where
                 column_component(column, cursor_x, self.cursor_y).into()
             })
             .collect_vec();
-        container(Row::with_children(columns)).padding(4).into()
+        iced::widget::scrollable(container(Row::with_children(columns)).padding(4))
+            .id(self.scroll_id.clone())
+            .horizontal_scroll(Properties::default())
+            .vertical_scroll(Properties::default())
+            .into()
     }
 }
 

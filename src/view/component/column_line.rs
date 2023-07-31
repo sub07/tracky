@@ -1,4 +1,3 @@
-
 use iced::Theme;
 use iced_lazy::Component;
 use iced_native::{row, Element};
@@ -33,27 +32,40 @@ where
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, R> {
-        let (note_char_1, note_char_2, octave_char) = if let Some(note) = self.line.note_field.note
-        {
-            let (note_1, note_2) = match note.note {
-                Note::A => ('A', '.'),
-                Note::B => ('B', '.'),
-                Note::C => ('C', '.'),
-                Note::D => ('D', '.'),
-                Note::E => ('E', '.'),
-                Note::F => ('F', '.'),
-                Note::G => ('G', '.'),
-                Note::CSharp => ('C', '#'),
-                Note::DSharp => ('D', '#'),
-                Note::FSharp => ('F', '#'),
-                Note::GSharp => ('G', '#'),
-                Note::ASharp => ('A', '#'),
+        let (note_char_1, note_char_2, octave_char) =
+            if let Some(note_value) = self.line.note_field.note {
+                let (note_1, note_2) = match note_value.note {
+                    Note::A => ('A', '-'),
+                    Note::B => ('B', '-'),
+                    Note::C => ('C', '-'),
+                    Note::D => ('D', '-'),
+                    Note::E => ('E', '-'),
+                    Note::F => ('F', '-'),
+                    Note::G => ('G', '-'),
+                    Note::CSharp => ('C', '#'),
+                    Note::DSharp => ('D', '#'),
+                    Note::FSharp => ('F', '#'),
+                    Note::GSharp => ('G', '#'),
+                    Note::ASharp => ('A', '#'),
+                };
+                let OctaveValue(octave) = note_value.octave;
+                let octave_char = match octave {
+                    0 => '0',
+                    1 => '1',
+                    2 => '2',
+                    3 => '3',
+                    4 => '4',
+                    5 => '5',
+                    6 => '6',
+                    7 => '7',
+                    8 => '8',
+                    9 => '9',
+                    _ => panic!("Cannot happen"),
+                };
+                (Some(note_1), Some(note_2), Some(octave_char))
+            } else {
+                (None, None, None)
             };
-            let OctaveValue(octave) = note.octave;
-            (Some(note_1), Some(note_2), Some(char::from(octave)))
-        } else {
-            (None, None, None)
-        };
 
         let (vel_char_1, vel_char_2) = if let Some(velocity) = self.line.velocity_field.value {
             (
@@ -71,20 +83,6 @@ where
         } else {
             (None, None)
         };
-
-        // let text_buffer = format!(
-        //     "{}{}{} {}{}",
-        //     note_char_1.unwrap_or('.'),
-        //     note_char_2.unwrap_or('.'),
-        //     octave_char.unwrap_or('.'),
-        //     vel_char_1.unwrap_or('.'),
-        //     vel_char_2.unwrap_or('.'),
-        // );
-
-        // text(text_buffer)
-        //     .size(30.0)
-        //     .font(R::Font::default())
-        //     .into()
 
         row![
             input_unit(note_char_1, self.cursor_x.is_some_and(|x| x == 0)),
