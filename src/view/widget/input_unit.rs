@@ -17,7 +17,7 @@ impl InputUnitWidget {
     }
 }
 
-const DEFAULT_SIZE: f32 = 30.0;
+pub const DEFAULT_FONT_SIZE: f32 = 30.0;
 
 impl<Message, Renderer> Widget<Message, Renderer> for InputUnitWidget
 where
@@ -35,7 +35,7 @@ where
         let mut str_buf = [0; 4];
         let (w, h) = renderer.measure(
             self.value().encode_utf8(&mut str_buf),
-            DEFAULT_SIZE,
+            DEFAULT_FONT_SIZE,
             Renderer::Font::default(),
             limits.max(),
         );
@@ -72,7 +72,7 @@ where
         let mut str_buf = [0; 4];
         let text = text::Text {
             font: Renderer::Font::default(),
-            size: DEFAULT_SIZE,
+            size: DEFAULT_FONT_SIZE,
             bounds: layout.bounds(),
             content: self.value().encode_utf8(&mut str_buf),
             horizontal_alignment: Horizontal::Left,

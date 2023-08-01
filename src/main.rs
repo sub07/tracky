@@ -12,6 +12,7 @@ use model::{HexValue, Note, NoteField, NoteValue, OctaveValue};
 use rust_utils_macro::New;
 
 use view::component::pattern::pattern_component;
+use view::component::patterns::patterns_component;
 
 use crate::model::pattern::{Column, ColumnLineElement};
 
@@ -153,34 +154,33 @@ impl Tracky {
         x: i32,
         y: i32,
     ) -> Command<<Tracky as iced::Application>::Message> {
-        self.pattern_collection.column_cursor += x;
-        self.pattern_collection.line_cursor += y;
+        self.pattern_collection.cursor_x += x;
+        self.pattern_collection.cursor_y += y;
 
-        if self.pattern_collection.column_cursor % ColumnLineElement::LINE_LEN == 1 {
-            self.pattern_collection.column_cursor += x;
+        if self.pattern_collection.cursor_x % ColumnLineElement::LINE_LEN == 1 {
+            self.pattern_collection.cursor_x += x;
         }
 
-        self.pattern_collection.column_cursor = i32::rem_euclid(
-            self.pattern_collection.column_cursor,
+        self.pattern_collection.cursor_x = i32::rem_euclid(
+            self.pattern_collection.cursor_x,
             ColumnLineElement::LINE_LEN
                 * self.pattern_collection.current_pattern().columns.len() as i32,
         );
-        self.pattern_collection.line_cursor = i32::rem_euclid(
-            self.pattern_collection.line_cursor,
+        self.pattern_collection.cursor_y = i32::rem_euclid(
+            self.pattern_collection.cursor_y,
             self.pattern_collection.current_pattern().columns[0]
                 .lines
                 .len() as i32,
         );
 
-        let cursor_x_column_index =
-            self.pattern_collection.column_cursor / ColumnLineElement::LINE_LEN;
+        let cursor_x_column_index = self.pattern_collection.cursor_x / ColumnLineElement::LINE_LEN;
 
         return scrollable::snap_to(
             self.pattern_scroll_id.clone(),
             scrollable::RelativeOffset {
                 x: cursor_x_column_index as f32
                     / (self.pattern_collection.current_pattern().columns.len() - 1) as f32,
-                y: self.pattern_collection.line_cursor as f32
+                y: self.pattern_collection.cursor_y as f32
                     / (self.pattern_collection.current_pattern().columns[0]
                         .lines
                         .len()
@@ -211,27 +211,6 @@ impl Application for Tracky {
                     return self.update(Message::TrackyAction(action));
                 }
             }
-            // Message::MoveCursor((x, y)) => {
-            //     self.pattern_collection.line_cursor += x;
-            //     self.cursor_y += y;
-
-            //     self.cursor_x = i32::rem_euclid(
-            //         self.cursor_x,
-            //         ColumnLineElement::LINE_LEN * self.pattern.columns.len() as i32,
-            //     );
-            //     self.cursor_y =
-            //         i32::rem_euclid(self.cursor_y, self.pattern.columns[0].lines.len() as i32);
-
-            //     let cursor_x_column_index = self.cursor_x / ColumnLineElement::LINE_LEN;
-
-            //     return scrollable::snap_to(
-            //         self.pattern_scroll_id.clone(),
-            //         scrollable::RelativeOffset {
-            //             x: cursor_x_column_index as f32 / (self.pattern.columns.len() - 1) as f32,
-            //             y: self.cursor_y as f32 / (self.pattern.columns[0].lines.len() - 1) as f32,
-            //         },
-            //     );
-            // }
             Message::TrackyAction(action) => match action {
                 keybinding::Action::NoteA => self.set_note(Note::A),
                 keybinding::Action::NoteB => self.set_note(Note::B),
@@ -285,13 +264,7 @@ impl Application for Tracky {
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        pattern_component(
-            &self.pattern_collection.current_pattern(),
-            self.pattern_collection.column_cursor,
-            self.pattern_collection.line_cursor,
-            self.pattern_scroll_id.clone(),
-        )
-        .into()
+        patterns_component(&self.pattern_collection, self.pattern_scroll_id.clone()).into()
     }
 
     fn theme(&self) -> Self::Theme {

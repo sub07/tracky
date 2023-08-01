@@ -20,16 +20,14 @@ pub struct PatternComponent<'a> {
     pattern: &'a Pattern,
     cursor_x: i32,
     cursor_y: i32,
-    scroll_id: iced::widget::scrollable::Id,
 }
 
 pub fn pattern_component<'a>(
     pattern: &'a Pattern,
     cursor_x: i32,
     cursor_y: i32,
-    scroll_id: iced::widget::scrollable::Id,
 ) -> PatternComponent<'a> {
-    PatternComponent::new(pattern, cursor_x, cursor_y, scroll_id)
+    PatternComponent::new(pattern, cursor_x, cursor_y)
 }
 
 impl<'a, M, R> Component<M, R> for PatternComponent<'a>
@@ -61,11 +59,7 @@ where
                 column_component(column, cursor_x, self.cursor_y).into()
             })
             .collect_vec();
-        iced::widget::scrollable(container(Row::with_children(columns)).padding(4))
-            .id(self.scroll_id.clone())
-            .horizontal_scroll(Properties::default())
-            .vertical_scroll(Properties::default())
-            .into()
+        container(Row::with_children(columns)).padding(4).into()
     }
 }
 

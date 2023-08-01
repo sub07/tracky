@@ -118,14 +118,14 @@ impl Pattern {
 pub struct PatternCollection {
     patterns: Vec<Pattern>,
     pub selected_pattern_index: usize,
-    pub column_cursor: i32,
-    pub line_cursor: i32,
+    pub cursor_x: i32,
+    pub cursor_y: i32,
     pub default_octave: OctaveValue,
 }
 
 impl PatternCollection {
     pub fn input_type(&self) -> PatternInputType {
-        let cursor_x = self.column_cursor % ColumnLineElement::LINE_LEN;
+        let cursor_x = self.cursor_x % ColumnLineElement::LINE_LEN;
         match cursor_x {
             0 => PatternInputType::Note,
             2 => PatternInputType::Octave,
@@ -143,23 +143,23 @@ impl PatternCollection {
     }
 
     pub fn current_line_mut(&mut self) -> &mut ColumnLine {
-        let current_column_index = self.column_cursor / ColumnLineElement::LINE_LEN;
-        let cursor_y = self.line_cursor;
+        let current_column_index = self.cursor_x / ColumnLineElement::LINE_LEN;
+        let cursor_y = self.cursor_y;
         self.current_pattern_mut()
             .column_mut(current_column_index)
             .line_mut(cursor_y)
     }
 
     pub fn current_line(&self) -> &ColumnLine {
-        let current_column_index = self.column_cursor / ColumnLineElement::LINE_LEN;
-        let cursor_y = self.line_cursor;
+        let current_column_index = self.cursor_x / ColumnLineElement::LINE_LEN;
+        let cursor_y = self.cursor_y;
         self.current_pattern()
             .column(current_column_index)
             .line(cursor_y)
     }
 
     pub fn local_column_index(&self) -> i32 {
-        self.column_cursor % ColumnLineElement::LINE_LEN
+        self.cursor_x % ColumnLineElement::LINE_LEN
     }
 }
 
@@ -171,8 +171,8 @@ impl Default for PatternCollection {
         Self {
             patterns: vec![pattern],
             selected_pattern_index: Default::default(),
-            column_cursor: Default::default(),
-            line_cursor: Default::default(),
+            cursor_x: Default::default(),
+            cursor_y: Default::default(),
             default_octave: Default::default(),
         }
     }
