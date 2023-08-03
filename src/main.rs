@@ -129,11 +129,9 @@ impl Tracky {
     }
 
     pub fn set_octave(&mut self, octave: OctaveValue) {
-        self.pattern_collection
-            .current_line_mut()
-            .note_field
-            .note
-            .map(|mut note| note.octave = octave);
+        if let Some(note) = &mut self.pattern_collection.current_line_mut().note_field.note {
+            note.octave = octave
+        }
     }
 
     pub fn clear(&mut self) {
@@ -212,49 +210,13 @@ impl Application for Tracky {
                 }
             }
             Message::TrackyAction(action) => match action {
-                keybinding::Action::NoteA => self.set_note(Note::A),
-                keybinding::Action::NoteB => self.set_note(Note::B),
-                keybinding::Action::NoteC => self.set_note(Note::C),
-                keybinding::Action::NoteD => self.set_note(Note::D),
-                keybinding::Action::NoteE => self.set_note(Note::E),
-                keybinding::Action::NoteF => self.set_note(Note::F),
-                keybinding::Action::NoteG => self.set_note(Note::G),
-                keybinding::Action::NoteCSharp => self.set_note(Note::CSharp),
-                keybinding::Action::NoteDSharp => self.set_note(Note::DSharp),
-                keybinding::Action::NoteFSharp => self.set_note(Note::FSharp),
-                keybinding::Action::NoteGSharp => self.set_note(Note::GSharp),
-                keybinding::Action::NoteASharp => self.set_note(Note::ASharp),
-                keybinding::Action::Hex0 => self.set_hex(HexValue::new(0x0).unwrap()),
-                keybinding::Action::Hex1 => self.set_hex(HexValue::new(0x1).unwrap()),
-                keybinding::Action::Hex2 => self.set_hex(HexValue::new(0x2).unwrap()),
-                keybinding::Action::Hex3 => self.set_hex(HexValue::new(0x3).unwrap()),
-                keybinding::Action::Hex4 => self.set_hex(HexValue::new(0x4).unwrap()),
-                keybinding::Action::Hex5 => self.set_hex(HexValue::new(0x5).unwrap()),
-                keybinding::Action::Hex6 => self.set_hex(HexValue::new(0x6).unwrap()),
-                keybinding::Action::Hex7 => self.set_hex(HexValue::new(0x7).unwrap()),
-                keybinding::Action::Hex8 => self.set_hex(HexValue::new(0x8).unwrap()),
-                keybinding::Action::Hex9 => self.set_hex(HexValue::new(0x9).unwrap()),
-                keybinding::Action::HexA => self.set_hex(HexValue::new(0xA).unwrap()),
-                keybinding::Action::HexB => self.set_hex(HexValue::new(0xB).unwrap()),
-                keybinding::Action::HexC => self.set_hex(HexValue::new(0xC).unwrap()),
-                keybinding::Action::HexD => self.set_hex(HexValue::new(0xD).unwrap()),
-                keybinding::Action::HexE => self.set_hex(HexValue::new(0xE).unwrap()),
-                keybinding::Action::HexF => self.set_hex(HexValue::new(0xF).unwrap()),
-                keybinding::Action::Octave0 => self.set_octave(OctaveValue::new(0).unwrap()),
-                keybinding::Action::Octave1 => self.set_octave(OctaveValue::new(1).unwrap()),
-                keybinding::Action::Octave2 => self.set_octave(OctaveValue::new(2).unwrap()),
-                keybinding::Action::Octave3 => self.set_octave(OctaveValue::new(3).unwrap()),
-                keybinding::Action::Octave4 => self.set_octave(OctaveValue::new(4).unwrap()),
-                keybinding::Action::Octave5 => self.set_octave(OctaveValue::new(5).unwrap()),
-                keybinding::Action::Octave6 => self.set_octave(OctaveValue::new(6).unwrap()),
-                keybinding::Action::Octave7 => self.set_octave(OctaveValue::new(7).unwrap()),
-                keybinding::Action::Octave8 => self.set_octave(OctaveValue::new(8).unwrap()),
-                keybinding::Action::Octave9 => self.set_octave(OctaveValue::new(9).unwrap()),
+                keybinding::Action::Note(note) => self.set_note(note),
+                keybinding::Action::Hex(value) => self.set_hex(value),
+                keybinding::Action::Octave(value) => self.set_octave(value),
                 keybinding::Action::ClearUnit => self.clear(),
-                keybinding::Action::MoveDown => return self.move_cursor(0, 1),
-                keybinding::Action::MoveUp => return self.move_cursor(0, -1),
-                keybinding::Action::MoveLeft => return self.move_cursor(-1, 0),
-                keybinding::Action::MoveRight => return self.move_cursor(1, 0),
+                keybinding::Action::Move(direction) => {
+                    return self.move_cursor(direction.x(), direction.y())
+                }
                 keybinding::Action::InsertPattern => todo!(),
                 keybinding::Action::NextPattern => todo!(),
                 keybinding::Action::PreviousPattern => todo!(),

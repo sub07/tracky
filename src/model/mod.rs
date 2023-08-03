@@ -1,10 +1,11 @@
 use anyhow::bail;
 use anyhow::Result;
+use rust_utils_macro::EnumValue;
 use rust_utils_macro::New;
 
 pub mod pattern;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Note {
     A,
     B,
@@ -20,7 +21,7 @@ pub enum Note {
     ASharp,
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Eq, PartialEq, Copy, Clone, Debug, Default)]
 pub struct OctaveValue(pub u8);
 
 impl OctaveValue {
@@ -39,10 +40,15 @@ pub struct NoteValue {
     pub octave: OctaveValue,
 }
 
+#[derive(Eq, PartialEq, Copy, Clone, Debug, EnumValue)]
 pub enum Direction {
+    #[value(x: i32 = -1, y: i32 = 0)]
     Left,
+    #[value(x: i32 = 1, y: i32 = 0)]
     Right,
+    #[value(x: i32 = 0, y: i32 = -1)]
     Up,
+    #[value(x: i32 = 0, y: i32 = 1)]
     Down,
 }
 
@@ -51,7 +57,7 @@ pub struct NoteField {
     pub note: Option<NoteValue>,
 }
 
-#[derive(Default, Copy, Clone)]
+#[derive(Eq, PartialEq, Copy, Clone, Debug, Default)]
 pub struct HexValue(pub u8);
 
 impl HexValue {
