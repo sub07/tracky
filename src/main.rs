@@ -1,21 +1,19 @@
 use iced::event::Event;
-use iced::keyboard::KeyCode;
+
 use iced::{
     executor, subscription, Application, Command, Element, Renderer, Settings, Subscription, Theme,
 };
 
-use iced_native::keyboard::Modifiers;
-use iced_native::widget::scrollable::{self, Properties};
+use iced_native::widget::scrollable::{self};
 
-use keybinding::{InputContext, KeyBindings};
-use model::pattern::{HexDigit, NoteField, Pattern, PatternCollection, VelocityField};
+use keybinding::KeyBindings;
+use model::pattern::{HexDigit, NoteField, PatternCollection};
 use model::{HexValue, Note, NoteValue, OctaveValue};
 use rust_utils_macro::New;
 
-use view::component::pattern::pattern_component;
 use view::component::patterns::patterns_component;
 
-use crate::model::pattern::{Column, ColumnLineElement};
+use crate::model::pattern::ColumnLineElement;
 
 mod keybinding;
 mod model;
