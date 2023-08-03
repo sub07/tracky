@@ -4,8 +4,7 @@ use iced::{
     executor, subscription, Application, Command, Element, Renderer, Settings, Subscription, Theme,
 };
 
-use iced_native::widget::scrollable::{self};
-
+use iced_native::widget::scrollable;
 use keybinding::KeyBindings;
 use model::pattern::{HexDigit, NoteField, PatternCollection};
 use model::{HexValue, Note, NoteValue, OctaveValue};
