@@ -1,7 +1,7 @@
 use rust_utils_macro::{EnumIter, EnumValue, New};
 
 use crate::{
-    keybinding::PatternInputType,
+    keybinding::InputContext,
     model::{HexValue, NoteField, OctaveValue},
 };
 
@@ -124,12 +124,12 @@ pub struct PatternCollection {
 }
 
 impl PatternCollection {
-    pub fn input_type(&self) -> PatternInputType {
+    pub fn input_type(&self) -> InputContext {
         let cursor_x = self.cursor_x % ColumnLineElement::LINE_LEN;
         match cursor_x {
-            0 => PatternInputType::Note,
-            2 => PatternInputType::Octave,
-            3 | 4 => PatternInputType::Hex,
+            0 => InputContext::Note,
+            2 => InputContext::Octave,
+            3 | 4 => InputContext::Hex,
             _ => panic!("Invalid cursor position: {cursor_x}"),
         }
     }

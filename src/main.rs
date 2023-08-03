@@ -4,9 +4,10 @@ use iced::{
     executor, subscription, Application, Command, Element, Renderer, Settings, Subscription, Theme,
 };
 
+use iced_native::keyboard::Modifiers;
 use iced_native::widget::scrollable::{self, Properties};
 
-use keybinding::{KeyBindings, PatternInputType};
+use keybinding::{InputContext, KeyBindings};
 use model::pattern::{HexDigit, Pattern, PatternCollection, VelocityField};
 use model::{HexValue, Note, NoteField, NoteValue, OctaveValue};
 use rust_utils_macro::New;
@@ -54,43 +55,24 @@ enum Message {
 
 impl Tracky {
     pub fn convert_event_to_action(&self, event: Event) -> Option<keybinding::Action> {
-        let pattern_input_type = self.pattern_collection.input_type();
+        let input_context = self.pattern_collection.input_type();
         match event {
             Event::Keyboard(kb_event) => match kb_event {
                 iced_native::keyboard::Event::KeyPressed {
                     key_code,
-                    modifiers: _,
-                } => {
-                    if let Some(key_map) =
-                        self.keybindings.context_bindings.get(&pattern_input_type)
-                    {
-                        if let Some(action) = key_map.get(&key_code) {
-                            return Some(*action);
-                        } else {
-                            if let Some(global_keybinds) = self
-                                .keybindings
-                                .context_bindings
-                                .get(&PatternInputType::Global)
-                            {
-                                if let Some(action) = global_keybinds.get(&key_code) {
-                                    return Some(*action);
-                                }
-                            }
-                        }
-                    }
-                }
+                    modifiers,
+                } => self.keybindings.action(modifiers, key_code, input_context),
                 iced_native::keyboard::Event::KeyReleased {
                     key_code: _,
                     modifiers: _,
-                } => {}
-                iced_native::keyboard::Event::CharacterReceived(_) => {}
-                iced_native::keyboard::Event::ModifiersChanged(_) => {}
+                } => None,
+                iced_native::keyboard::Event::CharacterReceived(_) => None,
+                iced_native::keyboard::Event::ModifiersChanged(_) => None,
             },
-            Event::Mouse(_) => {}
-            Event::Window(_) => {}
-            Event::Touch(_) => {}
+            Event::Mouse(_) => None,
+            Event::Window(_) => None,
+            Event::Touch(_) => None,
         }
-        None
     }
 
     pub fn get_current_octave(&self) -> OctaveValue {
