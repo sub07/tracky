@@ -12,62 +12,17 @@ pub struct NoteField {
     pub note: Option<NoteValue>,
 }
 
-#[derive(Default, Copy, Clone)]
-pub struct VelocityField {
-    pub value: Option<u8>,
-}
-
 pub enum HexDigit {
     First,
     Second,
 }
 
-impl VelocityField {
-    pub fn new(HexValue(digit_1): HexValue, HexValue(digit_2): HexValue) -> VelocityField {
-        VelocityField {
-            value: Some((digit_1 << 4) | digit_2),
-        }
-    }
-
-    pub fn set_digit_hex(&mut self, digit_index: HexDigit, HexValue(digit): HexValue) {
-        let (mask, value) = match digit_index {
-            HexDigit::First => (0x0F, digit << 4),
-            HexDigit::Second => (0xF0, digit),
-        };
-
-        let mut current_value = self.value.unwrap_or(0);
-        current_value &= mask;
-        current_value |= value;
-
-        self.value = Some(current_value);
-    }
-
-    pub fn set_first_digit_hex(&mut self, value: HexValue) {
-        self.set_digit_hex(HexDigit::First, value);
-    }
-
-    pub fn set_second_digit_hex(&mut self, value: HexValue) {
-        self.set_digit_hex(HexDigit::Second, value);
-    }
-
-    pub fn clear(&mut self) {
-        self.value = None;
-    }
-}
-
 #[derive(Default, Copy, Clone)]
-pub struct InstrumentField {
+pub struct HexField {
     pub value: Option<u8>,
 }
 
-// TODO : Refactor with velocity
-impl InstrumentField {
-    pub fn new(HexValue(digit_1): HexValue, HexValue(digit_2): HexValue) -> VelocityField {
-        VelocityField {
-            value: Some((digit_1 << 4) | digit_2),
-        }
-    }
-
+impl HexField {
     pub fn set_digit_hex(&mut self, digit_index: HexDigit, HexValue(digit): HexValue) {
         let (mask, value) = match digit_index {
             HexDigit::First => (0x0F, digit << 4),
@@ -97,8 +52,8 @@ impl InstrumentField {
 #[derive(New, Default, Clone)]
 pub struct ColumnLine {
     pub note_field: NoteField,
-    pub velocity_field: VelocityField,
-    pub instrument_field: InstrumentField,
+    pub velocity_field: HexField,
+    pub instrument_field: HexField,
 }
 
 #[derive(EnumIter, EnumValue)]
