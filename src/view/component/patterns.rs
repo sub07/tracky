@@ -3,10 +3,10 @@ use iced::{
     Element,
 };
 use iced_lazy::Component;
-use iced_native::{alignment::Horizontal, widget::scrollable::Properties, Padding};
+use iced_native::{alignment::Horizontal, widget::scrollable::Properties};
 use iter_tools::Itertools;
 
-use crate::{model::pattern::PatternCollection, view::widget::input_unit::InputUnitWidget};
+use crate::model::pattern::PatternCollection;
 
 use super::pattern::pattern_component;
 
@@ -32,17 +32,19 @@ where
     type State = ();
     type Event = ();
 
-    fn update(&mut self, state: &mut Self::State, event: Self::Event) -> Option<M> {
+    fn update(&mut self, _state: &mut Self::State, _event: Self::Event) -> Option<M> {
         None
     }
 
-    fn view(&self, state: &Self::State) -> iced_native::Element<'_, Self::Event, R> {
+    fn view(&self, _state: &Self::State) -> iced_native::Element<'_, Self::Event, R> {
         let pattern = pattern_component(
             self.pattern_collection.current_pattern(),
             self.pattern_collection.cursor_x,
             self.pattern_collection.cursor_y,
         );
-        let line_text_numbers = (0..self.pattern_collection.current_pattern().columns[0].lines.len())
+        let line_text_numbers = (0..self.pattern_collection.current_pattern().columns[0]
+            .lines
+            .len())
             .map(|line_index| {
                 text(format!("{: >3}", line_index))
                     .horizontal_alignment(Horizontal::Right)

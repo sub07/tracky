@@ -3,11 +3,7 @@ use iced::{
     Element,
 };
 use iced_lazy::Component;
-use iced_native::{
-    text,
-    widget::{scrollable::Properties, Operation},
-    Theme,
-};
+use iced_native::{text, Theme};
 use iter_tools::Itertools;
 use rust_utils_macro::New;
 
