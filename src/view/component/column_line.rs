@@ -84,13 +84,33 @@ where
             (None, None)
         };
 
+        let (instr_char_1, instr_char_2) = if let Some(instrument_id) = self.line.instrument_field.value {
+            (
+                Some(
+                    char::from_digit((instrument_id >> 4) as u32, 16)
+                        .unwrap()
+                        .to_ascii_uppercase(),
+                ),
+                Some(
+                    char::from_digit((instrument_id & 0x0F) as u32, 16)
+                        .unwrap()
+                        .to_ascii_uppercase(),
+                ),
+            )
+        } else {
+            (None, None)
+        };
+
         row![
             input_unit(note_char_1, self.cursor_x.is_some_and(|x| x == 0)),
-            input_unit(note_char_2, self.cursor_x.is_some_and(|x| x == 1)),
+            input_unit(note_char_2, false),
             input_unit(octave_char, self.cursor_x.is_some_and(|x| x == 2)),
             input_unit_spacer(),
             input_unit(vel_char_1, self.cursor_x.is_some_and(|x| x == 3)),
             input_unit(vel_char_2, self.cursor_x.is_some_and(|x| x == 4)),
+            input_unit_spacer(),
+            input_unit(instr_char_1, self.cursor_x.is_some_and(|x| x == 5)),
+            input_unit(instr_char_2, self.cursor_x.is_some_and(|x| x == 6)),
         ]
         .into()
     }

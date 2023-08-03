@@ -52,11 +52,6 @@ pub enum Direction {
     Down,
 }
 
-#[derive(New, Default, Copy, Clone)]
-pub struct NoteField {
-    pub note: Option<NoteValue>,
-}
-
 #[derive(Eq, PartialEq, Copy, Clone, Debug, Default)]
 pub struct HexValue(pub u8);
 

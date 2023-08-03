@@ -8,8 +8,8 @@ use iced_native::keyboard::Modifiers;
 use iced_native::widget::scrollable::{self, Properties};
 
 use keybinding::{InputContext, KeyBindings};
-use model::pattern::{HexDigit, Pattern, PatternCollection, VelocityField};
-use model::{HexValue, Note, NoteField, NoteValue, OctaveValue};
+use model::pattern::{HexDigit, NoteField, Pattern, PatternCollection, VelocityField};
+use model::{HexValue, Note, NoteValue, OctaveValue};
 use rust_utils_macro::New;
 
 use view::component::pattern::pattern_component;
@@ -103,9 +103,23 @@ impl Tracky {
             .set_digit_hex(velocity_digit_index, hex_value)
     }
 
+    pub fn set_instrument(&mut self, hex_value: HexValue) {
+        let instr_digit_index = match self.pattern_collection.local_column_index() {
+            5 => HexDigit::First,
+            6 => HexDigit::Second,
+            _ => panic!("Should not happen"),
+        };
+
+        self.pattern_collection
+            .current_line_mut()
+            .instrument_field
+            .set_digit_hex(instr_digit_index, hex_value)
+    }
+
     pub fn set_hex(&mut self, hex_value: HexValue) {
         match self.pattern_collection.local_column_index() {
             3 | 4 => self.set_velocity(hex_value),
+            5 | 6 => self.set_instrument(hex_value),
             _ => {}
         }
     }
@@ -120,11 +134,19 @@ impl Tracky {
         match self.pattern_collection.local_column_index() {
             0 | 2 => {
                 self.pattern_collection.current_line_mut().note_field = NoteField::default();
-                self.pattern_collection.current_line_mut().velocity_field = VelocityField::default()
+                self.pattern_collection.current_line_mut().velocity_field.clear();
+                self.pattern_collection.current_line_mut().instrument_field.clear();
             }
-            3 | 4 => {
-                self.pattern_collection.current_line_mut().velocity_field = VelocityField::default()
-            }
+            3 | 4 => self
+                .pattern_collection
+                .current_line_mut()
+                .velocity_field
+                .clear(),
+            5 | 6 => self
+                .pattern_collection
+                .current_line_mut()
+                .instrument_field
+                .clear(),
             _ => {}
         }
     }

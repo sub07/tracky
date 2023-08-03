@@ -2,8 +2,15 @@ use rust_utils_macro::{EnumIter, EnumValue, New};
 
 use crate::{
     keybinding::InputContext,
-    model::{HexValue, NoteField, OctaveValue},
+    model::{HexValue, OctaveValue},
 };
+
+use super::NoteValue;
+
+#[derive(New, Default, Copy, Clone)]
+pub struct NoteField {
+    pub note: Option<NoteValue>,
+}
 
 #[derive(Default, Copy, Clone)]
 pub struct VelocityField {
@@ -48,10 +55,50 @@ impl VelocityField {
     }
 }
 
+#[derive(Default, Copy, Clone)]
+pub struct InstrumentField {
+    pub value: Option<u8>,
+}
+
+// TODO : Refactor with velocity
+impl InstrumentField {
+    pub fn new(HexValue(digit_1): HexValue, HexValue(digit_2): HexValue) -> VelocityField {
+        VelocityField {
+            value: Some((digit_1 << 4) | digit_2),
+        }
+    }
+
+    pub fn set_digit_hex(&mut self, digit_index: HexDigit, HexValue(digit): HexValue) {
+        let (mask, value) = match digit_index {
+            HexDigit::First => (0x0F, digit << 4),
+            HexDigit::Second => (0xF0, digit),
+        };
+
+        let mut current_value = self.value.unwrap_or(0);
+        current_value &= mask;
+        current_value |= value;
+
+        self.value = Some(current_value);
+    }
+
+    pub fn set_first_digit_hex(&mut self, value: HexValue) {
+        self.set_digit_hex(HexDigit::First, value);
+    }
+
+    pub fn set_second_digit_hex(&mut self, value: HexValue) {
+        self.set_digit_hex(HexDigit::Second, value);
+    }
+
+    pub fn clear(&mut self) {
+        self.value = None;
+    }
+}
+
 #[derive(New, Default, Clone)]
 pub struct ColumnLine {
     pub note_field: NoteField,
     pub velocity_field: VelocityField,
+    pub instrument_field: InstrumentField,
 }
 
 #[derive(EnumIter, EnumValue)]
@@ -60,6 +107,8 @@ pub enum ColumnLineElement {
     Note,
     #[value(len: usize = 2)]
     Velocity,
+    #[value(len: usize = 2)]
+    Instrument,
 }
 
 impl ColumnLineElement {
@@ -129,7 +178,7 @@ impl PatternCollection {
         match cursor_x {
             0 => InputContext::Note,
             2 => InputContext::Octave,
-            3 | 4 => InputContext::Hex,
+            3 | 4 | 5 | 6 => InputContext::Hex,
             _ => panic!("Invalid cursor position: {cursor_x}"),
         }
     }
