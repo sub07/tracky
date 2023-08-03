@@ -134,8 +134,14 @@ impl Tracky {
         match self.pattern_collection.local_column_index() {
             0 | 2 => {
                 self.pattern_collection.current_line_mut().note_field = NoteField::default();
-                self.pattern_collection.current_line_mut().velocity_field.clear();
-                self.pattern_collection.current_line_mut().instrument_field.clear();
+                self.pattern_collection
+                    .current_line_mut()
+                    .velocity_field
+                    .clear();
+                self.pattern_collection
+                    .current_line_mut()
+                    .instrument_field
+                    .clear();
             }
             3 | 4 => self
                 .pattern_collection
