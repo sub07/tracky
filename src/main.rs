@@ -14,6 +14,7 @@ use view::component::patterns::patterns_component;
 
 use crate::model::pattern::ColumnLineElement;
 
+mod audio;
 mod keybinding;
 mod model;
 mod view;

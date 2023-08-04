@@ -13,3 +13,5 @@ rust-utils = { git = "https://github.com/sub07/rust-utils" }
 rust-utils-macro = { git = "https://github.com/sub07/rust-utils" }
 iter_tools = "0.1"
 anyhow = "1.0"
+cpal = "0.15.0"
+audrey = "0.3"
