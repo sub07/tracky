@@ -1,10 +1,18 @@
-use iced::alignment::Vertical;
-use iced::{Background, Color, Element, Length, Point, Rectangle, Size, Theme};
-use iced_native::alignment::Horizontal;
-use iced_native::layout::{Limits, Node};
-use iced_native::renderer::{BorderRadius, Quad, Style};
-use iced_native::widget::Tree;
-use iced_native::{text, Layout, Widget};
+use iced::{
+    advanced::{
+        layout::{Limits, Node},
+        renderer::{Quad, Style},
+        text::Renderer,
+        widget::Tree,
+        Layout, Text, Widget,
+    },
+    alignment::{Horizontal, Vertical},
+    mouse::Cursor,
+    widget::text::{LineHeight, Shaping},
+    Background, BorderRadius, Color, Element, Font, Length, Point, Rectangle, Size, Theme,
+};
+
+use crate::view::CustomRenderer;
 
 pub struct InputUnitWidget {
     pub value: Option<char>,
@@ -19,9 +27,9 @@ impl InputUnitWidget {
 
 pub const DEFAULT_FONT_SIZE: f32 = 30.0;
 
-impl<Message, Renderer> Widget<Message, Renderer> for InputUnitWidget
+impl<M, R> Widget<M, R> for InputUnitWidget
 where
-    Renderer: text::Renderer<Theme = Theme>,
+    R: CustomRenderer,
 {
     fn width(&self) -> Length {
         Length::Shrink
@@ -31,26 +39,29 @@ where
         Length::Shrink
     }
 
-    fn layout(&self, renderer: &Renderer, limits: &Limits) -> Node {
+    fn layout(&self, renderer: &R, limits: &Limits) -> Node {
         let mut str_buf = [0; 4];
-        let (w, h) = renderer.measure(
+        let Size { width, height } = renderer.measure(
             self.value().encode_utf8(&mut str_buf),
             DEFAULT_FONT_SIZE,
-            Renderer::Font::default(),
+            LineHeight::default(),
+            Font::MONOSPACE,
             limits.max(),
+            Shaping::default(),
         );
-        Node::new(Size::new(w, h))
+
+        Node::new(Size::new(width, height))
     }
 
     fn draw(
         &self,
-        _state: &Tree,
-        renderer: &mut Renderer,
-        theme: &Renderer::Theme,
-        _style: &Style,
+        state: &Tree,
+        renderer: &mut R,
+        theme: &R::Theme,
+        style: &Style,
         layout: Layout<'_>,
-        _cursor_position: Point,
-        _viewport: &Rectangle,
+        cursor: Cursor,
+        viewport: &Rectangle,
     ) {
         let (text_color, background_color) = if self.selected {
             (theme.palette().background, theme.palette().text)
@@ -70,22 +81,24 @@ where
         }
 
         let mut str_buf = [0; 4];
-        let text = text::Text {
-            font: Renderer::Font::default(),
+        let text = Text {
+            font: Font::MONOSPACE,
             size: DEFAULT_FONT_SIZE,
             bounds: layout.bounds(),
             content: self.value().encode_utf8(&mut str_buf),
             horizontal_alignment: Horizontal::Left,
             vertical_alignment: Vertical::Top,
             color: text_color,
+            line_height: Default::default(),
+            shaping: Default::default(),
         };
         renderer.fill_text(text);
     }
 }
 
-impl<'a, Message, Renderer> From<InputUnitWidget> for Element<'a, Message, Renderer>
+impl<'a, M, R> From<InputUnitWidget> for Element<'a, M, R>
 where
-    Renderer: text::Renderer<Theme = Theme>,
+    R: CustomRenderer,
 {
     fn from(v: InputUnitWidget) -> Self {
         Self::new(v)

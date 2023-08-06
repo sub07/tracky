@@ -1,12 +1,19 @@
 use iced::{
-    widget::{text, Column},
-    Element,
+    advanced::text::Renderer,
+    alignment::Horizontal,
+    widget::{
+        component, container, row,
+        scrollable::{Direction, Properties},
+        text, Component, Row,
+    },
+    Element, Font, Theme,
 };
-use iced_lazy::Component;
-use iced_native::{alignment::Horizontal, widget::scrollable::Properties};
 use iter_tools::Itertools;
 
-use crate::model::pattern::PatternCollection;
+use crate::{
+    model::pattern::{Column, PatternCollection},
+    view::CustomRenderer,
+};
 
 use super::pattern::pattern_component;
 
@@ -27,7 +34,7 @@ pub fn patterns_component<'a>(
 
 impl<'a, M, R> Component<M, R> for PatternsComponent<'a>
 where
-    R: iced_native::text::Renderer<Theme = iced::Theme> + 'static,
+    R: CustomRenderer + 'static,
 {
     type State = ();
     type Event = ();
@@ -36,7 +43,7 @@ where
         None
     }
 
-    fn view(&self, _state: &Self::State) -> iced_native::Element<'_, Self::Event, R> {
+    fn view(&self, _state: &Self::State) -> iced::Element<'_, Self::Event, R> {
         let pattern = pattern_component(
             self.pattern_collection.current_pattern(),
             self.pattern_collection.cursor_x,
@@ -47,28 +54,32 @@ where
             .len())
             .map(|line_index| {
                 text(format!("{: >3}", line_index))
+                    .font(Font::MONOSPACE)
                     .horizontal_alignment(Horizontal::Right)
                     .size(crate::view::widget::input_unit::DEFAULT_FONT_SIZE)
                     .into()
             })
             .collect_vec();
-        let line_number_column = Column::with_children(line_text_numbers).padding([16, 0]);
+        let line_number_column =
+            iced::widget::Column::with_children(line_text_numbers).padding([16, 0]);
 
         iced::widget::scrollable(iced::widget::row![line_number_column, pattern,])
             .id(self.scroll_id.clone())
-            .horizontal_scroll(Properties::default())
-            .vertical_scroll(Properties::default())
+            .direction(Direction::Both {
+                vertical: Properties::default(),
+                horizontal: Properties::default(),
+            })
             .into()
     }
 }
 
-impl<'a, 'm, Message, Renderer> From<PatternsComponent<'a>> for Element<'m, Message, Renderer>
+impl<'a, 'm, M, R> From<PatternsComponent<'a>> for Element<'m, M, R>
 where
-    Message: 'm,
-    Renderer: 'static + iced_native::text::Renderer<Theme = iced::Theme>,
+    M: 'm,
+    R: 'static + CustomRenderer,
     'a: 'm,
 {
     fn from(pattern: PatternsComponent<'a>) -> Self {
-        iced_lazy::component(pattern)
+        component(pattern)
     }
 }

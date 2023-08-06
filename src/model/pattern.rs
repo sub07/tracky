@@ -95,7 +95,7 @@ impl Column {
     }
 }
 
-const DEFAULT_COLUMN_LEN: usize = 64;
+const DEFAULT_COLUMN_LEN: usize = 128;
 
 impl Default for Column {
     fn default() -> Self {

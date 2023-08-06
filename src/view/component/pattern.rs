@@ -1,13 +1,12 @@
 use iced::{
-    widget::{container, Row},
-    Element,
+    advanced::text::Renderer,
+    widget::{component, container, row, Component, Row},
+    Element, Theme,
 };
-use iced_lazy::Component;
-use iced_native::{text, Theme};
 use iter_tools::Itertools;
 use rust_utils_macro::New;
 
-use crate::model::pattern::{ColumnLineElement, Pattern};
+use crate::{model::pattern::{ColumnLineElement, Pattern}, view::CustomRenderer};
 
 use super::column::column_component;
 
@@ -28,7 +27,7 @@ pub fn pattern_component<'a>(
 
 impl<'a, M, R> Component<M, R> for PatternComponent<'a>
 where
-    R: text::Renderer<Theme = Theme> + 'static,
+    R: CustomRenderer + 'static,
 {
     type State = ();
 
@@ -38,7 +37,7 @@ where
         None
     }
 
-    fn view(&self, _state: &Self::State) -> iced_native::Element<'_, Self::Event, R> {
+    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, R> {
         let cursor_column_index = self.cursor_x / ColumnLineElement::LINE_LEN;
         let cursor_column_local = self.cursor_x % ColumnLineElement::LINE_LEN;
         let columns = self
@@ -59,13 +58,13 @@ where
     }
 }
 
-impl<'a, 'm, Message, Renderer> From<PatternComponent<'a>> for Element<'m, Message, Renderer>
+impl<'a, 'm, M, R> From<PatternComponent<'a>> for Element<'m, M, R>
 where
-    Message: 'm,
-    Renderer: 'static + text::Renderer<Theme = Theme>,
+    M: 'm,
+    R: 'static + CustomRenderer,
     'a: 'm,
 {
     fn from(pattern: PatternComponent<'a>) -> Self {
-        iced_lazy::component(pattern)
+        component(pattern)
     }
 }

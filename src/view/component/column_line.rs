@@ -1,11 +1,14 @@
-use iced::Theme;
-use iced_lazy::Component;
-use iced_native::{row, Element};
+use iced::{
+    advanced::text::Renderer,
+    widget::{component, row, Component},
+    Element, Theme,
+};
 use rust_utils_macro::New;
 
-use crate::model::pattern::ColumnLine;
-use crate::model::{Note, OctaveValue};
-use crate::view::widget::input_unit::{input_unit, input_unit_spacer};
+use crate::{
+    model::{pattern::ColumnLine, Note, OctaveValue},
+    view::{widget::input_unit::{input_unit, input_unit_spacer}, CustomRenderer},
+};
 
 #[derive(New)]
 pub struct ColumnLineComponent<'a> {
@@ -22,7 +25,7 @@ pub fn column_line_component<'a>(
 
 impl<'a, M, R> Component<M, R> for ColumnLineComponent<'a>
 where
-    R: iced_native::text::Renderer<Theme = Theme> + 'static,
+    R: CustomRenderer + 'static,
 {
     type State = ();
     type Event = ();
@@ -117,13 +120,13 @@ where
     }
 }
 
-impl<'a, 'm, Message, Renderer> From<ColumnLineComponent<'a>> for Element<'m, Message, Renderer>
+impl<'a, 'm, M, R> From<ColumnLineComponent<'a>> for Element<'m, M, R>
 where
-    Message: 'm,
-    Renderer: 'static + iced_native::text::Renderer<Theme = Theme>,
+    M: 'm,
+    R: 'static + CustomRenderer,
     'a: 'm,
 {
     fn from(column_line: ColumnLineComponent<'a>) -> Self {
-        iced_lazy::component(column_line)
+        component(column_line)
     }
 }

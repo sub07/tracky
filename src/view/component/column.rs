@@ -1,11 +1,18 @@
-use iced::Element;
-use iced::{widget::container, Theme};
-use iced_lazy::Component;
-use iced_native::text;
+use iced::{
+    advanced::text::Renderer,
+    widget::{component, container, row, Component},
+    Element, Theme,
+};
 use iter_tools::Itertools;
 use rust_utils_macro::New;
 
-use crate::model::pattern::Column;
+use crate::{
+    model::{
+        pattern::{Column, ColumnLine},
+        Note, OctaveValue,
+    },
+    view::{widget::input_unit::{input_unit, input_unit_spacer}, CustomRenderer},
+};
 
 use super::column_line::column_line_component;
 
@@ -26,7 +33,7 @@ pub fn column_component<'a>(
 
 impl<'a, M, R> Component<M, R> for ColumnComponent<'a>
 where
-    R: text::Renderer<Theme = Theme> + 'static,
+    R: CustomRenderer + 'static,
 {
     type State = ();
     type Event = ();
@@ -35,7 +42,7 @@ where
         None
     }
 
-    fn view(&self, _state: &Self::State) -> iced_native::Element<'_, Self::Event, R> {
+    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, R> {
         let lines = self
             .column
             .lines
@@ -59,13 +66,13 @@ where
     }
 }
 
-impl<'a, 'm, Message, Renderer> From<ColumnComponent<'a>> for Element<'m, Message, Renderer>
+impl<'a, 'm, M, R> From<ColumnComponent<'a>> for Element<'m, M, R>
 where
-    Message: 'm,
-    Renderer: 'static + text::Renderer<Theme = Theme>,
+    M: 'm,
+    R: 'static + CustomRenderer,
     'a: 'm,
 {
     fn from(column: ColumnComponent<'a>) -> Self {
-        iced_lazy::component(column)
+        component(column)
     }
 }

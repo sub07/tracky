@@ -1,10 +1,11 @@
 use iced::event::Event;
 
 use iced::{
-    executor, subscription, Application, Command, Element, Renderer, Settings, Subscription, Theme,
+    executor, font, subscription, Application, Command, Element, Font, Renderer, Settings,
+    Subscription, Theme,
 };
 
-use iced_native::widget::scrollable;
+use iced::widget::scrollable;
 use keybinding::KeyBindings;
 use model::pattern::{HexDigit, NoteField, PatternCollection};
 use model::{HexValue, Note, NoteValue, OctaveValue};
@@ -12,6 +13,7 @@ use rust_utils_macro::New;
 
 use view::component::patterns::patterns_component;
 
+use crate::audio::pcm_sample::PcmStereoSample;
 use crate::model::pattern::ColumnLineElement;
 
 mod audio;
@@ -20,10 +22,9 @@ mod model;
 mod view;
 
 pub fn main() -> iced::Result {
-    Tracky::run(Settings {
-        default_font: Some(include_bytes!("../font.ttf")),
-        ..Default::default()
-    })
+    let sound = PcmStereoSample::from_path("piano.wav").unwrap();
+    dbg!(sound.sample_rate);
+    Tracky::run(Settings::default())
 }
 
 #[derive(New)]
@@ -56,16 +57,16 @@ impl Tracky {
         let input_context = self.pattern_collection.input_type();
         match event {
             Event::Keyboard(kb_event) => match kb_event {
-                iced_native::keyboard::Event::KeyPressed {
+                iced::keyboard::Event::KeyPressed {
                     key_code,
                     modifiers,
                 } => self.keybindings.action(modifiers, key_code, input_context),
-                iced_native::keyboard::Event::KeyReleased {
+                iced::keyboard::Event::KeyReleased {
                     key_code: _,
                     modifiers: _,
                 } => None,
-                iced_native::keyboard::Event::CharacterReceived(_) => None,
-                iced_native::keyboard::Event::ModifiersChanged(_) => None,
+                iced::keyboard::Event::CharacterReceived(_) => None,
+                iced::keyboard::Event::ModifiersChanged(_) => None,
             },
             Event::Mouse(_) => None,
             Event::Window(_) => None,
@@ -203,7 +204,10 @@ impl Application for Tracky {
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        (Default::default(), Command::none())
+        (
+            Default::default(),
+            Command::none(),
+        )
     }
 
     fn title(&self) -> String {
@@ -228,7 +232,7 @@ impl Application for Tracky {
                 keybinding::Action::InsertPattern => todo!(),
                 keybinding::Action::NextPattern => todo!(),
                 keybinding::Action::PreviousPattern => todo!(),
-            },
+            }
         }
         Command::none()
     }
