@@ -1,7 +1,6 @@
 use iced::{
-    advanced::text::Renderer,
     widget::{component, row, Component},
-    Element, Theme,
+    Element,
 };
 use rust_utils_macro::New;
 

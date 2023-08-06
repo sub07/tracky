@@ -1,17 +1,16 @@
 use iced::{
-    advanced::text::Renderer,
     alignment::Horizontal,
     widget::{
-        component, container, row,
+        component,
         scrollable::{Direction, Properties},
-        text, Component, Row,
+        text, Component,
     },
-    Element, Font, Theme,
+    Element, Font,
 };
 use iter_tools::Itertools;
 
 use crate::{
-    model::pattern::{Column, PatternCollection},
+    model::pattern::{PatternCollection},
     view::CustomRenderer,
 };
 

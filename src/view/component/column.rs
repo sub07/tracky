@@ -1,18 +1,15 @@
 use iced::{
-    advanced::text::Renderer,
-    widget::{component, container, row, Component},
-    Element, Theme,
+    widget::{component, container, Component},
+    Element,
 };
 use iter_tools::Itertools;
 use rust_utils_macro::New;
 
 use crate::{
     model::{
-        pattern::{Column, ColumnLine},
-        Note, OctaveValue,
+        pattern::{Column},
     },
     view::{
-        widget::input_unit::{input_unit, input_unit_spacer},
         CustomRenderer,
     },
 };

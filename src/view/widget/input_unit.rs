@@ -9,7 +9,7 @@ use iced::{
     alignment::{Horizontal, Vertical},
     mouse::Cursor,
     widget::text::{LineHeight, Shaping},
-    Background, BorderRadius, Color, Element, Font, Length, Point, Rectangle, Size, Theme,
+    Background, BorderRadius, Color, Element, Font, Length, Rectangle, Size,
 };
 
 use crate::view::CustomRenderer;
@@ -55,13 +55,13 @@ where
 
     fn draw(
         &self,
-        state: &Tree,
+        _state: &Tree,
         renderer: &mut R,
         theme: &R::Theme,
-        style: &Style,
+        _style: &Style,
         layout: Layout<'_>,
-        cursor: Cursor,
-        viewport: &Rectangle,
+        _cursor: Cursor,
+        _viewport: &Rectangle,
     ) {
         let (text_color, background_color) = if self.selected {
             (theme.palette().background, theme.palette().text)

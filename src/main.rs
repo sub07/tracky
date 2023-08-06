@@ -1,7 +1,7 @@
 use iced::event::Event;
 
 use iced::{
-    executor, font, subscription, Application, Command, Element, Font, Renderer, Settings,
+    executor, subscription, Application, Command, Element, Renderer, Settings,
     Subscription, Theme,
 };
 

@@ -1,7 +1,6 @@
 use iced::{
-    advanced::text::Renderer,
-    widget::{component, container, row, Component, Row},
-    Element, Theme,
+    widget::{component, container, Component, Row},
+    Element,
 };
 use iter_tools::Itertools;
 use rust_utils_macro::New;
