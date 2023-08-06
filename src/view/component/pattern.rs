@@ -6,7 +6,10 @@ use iced::{
 use iter_tools::Itertools;
 use rust_utils_macro::New;
 
-use crate::{model::pattern::{ColumnLineElement, Pattern}, view::CustomRenderer};
+use crate::{
+    model::pattern::{ColumnLineElement, Pattern},
+    view::CustomRenderer,
+};
 
 use super::column::column_component;
 

@@ -11,7 +11,10 @@ use crate::{
         pattern::{Column, ColumnLine},
         Note, OctaveValue,
     },
-    view::{widget::input_unit::{input_unit, input_unit_spacer}, CustomRenderer},
+    view::{
+        widget::input_unit::{input_unit, input_unit_spacer},
+        CustomRenderer,
+    },
 };
 
 use super::column_line::column_line_component;

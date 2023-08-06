@@ -7,7 +7,10 @@ use rust_utils_macro::New;
 
 use crate::{
     model::{pattern::ColumnLine, Note, OctaveValue},
-    view::{widget::input_unit::{input_unit, input_unit_spacer}, CustomRenderer},
+    view::{
+        widget::input_unit::{input_unit, input_unit_spacer},
+        CustomRenderer,
+    },
 };
 
 #[derive(New)]

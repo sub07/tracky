@@ -204,10 +204,7 @@ impl Application for Tracky {
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        (
-            Default::default(),
-            Command::none(),
-        )
+        (Default::default(), Command::none())
     }
 
     fn title(&self) -> String {
@@ -232,7 +229,7 @@ impl Application for Tracky {
                 keybinding::Action::InsertPattern => todo!(),
                 keybinding::Action::NextPattern => todo!(),
                 keybinding::Action::PreviousPattern => todo!(),
-            }
+            },
         }
         Command::none()
     }
