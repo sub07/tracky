@@ -13,6 +13,7 @@ use iced::{
 };
 
 use crate::view::CustomRenderer;
+use crate::MONOSPACED_FONT;
 
 pub struct InputUnitWidget {
     pub value: Option<char>,
@@ -25,7 +26,7 @@ impl InputUnitWidget {
     }
 }
 
-pub const DEFAULT_FONT_SIZE: f32 = 30.0;
+pub const DEFAULT_FONT_SIZE: f32 = 18.0;
 
 impl<M, R> Widget<M, R> for InputUnitWidget
 where
@@ -45,7 +46,7 @@ where
             self.value().encode_utf8(&mut str_buf),
             DEFAULT_FONT_SIZE,
             LineHeight::default(),
-            Font::MONOSPACE,
+            MONOSPACED_FONT,
             limits.max(),
             Shaping::default(),
         );
@@ -82,7 +83,7 @@ where
 
         let mut str_buf = [0; 4];
         let text = Text {
-            font: Font::MONOSPACE,
+            font: MONOSPACED_FONT,
             size: DEFAULT_FONT_SIZE,
             bounds: layout.bounds(),
             content: self.value().encode_utf8(&mut str_buf),

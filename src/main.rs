@@ -1,29 +1,34 @@
 use iced::event::Event;
-
+use iced::font::{Stretch, Weight};
+use iced::widget::scrollable;
 use iced::{
-    executor, subscription, Application, Command, Element, Renderer, Settings,
+    executor, font, subscription, Application, Command, Element, Font, Renderer, Settings,
     Subscription, Theme,
 };
+use rust_utils_macro::New;
 
-use iced::widget::scrollable;
 use keybinding::KeyBindings;
 use model::pattern::{HexDigit, NoteField, PatternCollection};
 use model::{HexValue, Note, NoteValue, OctaveValue};
-use rust_utils_macro::New;
-
-use view::component::patterns::patterns_component;
 
 use crate::audio::pcm_sample::PcmStereoSample;
 use crate::model::pattern::ColumnLineElement;
+use crate::view::component::patterns::patterns_component;
 
 mod audio;
 mod keybinding;
 mod model;
 mod view;
 
+const MONOSPACED_FONT: Font = Font {
+    family: font::Family::Name("Roboto Mono"),
+    monospaced: true,
+    stretch: Stretch::Normal,
+    weight: Weight::Light,
+};
+
 pub fn main() -> iced::Result {
     let sound = PcmStereoSample::from_path("piano.wav").unwrap();
-    dbg!(sound.sample_rate);
     Tracky::run(Settings::default())
 }
 
@@ -50,6 +55,7 @@ impl Default for Tracky {
 enum Message {
     EventOccurred(Event),
     TrackyAction(keybinding::Action),
+    FontLoaded(Result<(), font::Error>),
 }
 
 impl Tracky {
@@ -204,7 +210,10 @@ impl Application for Tracky {
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        (Default::default(), Command::none())
+        (
+            Default::default(),
+            font::load(include_bytes!("../roboto_mono.ttf").as_slice()).map(Message::FontLoaded),
+        )
     }
 
     fn title(&self) -> String {
@@ -230,6 +239,9 @@ impl Application for Tracky {
                 keybinding::Action::NextPattern => todo!(),
                 keybinding::Action::PreviousPattern => todo!(),
             },
+            Message::FontLoaded(r) => {
+                println!("{r:?}");
+            }
         }
         Command::none()
     }

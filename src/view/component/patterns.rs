@@ -9,10 +9,7 @@ use iced::{
 };
 use iter_tools::Itertools;
 
-use crate::{
-    model::pattern::{PatternCollection},
-    view::CustomRenderer,
-};
+use crate::{model::pattern::PatternCollection, view::CustomRenderer, MONOSPACED_FONT};
 
 use super::pattern::pattern_component;
 
@@ -53,7 +50,7 @@ where
             .len())
             .map(|line_index| {
                 text(format!("{: >3}", line_index))
-                    .font(Font::MONOSPACE)
+                    .font(MONOSPACED_FONT)
                     .horizontal_alignment(Horizontal::Right)
                     .size(crate::view::widget::input_unit::DEFAULT_FONT_SIZE)
                     .into()
