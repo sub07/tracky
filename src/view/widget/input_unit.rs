@@ -9,7 +9,7 @@ use iced::{
     alignment::{Horizontal, Vertical},
     mouse::Cursor,
     widget::text::{LineHeight, Shaping},
-    Background, BorderRadius, Color, Element, Font, Length, Rectangle, Size,
+    Background, BorderRadius, Color, Element, Length, Rectangle, Size,
 };
 
 use crate::view::CustomRenderer;

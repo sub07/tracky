@@ -5,7 +5,7 @@ use iced::{
         scrollable::{Direction, Properties},
         text, Component,
     },
-    Element, Font,
+    Element,
 };
 use iter_tools::Itertools;
 

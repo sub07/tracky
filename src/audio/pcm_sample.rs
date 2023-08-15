@@ -35,11 +35,13 @@ impl PcmStereoSample {
     }
 
     pub fn interpolate_frame_at_time(&self, time: Duration) -> (f32, f32) {
-        if time > self.duration() { return (0.0, 0.0); }
+        if time > self.duration() {
+            return (0.0, 0.0);
+        }
         let (frame_index, rem) = self.frame_index_at_time(time);
-        if frame_index == self.frames.len() - 1 { 
+        if frame_index == self.frames.len() - 1 {
             if let [.., last_frame] = self.frames.as_slice() {
-                return *last_frame; 
+                return *last_frame;
             }
         }
 
@@ -61,5 +63,4 @@ impl PcmStereoSample {
         let index = time.as_secs_f32() * self.sample_rate;
         (index as usize, index.fract())
     }
-
 }
