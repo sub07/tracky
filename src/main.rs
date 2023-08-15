@@ -1,3 +1,5 @@
+use audio::pcm_sample_player::PcmSamplePlayer;
+use audio::resample;
 use iced::event::Event;
 use iced::font::{Stretch, Weight};
 use iced::widget::scrollable;
@@ -29,6 +31,9 @@ const MONOSPACED_FONT: Font = Font {
 
 pub fn main() -> iced::Result {
     let sound = PcmStereoSample::from_path("piano.wav").unwrap();
+    let mut pcm_player = PcmSamplePlayer::new().unwrap();
+    let sound = resample(&sound, pcm_player.sample_rate);
+    pcm_player.queue_sound(&sound).unwrap();
     Tracky::run(Settings::default())
 }
 
@@ -240,7 +245,9 @@ impl Application for Tracky {
                 keybinding::Action::PreviousPattern => todo!(),
             },
             Message::FontLoaded(r) => {
-                println!("{r:?}");
+                if let Err(e) = r {
+                    panic!("{e:?}");
+                }
             }
         }
         Command::none()
