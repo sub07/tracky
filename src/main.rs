@@ -1,3 +1,4 @@
+use audio::generation::{SineWaveDescriptor, SquareWaveDescriptor, SawWaveDescriptor};
 use audio::pcm_sample_player::PcmSamplePlayer;
 use audio::resample;
 use iced::event::Event;
@@ -7,6 +8,7 @@ use iced::{
     executor, font, subscription, Application, Command, Element, Font, Renderer, Settings,
     Subscription, Theme,
 };
+use iter_tools::Itertools;
 use rust_utils_macro::New;
 
 use keybinding::KeyBindings;
@@ -30,10 +32,23 @@ const MONOSPACED_FONT: Font = Font {
 };
 
 pub fn main() -> iced::Result {
-    let sound = PcmStereoSample::from_path("piano.wav").unwrap();
     let mut pcm_player = PcmSamplePlayer::new().unwrap();
-    let sound = resample(&sound, pcm_player.sample_rate);
-    pcm_player.queue_sound(&sound).unwrap();
+
+    let sine_wave_generator = SineWaveDescriptor::new(0.1, 440.0, pcm_player.sample_rate as f64);
+    let mut sine_pcm_samples = sine_wave_generator.take((0.5 * pcm_player.sample_rate) as usize).collect_vec();
+
+    let square_wave_generator = SquareWaveDescriptor::new(440.0, 0.1, pcm_player.sample_rate as f64);
+    let square_pcm_samples = square_wave_generator.take((0.5 * pcm_player.sample_rate) as usize).collect_vec();
+
+    let saw_wave = SawWaveDescriptor::new(440.0, 0.1, pcm_player.sample_rate as f64);
+    let saw_pcm_samples = saw_wave.take((0.5 * pcm_player.sample_rate) as usize).collect_vec();
+
+    sine_pcm_samples.extend(square_pcm_samples.iter());
+    sine_pcm_samples.extend(saw_pcm_samples.iter());
+
+    let pcm_sample = PcmStereoSample::from_frames(sine_pcm_samples, pcm_player.sample_rate);
+
+    pcm_player.queue_pcm_samples(&pcm_sample).unwrap();
     Tracky::run(Settings::default())
 }
 

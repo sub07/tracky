@@ -30,6 +30,13 @@ impl PcmStereoSample {
         })
     }
 
+    pub fn from_frames(frames: Vec<(f32, f32)>, sample_rate: f32) -> PcmStereoSample {
+        Self {
+            frames,
+            sample_rate,
+        }
+    }
+
     pub fn duration(&self) -> Duration {
         Duration::from_secs_f32(self.frames.len() as f32 / self.sample_rate)
     }

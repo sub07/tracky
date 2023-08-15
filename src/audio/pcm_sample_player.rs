@@ -169,7 +169,7 @@ impl PcmSamplePlayer {
         })
     }
 
-    pub fn queue_sound(&mut self, sound: &PcmStereoSample) -> anyhow::Result<()> {
+    pub fn queue_pcm_samples(&mut self, sound: &PcmStereoSample) -> anyhow::Result<()> {
         self.stream_data
             .lock()
             .unwrap()
