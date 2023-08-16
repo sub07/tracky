@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use iter_tools::Itertools;
 use rust_utils::define_value_object;
 
 use self::pcm_sample::PcmStereoSample;
@@ -32,5 +33,21 @@ pub fn resample(src: &PcmStereoSample, target_sample_rate: f32) -> PcmStereoSamp
     PcmStereoSample {
         sample_rate: target_sample_rate,
         frames,
+    }
+}
+
+pub trait Samples {
+    fn next(&mut self, freq: f32, sample_rate: f32) -> Option<(f32, f32)>;
+
+    fn collect_for_duration(
+        &mut self,
+        duration: Duration,
+        freq: f32,
+        sample_rate: f32,
+    ) -> Vec<(f32, f32)> {
+        let nb_sample = sample_rate * duration.as_secs_f32();
+        (0..nb_sample as usize)
+            .map_while(|_| self.next(freq, sample_rate))
+            .collect_vec()
     }
 }

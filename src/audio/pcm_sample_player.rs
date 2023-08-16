@@ -178,6 +178,11 @@ impl PcmSamplePlayer {
         self.stream_commands_sender.send(StreamCommand::Play)?;
         Ok(())
     }
+
+    pub fn volume(&mut self, volume: Volume) {
+        let mut stream_data = self.stream_data.lock().unwrap();
+        stream_data.volume = volume;
+    }
 }
 
 impl Drop for PcmSamplePlayer {

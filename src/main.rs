@@ -1,5 +1,8 @@
+use std::time::Duration;
+
 use audio::generation::{SawWaveDescriptor, SineWaveDescriptor, SquareWaveDescriptor};
 use audio::pcm_sample_player::PcmSamplePlayer;
+use audio::{Samples, Volume};
 
 use iced::event::Event;
 use iced::font::{Stretch, Weight};
@@ -33,29 +36,17 @@ const MONOSPACED_FONT: Font = Font {
 
 pub fn main() -> iced::Result {
     let mut pcm_player = PcmSamplePlayer::new().unwrap();
+    pcm_player.volume(Volume::new(0.1).unwrap());
 
-    let sine_wave_generator = SineWaveDescriptor::new(0.1, 440.0, pcm_player.sample_rate as f64);
-    let mut sine_pcm_samples = sine_wave_generator
-        .take((0.5 * pcm_player.sample_rate) as usize)
-        .collect_vec();
+    let sine_pcm_frames = SineWaveDescriptor::new(1.0).collect_for_duration(
+        Duration::from_secs(3),
+        440.0,
+        pcm_player.sample_rate,
+    );
 
-    let square_wave_generator =
-        SquareWaveDescriptor::new(440.0, 0.1, pcm_player.sample_rate as f64);
-    let square_pcm_samples = square_wave_generator
-        .take((0.5 * pcm_player.sample_rate) as usize)
-        .collect_vec();
+    let sine_pcm_sample = PcmStereoSample::from_frames(sine_pcm_frames, pcm_player.sample_rate);
 
-    let saw_wave = SawWaveDescriptor::new(440.0, 0.1, pcm_player.sample_rate as f64);
-    let saw_pcm_samples = saw_wave
-        .take((0.5 * pcm_player.sample_rate) as usize)
-        .collect_vec();
-
-    sine_pcm_samples.extend(square_pcm_samples.iter());
-    sine_pcm_samples.extend(saw_pcm_samples.iter());
-
-    let pcm_sample = PcmStereoSample::from_frames(sine_pcm_samples, pcm_player.sample_rate);
-
-    pcm_player.queue_pcm_samples(&pcm_sample).unwrap();
+    pcm_player.queue_pcm_samples(&sine_pcm_sample).unwrap();
     Tracky::run(Settings::default())
 }
 
