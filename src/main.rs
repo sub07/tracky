@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use audio::generation::{SawWaveDescriptor, SineWaveDescriptor, SquareWaveDescriptor};
+use audio::generation::SineWaveDescriptor;
 use audio::pcm_sample_player::PcmSamplePlayer;
 use audio::{Samples, Volume};
 
