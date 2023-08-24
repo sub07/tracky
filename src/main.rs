@@ -8,8 +8,8 @@ use iced::event::Event;
 use iced::font::{Stretch, Weight};
 use iced::widget::scrollable;
 use iced::{
-    executor, font, subscription, Application, Command, Element, Font, Renderer, Settings,
-    Subscription, Theme, time,
+    executor, font, subscription, time, Application, Command, Element, Font, Renderer, Settings,
+    Subscription, Theme,
 };
 
 use keybinding::KeyBindings;
@@ -269,9 +269,18 @@ impl Application for Tracky {
                 self.sine_hz = value;
             }
             Message::Tick(now) => {
-                let pcm_samples = self.sine_generator.collect_for_duration(Duration::from_millis(10), self.sine_hz as f32, self.sample_player.sample_rate);
-                self.sample_player.queue_pcm_samples(&PcmStereoSample::from_frames(pcm_samples, self.sample_player.sample_rate)).unwrap();
-            },
+                let pcm_samples = self.sine_generator.collect_for_duration(
+                    Duration::from_millis(10),
+                    self.sine_hz as f32,
+                    self.sample_player.sample_rate,
+                );
+                self.sample_player
+                    .queue_pcm_samples(&PcmStereoSample::from_frames(
+                        pcm_samples,
+                        self.sample_player.sample_rate,
+                    ))
+                    .unwrap();
+            }
         }
         Command::none()
     }
