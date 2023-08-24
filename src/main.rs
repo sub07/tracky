@@ -268,7 +268,7 @@ impl Application for Tracky {
             Message::OnSineChanged(value) => {
                 self.sine_hz = value;
             }
-            Message::Tick(now) => {
+            Message::Tick(_now) => {
                 let pcm_samples = self.sine_generator.collect_for_duration(
                     Duration::from_millis(10),
                     self.sine_hz as f32,
