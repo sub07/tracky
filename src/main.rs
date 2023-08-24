@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use audio::generation::SineWaveDescriptor;
 use audio::pcm_sample_player::PcmSamplePlayer;
@@ -9,10 +9,8 @@ use iced::font::{Stretch, Weight};
 use iced::widget::scrollable;
 use iced::{
     executor, font, subscription, Application, Command, Element, Font, Renderer, Settings,
-    Subscription, Theme,
+    Subscription, Theme, time,
 };
-use iter_tools::Itertools;
-use rust_utils_macro::New;
 
 use keybinding::KeyBindings;
 use model::pattern::{HexDigit, NoteField, PatternCollection};
@@ -38,35 +36,26 @@ pub fn main() -> iced::Result {
     let mut pcm_player = PcmSamplePlayer::new().unwrap();
     pcm_player.volume(Volume::new(0.1).unwrap());
 
-    let sine_pcm_frames = SineWaveDescriptor::new(1.0).collect_for_duration(
-        Duration::from_secs(3),
-        440.0,
-        pcm_player.sample_rate,
-    );
+    // let sine_pcm_frames = SineWaveDescriptor::new(1.0).collect_for_duration(
+    //     Duration::from_secs(3),
+    //     440.0,
+    //     pcm_player.sample_rate,
+    // );
 
-    let sine_pcm_sample = PcmStereoSample::from_frames(sine_pcm_frames, pcm_player.sample_rate);
+    // let sine_pcm_sample = PcmStereoSample::from_frames(sine_pcm_frames, pcm_player.sample_rate);
 
-    pcm_player.queue_pcm_samples(&sine_pcm_sample).unwrap();
-    Tracky::run(Settings::default())
+    // pcm_player.queue_pcm_samples(&sine_pcm_sample).unwrap();
+    Tracky::run(Settings::with_flags(pcm_player))
 }
 
-#[derive(New)]
 struct Tracky {
     pattern_collection: PatternCollection,
     pattern_scroll_id: scrollable::Id,
     default_octave: OctaveValue,
     keybindings: KeyBindings,
-}
-
-impl Default for Tracky {
-    fn default() -> Self {
-        Self {
-            pattern_collection: Default::default(),
-            keybindings: Default::default(),
-            default_octave: OctaveValue::new(5).unwrap(),
-            pattern_scroll_id: scrollable::Id::unique(),
-        }
-    }
+    sample_player: PcmSamplePlayer,
+    sine_hz: i32,
+    sine_generator: SineWaveDescriptor,
 }
 
 #[derive(Debug, Clone)]
@@ -74,9 +63,23 @@ enum Message {
     EventOccurred(Event),
     TrackyAction(keybinding::Action),
     FontLoaded(Result<(), font::Error>),
+    OnSineChanged(i32),
+    Tick(Instant),
 }
 
 impl Tracky {
+    fn new(sample_player: PcmSamplePlayer) -> Self {
+        Self {
+            pattern_collection: Default::default(),
+            keybindings: Default::default(),
+            default_octave: OctaveValue::new(5).unwrap(),
+            pattern_scroll_id: scrollable::Id::unique(),
+            sample_player,
+            sine_hz: 100,
+            sine_generator: SineWaveDescriptor::new(1.0),
+        }
+    }
+
     pub fn convert_event_to_action(&self, event: Event) -> Option<keybinding::Action> {
         let input_context = self.pattern_collection.input_type();
         match event {
@@ -225,11 +228,11 @@ impl Application for Tracky {
     type Executor = executor::Default;
     type Message = Message;
     type Theme = Theme;
-    type Flags = ();
+    type Flags = PcmSamplePlayer;
 
-    fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
+    fn new(sample_player: Self::Flags) -> (Self, Command<Self::Message>) {
         (
-            Default::default(),
+            Tracky::new(sample_player),
             font::load(include_bytes!("../roboto_mono.ttf").as_slice()).map(Message::FontLoaded),
         )
     }
@@ -262,12 +265,23 @@ impl Application for Tracky {
                     panic!("{e:?}");
                 }
             }
+            Message::OnSineChanged(value) => {
+                self.sine_hz = value;
+            }
+            Message::Tick(now) => {
+                let pcm_samples = self.sine_generator.collect_for_duration(Duration::from_millis(10), self.sine_hz as f32, self.sample_player.sample_rate);
+                self.sample_player.queue_pcm_samples(&PcmStereoSample::from_frames(pcm_samples, self.sample_player.sample_rate)).unwrap();
+            },
         }
         Command::none()
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        patterns_component(&self.pattern_collection, self.pattern_scroll_id.clone()).into()
+        iced::widget::column![
+            iced::widget::slider(50..=1000, self.sine_hz, Message::OnSineChanged),
+            patterns_component(&self.pattern_collection, self.pattern_scroll_id.clone()),
+        ]
+        .into()
     }
 
     fn theme(&self) -> Self::Theme {
@@ -275,6 +289,9 @@ impl Application for Tracky {
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        subscription::events().map(Message::EventOccurred)
+        Subscription::batch([
+            time::every(Duration::from_millis(10)).map(Message::Tick),
+            subscription::events().map(Message::EventOccurred),
+        ])
     }
 }

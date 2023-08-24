@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-iced = { version = "0.10", features = ["advanced", "lazy", "wgpu"]}
+iced = { version = "0.10", features = ["advanced", "lazy", "wgpu", "smol"] }
 rust-utils = { git = "https://github.com/sub07/rust-utils" }
 rust-utils-macro = { git = "https://github.com/sub07/rust-utils" }
 iter_tools = "0.1"
