@@ -15,6 +15,7 @@ pub enum Action {
     InsertPattern,
     NextPattern,
     PreviousPattern,
+    TogglePlay,
 }
 
 #[derive(PartialEq, Eq, Debug, Hash)]
@@ -119,6 +120,7 @@ impl Default for KeyBindings {
                 KeyboardEvent::Key(KeyCode::Plus) => Action::NextPattern,
                 KeyboardEvent::Key(KeyCode::Minus) => Action::PreviousPattern,
                 KeyboardEvent::Key(KeyCode::Delete) => Action::ClearUnit,
+                KeyboardEvent::Key(KeyCode::Space) => Action::TogglePlay,
             ),
         );
 

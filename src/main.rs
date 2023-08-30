@@ -1,12 +1,13 @@
 use std::time::{Duration, Instant};
 
+use audio::audio_channel::handle_column;
 use audio::generation::SineWaveDescriptor;
 use audio::pcm_sample_player::PcmSamplePlayer;
 use audio::{Samples, Volume};
 
 use iced::event::Event;
 use iced::font::{Stretch, Weight};
-use iced::widget::scrollable;
+use iced::widget::{scrollable, text};
 use iced::{
     executor, font, subscription, time, Application, Command, Element, Font, Renderer, Settings,
     Subscription, Theme,
@@ -46,6 +47,7 @@ struct Tracky {
     sample_player: PcmSamplePlayer,
     sine_hz: i32,
     sine_generator: SineWaveDescriptor,
+    playing: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -67,6 +69,7 @@ impl Tracky {
             sample_player,
             sine_hz: 100,
             sine_generator: SineWaveDescriptor::new(1.0),
+            playing: false,
         }
     }
 
@@ -249,6 +252,30 @@ impl Application for Tracky {
                 keybinding::Action::InsertPattern => todo!(),
                 keybinding::Action::NextPattern => todo!(),
                 keybinding::Action::PreviousPattern => todo!(),
+                keybinding::Action::TogglePlay => {
+                    self.playing = !self.playing;
+                    let bps = 6.0;
+                    if self.playing {
+                        let mut channel = PcmStereoSample::from_duration(
+                            Duration::from_secs_f64(
+                                (1.0 / bps)
+                                    * self
+                                        .pattern_collection
+                                        .current_pattern()
+                                        .column(0)
+                                        .lines
+                                        .len() as f64,
+                            ),
+                            self.sample_player.sample_rate,
+                        );
+                        handle_column(
+                            bps,
+                            &mut channel,
+                            &self.pattern_collection.current_pattern().column(0),
+                        );
+                        self.sample_player.queue_pcm_samples(&channel).unwrap();
+                    }
+                }
             },
             Message::FontLoaded(r) => {
                 if let Err(e) = r {
@@ -259,17 +286,17 @@ impl Application for Tracky {
                 self.sine_hz = value;
             }
             Message::Tick(_now) => {
-                let pcm_samples = self.sine_generator.collect_for_duration(
-                    Duration::from_millis(10),
-                    self.sine_hz as f32,
-                    self.sample_player.sample_rate,
-                );
-                self.sample_player
-                    .queue_pcm_samples(&PcmStereoSample::from_frames(
-                        pcm_samples,
-                        self.sample_player.sample_rate,
-                    ))
-                    .unwrap();
+                // let pcm_samples = self.sine_generator.collect_for_duration(
+                //     Duration::from_millis(10),
+                //     self.sine_hz as f32,
+                //     self.sample_player.sample_rate,
+                // );
+                // self.sample_player
+                //     .queue_pcm_samples(&PcmStereoSample::from_frames(
+                //         pcm_samples,
+                //         self.sample_player.sample_rate,
+                //     ))
+                //     .unwrap();
             }
         }
         Command::none()
@@ -277,8 +304,8 @@ impl Application for Tracky {
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
         iced::widget::column![
-            iced::widget::slider(50..=3000, self.sine_hz, Message::OnSineChanged),
-            // patterns_component(&self.pattern_collection, self.pattern_scroll_id.clone()),
+            text(if self.playing { "playing" } else { "editing" }),
+            patterns_component(&self.pattern_collection, self.pattern_scroll_id.clone()),
         ]
         .into()
     }

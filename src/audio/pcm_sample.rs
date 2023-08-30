@@ -1,6 +1,6 @@
 use iter_tools::Itertools;
 use rust_utils::iter::zip_self::ZipSelf;
-use std::{path::Path, time::Duration, io::Write};
+use std::{io::Write, path::Path, time::Duration};
 
 use anyhow::bail;
 
@@ -37,6 +37,14 @@ impl PcmStereoSample {
         }
     }
 
+    pub fn from_duration(duration: Duration, sample_rate: f32) -> PcmStereoSample {
+        let nb_frame = duration.as_secs_f32() * sample_rate;
+        Self {
+            frames: vec![(0f32, 0f32); nb_frame as usize],
+            sample_rate,
+        }
+    }
+
     pub fn duration(&self) -> Duration {
         Duration::from_secs_f32(self.frames.len() as f32 / self.sample_rate)
     }
@@ -64,6 +72,13 @@ impl PcmStereoSample {
     pub fn set_frame_at_time(&mut self, time: Duration, frame: (f32, f32)) {
         let (frame_index, _) = self.frame_index_at_time(time);
         self.frames[frame_index] = frame;
+    }
+
+    pub fn set_frames_at_time(&mut self, time: Duration, frames: Vec<(f32, f32)>) {
+        let (frame_index, _) = self.frame_index_at_time(time);
+        let dest_upper_index = usize::min(self.frames.len() - 1, frame_index + frames.len());
+        self.frames[frame_index..dest_upper_index]
+            .copy_from_slice(&frames[..(dest_upper_index - frame_index)]);
     }
 
     fn frame_index_at_time(&self, time: Duration) -> (usize, f32) {
