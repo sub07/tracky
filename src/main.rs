@@ -35,16 +35,6 @@ const MONOSPACED_FONT: Font = Font {
 pub fn main() -> iced::Result {
     let mut pcm_player = PcmSamplePlayer::new().unwrap();
     pcm_player.volume(Volume::new(0.1).unwrap());
-
-    // let sine_pcm_frames = SineWaveDescriptor::new(1.0).collect_for_duration(
-    //     Duration::from_secs(3),
-    //     440.0,
-    //     pcm_player.sample_rate,
-    // );
-
-    // let sine_pcm_sample = PcmStereoSample::from_frames(sine_pcm_frames, pcm_player.sample_rate);
-
-    // pcm_player.queue_pcm_samples(&sine_pcm_sample).unwrap();
     Tracky::run(Settings::with_flags(pcm_player))
 }
 
@@ -287,8 +277,8 @@ impl Application for Tracky {
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
         iced::widget::column![
-            iced::widget::slider(50..=1000, self.sine_hz, Message::OnSineChanged),
-            patterns_component(&self.pattern_collection, self.pattern_scroll_id.clone()),
+            iced::widget::slider(50..=3000, self.sine_hz, Message::OnSineChanged),
+            // patterns_component(&self.pattern_collection, self.pattern_scroll_id.clone()),
         ]
         .into()
     }

@@ -8,6 +8,7 @@ use self::pcm_sample::PcmStereoSample;
 pub mod generation;
 pub mod pcm_sample;
 pub mod pcm_sample_player;
+pub mod audio_channel;
 
 define_value_object!(pub Volume, f32, 1.0, |v| { (0.0..=1.0).contains(&v) });
 define_value_object!(pub Pan, f32, 0.0, |v| { (-1.0..=1.0).contains(&v) });
