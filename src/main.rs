@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use audio::audio_channel::handle_column;
 use audio::generation::SineWaveDescriptor;
 use audio::pcm_sample_player::PcmSamplePlayer;
-use audio::{Samples, Volume};
+use audio::Volume;
 
 use iced::event::Event;
 use iced::font::{Stretch, Weight};
@@ -94,19 +94,20 @@ impl Tracky {
         }
     }
 
-    pub fn get_current_octave(&self) -> OctaveValue {
-        self.pattern_collection
-            .current_line()
-            .note_field
-            .note
-            .map(|n| n.octave)
-            .unwrap_or(self.default_octave)
+    pub fn get_current_octave_or_default(&self) -> OctaveValue {
+        match self.pattern_collection.current_line().note_field.note {
+            Some(note) => match note {
+                NoteValue::Cut => self.default_octave,
+                NoteValue::Note(_, octave) => octave,
+            },
+            _ => self.default_octave,
+        }
     }
 
     pub fn set_note(&mut self, note: Note) {
-        let octave = self.get_current_octave();
+        let octave = self.get_current_octave_or_default();
         self.pattern_collection.current_line_mut().note_field =
-            NoteField::new(Some(NoteValue::new(note, octave)));
+            NoteField::new(Some(NoteValue::Note(note, octave)));
     }
 
     pub fn set_velocity(&mut self, hex_value: HexValue) {
@@ -144,8 +145,10 @@ impl Tracky {
     }
 
     pub fn set_octave(&mut self, octave: OctaveValue) {
-        if let Some(note) = &mut self.pattern_collection.current_line_mut().note_field.note {
-            note.octave = octave
+        if let Some(NoteValue::Note(_, field_octave)) =
+            &mut self.pattern_collection.current_line_mut().note_field.note
+        {
+            *field_octave = octave
         }
     }
 
@@ -275,6 +278,10 @@ impl Application for Tracky {
                         );
                         self.sample_player.queue_pcm_samples(&channel).unwrap();
                     }
+                }
+                keybinding::Action::SetNoteCut => {
+                    self.pattern_collection.current_line_mut().note_field.note =
+                        Some(NoteValue::Cut)
                 }
             },
             Message::FontLoaded(r) => {

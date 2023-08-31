@@ -5,7 +5,7 @@ use iced::{
 use rust_utils_macro::New;
 
 use crate::{
-    model::{pattern::ColumnLine, Note, OctaveValue},
+    model::{pattern::ColumnLine, OctaveValue, NoteValue, Note},
     view::{
         widget::input_unit::{input_unit, input_unit_spacer},
         CustomRenderer,
@@ -39,35 +39,40 @@ where
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, R> {
         let (note_char_1, note_char_2, octave_char) =
             if let Some(note_value) = self.line.note_field.note {
-                let (note_1, note_2) = match note_value.note {
-                    Note::A => ('A', '-'),
-                    Note::B => ('B', '-'),
-                    Note::C => ('C', '-'),
-                    Note::D => ('D', '-'),
-                    Note::E => ('E', '-'),
-                    Note::F => ('F', '-'),
-                    Note::G => ('G', '-'),
-                    Note::CSharp => ('C', '#'),
-                    Note::DSharp => ('D', '#'),
-                    Note::FSharp => ('F', '#'),
-                    Note::GSharp => ('G', '#'),
-                    Note::ASharp => ('A', '#'),
-                };
-                let OctaveValue(octave) = note_value.octave;
-                let octave_char = match octave {
-                    0 => '0',
-                    1 => '1',
-                    2 => '2',
-                    3 => '3',
-                    4 => '4',
-                    5 => '5',
-                    6 => '6',
-                    7 => '7',
-                    8 => '8',
-                    9 => '9',
-                    _ => panic!("Cannot happen"),
-                };
-                (Some(note_1), Some(note_2), Some(octave_char))
+                match note_value {
+                    NoteValue::Note(note, octave) => {
+                        let (note_1, note_2) = match note {
+                            Note::A => ('A', '-'),
+                            Note::B => ('B', '-'),
+                            Note::C => ('C', '-'),
+                            Note::D => ('D', '-'),
+                            Note::E => ('E', '-'),
+                            Note::F => ('F', '-'),
+                            Note::G => ('G', '-'),
+                            Note::CSharp => ('C', '#'),
+                            Note::DSharp => ('D', '#'),
+                            Note::FSharp => ('F', '#'),
+                            Note::GSharp => ('G', '#'),
+                            Note::ASharp => ('A', '#'),
+                        };
+                        let OctaveValue(octave) = octave;
+                        let octave_char = match octave {
+                            0 => '0',
+                            1 => '1',
+                            2 => '2',
+                            3 => '3',
+                            4 => '4',
+                            5 => '5',
+                            6 => '6',
+                            7 => '7',
+                            8 => '8',
+                            9 => '9',
+                            _ => panic!("Cannot happen"),
+                        };
+                        (Some(note_1), Some(note_2), Some(octave_char))
+                    }
+                    NoteValue::Cut => (Some('C'), Some('U'), Some('T')),
+                }
             } else {
                 (None, None, None)
             };

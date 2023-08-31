@@ -1,7 +1,6 @@
 use anyhow::bail;
 use anyhow::Result;
 use rust_utils_macro::EnumValue;
-use rust_utils_macro::New;
 
 pub mod pattern;
 
@@ -34,10 +33,10 @@ impl OctaveValue {
     }
 }
 
-#[derive(New, Copy, Clone)]
-pub struct NoteValue {
-    pub note: Note,
-    pub octave: OctaveValue,
+#[derive(Copy, Clone)]
+pub enum NoteValue {
+    Note(Note, OctaveValue),
+    Cut,
 }
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug, EnumValue)]

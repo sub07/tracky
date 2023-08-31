@@ -16,6 +16,7 @@ pub enum Action {
     NextPattern,
     PreviousPattern,
     TogglePlay,
+    SetNoteCut,
 }
 
 #[derive(PartialEq, Eq, Debug, Hash)]
@@ -80,6 +81,7 @@ impl Default for KeyBindings {
                 KeyboardEvent::Key(KeyCode::Y) => Action::Note(Note::A),
                 KeyboardEvent::Key(KeyCode::Key7) => Action::Note(Note::ASharp),
                 KeyboardEvent::Key(KeyCode::U) => Action::Note(Note::B),
+                KeyboardEvent::Key(KeyCode::Key1) => Action::SetNoteCut,
             ),
             InputContext::Octave => hash_map_of!(
                 KeyboardEvent::Key(KeyCode::Key0) => Action::Octave(OctaveValue::new(0).unwrap()),
