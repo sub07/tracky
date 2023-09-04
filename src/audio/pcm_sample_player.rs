@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 use std::iter::Peekable;
+use std::ops::DerefMut;
 use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -180,8 +181,17 @@ impl PcmSamplePlayer {
     }
 
     pub fn volume(&mut self, volume: Volume) {
-        let mut stream_data = self.stream_data.lock().unwrap();
-        stream_data.volume = volume;
+        self.data_mut().volume = volume;
+    }
+
+    pub fn pause_and_clear(&mut self) -> anyhow::Result<()> {
+        self.stream_commands_sender.send(StreamCommand::Pause)?;
+        self.data_mut().queue.clear();
+        Ok(())
+    }
+
+    fn data_mut(&mut self) -> impl DerefMut<Target = StreamData> + '_ {
+        self.stream_data.lock().unwrap()
     }
 }
 

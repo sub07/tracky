@@ -277,6 +277,8 @@ impl Application for Tracky {
                             &self.pattern_collection.current_pattern().column(0),
                         );
                         self.sample_player.queue_pcm_samples(&channel).unwrap();
+                    } else {
+                        self.sample_player.pause_and_clear().unwrap();
                     }
                 }
                 keybinding::Action::SetNoteCut => {
