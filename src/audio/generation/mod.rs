@@ -2,69 +2,67 @@ use std::f32::consts::PI;
 
 use rust_utils_macro::New;
 
-use super::Samples;
+use super::{frame, Samples};
 
-#[derive(New)]
-pub struct SineWaveDescriptor {
-    #[new_default]
-    phase: f32,
-    amp: f32,
-}
+pub struct SineWaveDescriptor;
 
 impl Samples for SineWaveDescriptor {
-    fn next(&mut self, freq: f32, sample_rate: f32) -> Option<(f32, f32)> {
-        let sample = self.phase.sin() * self.amp;
-        self.phase += 2.0 * PI * freq / sample_rate;
-        Some((sample, sample))
+    fn next(
+        &mut self,
+        freq: f32,
+        amp: f32,
+        phase: &mut f32,
+        sample_rate: f32,
+    ) -> Option<(f32, f32)> {
+        let s = phase.sin() * amp;
+        *phase += 2.0 * PI * freq / sample_rate;
+        Some((s, s))
     }
 }
 
-#[derive(New)]
-pub struct SquareWaveDescriptor {
-    #[new_default]
-    phase: f32,
-    amp: f32,
-}
+pub struct SquareWaveDescriptor;
 
 impl Samples for SquareWaveDescriptor {
-    fn next(&mut self, freq: f32, sample_rate: f32) -> Option<(f32, f32)> {
+    fn next(
+        &mut self,
+        freq: f32,
+        amp: f32,
+        phase: &mut f32,
+        sample_rate: f32,
+    ) -> Option<(f32, f32)> {
         let half_freq_period = 1.0 / freq / 2.0;
         let freq_period = 1.0 / freq;
 
-        let sample = if self.phase < half_freq_period {
-            1.0
-        } else {
-            -1.0
-        } * self.amp;
-        let sample = sample as f32;
+        let sample = if *phase < half_freq_period { 1.0 } else { -1.0 } * amp;
+        let s = sample as f32;
 
-        self.phase += 1.0 / sample_rate;
-        if self.phase > freq_period {
-            self.phase -= freq_period;
+        *phase += 1.0 / sample_rate;
+        if *phase > freq_period {
+            *phase -= freq_period;
         }
 
-        Some((sample, sample))
+        Some((s, s))
     }
 }
-
-#[derive(New)]
-pub struct SawWaveDescriptor {
-    #[new_default]
-    phase: f32,
-    amp: f32,
-}
+pub struct SawWaveDescriptor;
 
 impl Samples for SawWaveDescriptor {
-    fn next(&mut self, freq: f32, sample_rate: f32) -> Option<(f32, f32)> {
+    fn next(
+        &mut self,
+        freq: f32,
+        amp: f32,
+        phase: &mut f32,
+        sample_rate: f32,
+    ) -> Option<(f32, f32)> {
         let freq_period = 1.0 / freq;
-        let normalized_position = self.phase / freq_period;
-        let sample = -1.0 + (1.0 - -1.0) * normalized_position * self.amp;
-        let sample = sample as f32;
-        self.phase += 1.0 / sample_rate;
-        if self.phase > freq_period {
-            self.phase -= freq_period;
+        let normalized_position = *phase / freq_period;
+        let sample = -1.0 + (1.0 - -1.0) * normalized_position * amp;
+        let s = sample as f32;
+        *phase += 1.0 / sample_rate;
+        if *phase > freq_period {
+            *phase -= freq_period;
         }
 
-        Some((sample, sample))
+        Some((s, s))
     }
 }

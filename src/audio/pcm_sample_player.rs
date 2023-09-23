@@ -10,7 +10,7 @@ use anyhow::{anyhow, bail};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use rust_utils_macro::New;
 
-use super::pcm_sample::PcmStereoSample;
+use super::signal::StereoSignal;
 use super::{Pan, Volume};
 
 #[derive(New, Default)]
@@ -170,12 +170,10 @@ impl PcmSamplePlayer {
         })
     }
 
-    pub fn queue_pcm_samples(&mut self, sound: &PcmStereoSample) -> anyhow::Result<()> {
-        self.stream_data
-            .lock()
-            .unwrap()
+    pub fn queue_pcm_signal(&mut self, signal: &StereoSignal) -> anyhow::Result<()> {
+        self.data_mut()
             .queue
-            .push_back(sound.frames.clone().into_iter().peekable());
+            .push_back(signal.frames.clone().into_iter().peekable());
         self.stream_commands_sender.send(StreamCommand::Play)?;
         Ok(())
     }

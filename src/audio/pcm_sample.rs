@@ -17,7 +17,7 @@ impl PcmStereoSample {
         if desc.channel_count() > 2 {
             bail!("Invalid number of channel: {}", desc.channel_count());
         }
-        let samples = audio_file.samples().map(Result::unwrap).collect_vec();
+        let samples = audio_file.samples().map_while(|f| f.ok()).collect_vec();
         let samples = if desc.channel_count() == 1 {
             samples.into_iter().zip_self(2).collect_vec()
         } else {

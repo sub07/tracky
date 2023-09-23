@@ -3,7 +3,8 @@ use std::time::{Duration, Instant};
 use audio::audio_channel::handle_column;
 use audio::generation::SineWaveDescriptor;
 use audio::pcm_sample_player::PcmSamplePlayer;
-use audio::Volume;
+use audio::signal::StereoSignal;
+use audio::{Samples, Volume};
 
 use iced::event::Event;
 use iced::font::{Stretch, Weight};
@@ -17,7 +18,6 @@ use keybinding::KeyBindings;
 use model::pattern::{HexDigit, NoteField, PatternCollection};
 use model::{HexValue, Note, NoteValue, OctaveValue};
 
-use crate::audio::pcm_sample::PcmStereoSample;
 use crate::model::pattern::ColumnLineElement;
 use crate::view::component::patterns::patterns_component;
 
@@ -68,7 +68,7 @@ impl Tracky {
             pattern_scroll_id: scrollable::Id::unique(),
             sample_player,
             sine_hz: 100,
-            sine_generator: SineWaveDescriptor::new(1.0),
+            sine_generator: SineWaveDescriptor,
             playing: false,
         }
     }
@@ -259,7 +259,7 @@ impl Application for Tracky {
                     self.playing = !self.playing;
                     let bps = 6.0;
                     if self.playing {
-                        let mut channel = PcmStereoSample::from_duration(
+                        let mut channel = StereoSignal::new(
                             Duration::from_secs_f64(
                                 (1.0 / bps)
                                     * self
@@ -276,7 +276,7 @@ impl Application for Tracky {
                             &mut channel,
                             &self.pattern_collection.current_pattern().column(0),
                         );
-                        self.sample_player.queue_pcm_samples(&channel).unwrap();
+                        self.sample_player.queue_pcm_signal(&channel).unwrap();
                     } else {
                         self.sample_player.pause_and_clear().unwrap();
                     }
@@ -295,14 +295,15 @@ impl Application for Tracky {
                 self.sine_hz = value;
             }
             Message::Tick(_now) => {
-                // let pcm_samples = self.sine_generator.collect_for_duration(
+                // let frames = Samples::<audio::frame::Mono>::collect_for_duration(
+                //     &mut self.sine_generator,
                 //     Duration::from_millis(10),
                 //     self.sine_hz as f32,
                 //     self.sample_player.sample_rate,
                 // );
                 // self.sample_player
-                //     .queue_pcm_samples(&PcmStereoSample::from_frames(
-                //         pcm_samples,
+                //     .queue_pcm_signal(&BufferSignal::from_frames(
+                //         frames,
                 //         self.sample_player.sample_rate,
                 //     ))
                 //     .unwrap();
