@@ -4,7 +4,7 @@ use audio::audio_channel::handle_column;
 use audio::generation::SineWaveDescriptor;
 use audio::pcm_sample_player::PcmSamplePlayer;
 use audio::signal::StereoSignal;
-use audio::{Samples, Volume};
+use audio::Volume;
 
 use iced::event::Event;
 use iced::font::{Stretch, Weight};

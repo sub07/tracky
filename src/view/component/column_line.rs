@@ -5,7 +5,7 @@ use iced::{
 use rust_utils_macro::New;
 
 use crate::{
-    model::{pattern::ColumnLine, OctaveValue, NoteValue, Note},
+    model::{pattern::ColumnLine, Note, NoteValue, OctaveValue},
     view::{
         widget::input_unit::{input_unit, input_unit_spacer},
         CustomRenderer,

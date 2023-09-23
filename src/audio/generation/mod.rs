@@ -1,8 +1,6 @@
 use std::f32::consts::PI;
 
-use rust_utils_macro::New;
-
-use super::{frame, Samples};
+use super::Samples;
 
 pub struct SineWaveDescriptor;
 

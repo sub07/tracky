@@ -3,9 +3,8 @@ use std::time::Duration;
 use crate::model::pattern::Column;
 
 use super::{
-    frame,
     generation::{SawWaveDescriptor, SineWaveDescriptor, SquareWaveDescriptor},
-    signal::{self, StereoSignal},
+    signal::StereoSignal,
     Samples,
 };
 

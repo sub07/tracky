@@ -39,7 +39,13 @@ pub fn resample(src: &StereoSignal, target_sample_rate: f32) -> StereoSignal {
 }
 
 pub trait Samples {
-    fn next(&mut self, freq: f32, amp: f32, phase: &mut f32, sample_rate: f32) -> Option<(f32, f32)>;
+    fn next(
+        &mut self,
+        freq: f32,
+        amp: f32,
+        phase: &mut f32,
+        sample_rate: f32,
+    ) -> Option<(f32, f32)>;
 
     fn collect_for_duration(
         &mut self,
