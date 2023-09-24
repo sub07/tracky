@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use audio::audio_channel::handle_column;
 use audio::generation::SineWaveDescriptor;
-use audio::pcm_sample_player::PcmSamplePlayer;
+use audio::player::PcmSamplePlayer;
 use audio::signal::StereoSignal;
 use audio::Volume;
 

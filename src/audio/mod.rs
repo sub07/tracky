@@ -8,7 +8,7 @@ use self::signal::StereoSignal;
 pub mod audio_channel;
 pub mod frame;
 pub mod generation;
-pub mod pcm_sample_player;
+pub mod player;
 pub mod signal;
 
 define_value_object!(pub Volume, f32, 1.0, |v| { (0.0..=1.0).contains(&v) });
