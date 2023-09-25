@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use audio::audio_channel::handle_column;
 use audio::generation::SineWaveDescriptor;
-use audio::player::PcmSamplePlayer;
+use audio::player::Player;
 use audio::signal::StereoSignal;
 use audio::Volume;
 
@@ -34,9 +34,12 @@ const MONOSPACED_FONT: Font = Font {
 };
 
 pub fn main() -> iced::Result {
-    let mut pcm_player = PcmSamplePlayer::new().unwrap();
-    pcm_player.volume(Volume::new(0.1).unwrap());
-    Tracky::run(Settings::with_flags(pcm_player))
+    Tracky::run(Settings::default())
+}
+
+pub enum PlayingState {
+    Stopped,
+    Playing(audio::player::Player),
 }
 
 struct Tracky {
@@ -44,13 +47,12 @@ struct Tracky {
     pattern_scroll_id: scrollable::Id,
     default_octave: OctaveValue,
     keybindings: KeyBindings,
-    sample_player: PcmSamplePlayer,
+    playing_state: PlayingState,
     sine_hz: i32,
     sine_generator: SineWaveDescriptor,
-    playing: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 enum Message {
     EventOccurred(Event),
     TrackyAction(keybinding::Action),
@@ -60,16 +62,15 @@ enum Message {
 }
 
 impl Tracky {
-    fn new(sample_player: PcmSamplePlayer) -> Self {
+    fn new() -> Self {
         Self {
             pattern_collection: Default::default(),
             keybindings: Default::default(),
             default_octave: OctaveValue::new(5).unwrap(),
             pattern_scroll_id: scrollable::Id::unique(),
-            sample_player,
+            playing_state: PlayingState::Stopped,
             sine_hz: 100,
             sine_generator: SineWaveDescriptor,
-            playing: false,
         }
     }
 
@@ -224,11 +225,11 @@ impl Application for Tracky {
     type Executor = executor::Default;
     type Message = Message;
     type Theme = Theme;
-    type Flags = PcmSamplePlayer;
+    type Flags = ();
 
-    fn new(sample_player: Self::Flags) -> (Self, Command<Self::Message>) {
+    fn new(_: Self::Flags) -> (Self, Command<Self::Message>) {
         (
-            Tracky::new(sample_player),
+            Tracky::new(),
             font::load(include_bytes!("../roboto_mono.ttf").as_slice()).map(Message::FontLoaded),
         )
     }
@@ -256,9 +257,12 @@ impl Application for Tracky {
                 keybinding::Action::NextPattern => todo!(),
                 keybinding::Action::PreviousPattern => todo!(),
                 keybinding::Action::TogglePlay => {
-                    self.playing = !self.playing;
-                    let bps = 6.0;
-                    if self.playing {
+                    self.playing_state = if let PlayingState::Playing(_) = self.playing_state {
+                        PlayingState::Stopped
+                    } else {
+                        let bps = 6.0;
+                        let mut player = audio::player::Player::new().unwrap();
+                        player.volume(Volume::new(0.1).unwrap());
                         let mut channel = StereoSignal::new(
                             Duration::from_secs_f64(
                                 (1.0 / bps)
@@ -269,16 +273,16 @@ impl Application for Tracky {
                                         .lines
                                         .len() as f64,
                             ),
-                            self.sample_player.sample_rate,
+                            player.sample_rate,
                         );
+
                         handle_column(
                             bps,
                             &mut channel,
                             &self.pattern_collection.current_pattern().column(0),
                         );
-                        self.sample_player.queue_pcm_signal(&channel).unwrap();
-                    } else {
-                        self.sample_player.pause_and_clear().unwrap();
+                        player.play_signal(&channel).unwrap();
+                        PlayingState::Playing(player)
                     }
                 }
                 keybinding::Action::SetNoteCut => {
@@ -314,7 +318,11 @@ impl Application for Tracky {
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
         iced::widget::column![
-            text(if self.playing { "playing" } else { "editing" }),
+            text(if let PlayingState::Playing(_) = &self.playing_state {
+                "playing"
+            } else {
+                "editing"
+            }),
             patterns_component(&self.pattern_collection, self.pattern_scroll_id.clone()),
         ]
         .into()

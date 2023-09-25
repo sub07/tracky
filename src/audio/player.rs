@@ -1,5 +1,7 @@
 use std::collections::VecDeque;
+use std::fmt::Debug;
 use std::iter::Peekable;
+use std::marker::PhantomData;
 use std::ops::DerefMut;
 use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
@@ -33,15 +35,24 @@ enum StreamCreationMessage {
     Done,
 }
 
-pub struct PcmSamplePlayer {
+impl Debug for Player {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Player")
+            .field("sample_rate", &self.sample_rate)
+            .field("nb_channel", &self.nb_channel)
+            .finish()
+    }
+}
+
+pub struct Player {
     pub sample_rate: f32,
     pub nb_channel: u32,
     stream_data: Arc<Mutex<StreamData>>,
     stream_commands_sender: Sender<StreamCommand>,
 }
 
-impl PcmSamplePlayer {
-    pub fn new() -> anyhow::Result<PcmSamplePlayer> {
+impl Player {
+    pub fn new() -> anyhow::Result<Player> {
         let stream_data = Arc::new(Mutex::new(StreamData::default()));
         let stream_data_clone = stream_data.clone();
 
@@ -162,7 +173,7 @@ impl PcmSamplePlayer {
             bail!("Stream done message was not returned: {message:?}");
         };
 
-        Ok(PcmSamplePlayer {
+        Ok(Player {
             sample_rate: sample_rate as f32,
             nb_channel,
             stream_commands_sender,
@@ -170,7 +181,8 @@ impl PcmSamplePlayer {
         })
     }
 
-    pub fn queue_pcm_signal(&mut self, signal: &StereoSignal) -> anyhow::Result<()> {
+    pub fn play_signal(&mut self, signal: &StereoSignal) -> anyhow::Result<()> {
+        self.clear();
         self.data_mut()
             .queue
             .push_back(signal.frames.clone().into_iter().peekable());
@@ -182,10 +194,17 @@ impl PcmSamplePlayer {
         self.data_mut().volume = volume;
     }
 
-    pub fn pause_and_clear(&mut self) -> anyhow::Result<()> {
-        self.stream_commands_sender.send(StreamCommand::Pause)?;
-        self.data_mut().queue.clear();
+    pub fn pan(&mut self, pan: Pan) {
+        self.data_mut().pan = pan;
+    }
+
+    pub fn stop(&mut self) -> anyhow::Result<()> {
+        self.stream_commands_sender.send(StreamCommand::Stop)?;
         Ok(())
+    }
+
+    fn clear(&mut self) {
+        self.data_mut().queue.clear();
     }
 
     fn data_mut(&mut self) -> impl DerefMut<Target = StreamData> + '_ {
@@ -193,10 +212,8 @@ impl PcmSamplePlayer {
     }
 }
 
-impl Drop for PcmSamplePlayer {
+impl Drop for Player {
     fn drop(&mut self) {
-        self.stream_commands_sender
-            .send(StreamCommand::Stop)
-            .unwrap();
+        self.stop().unwrap()
     }
 }
