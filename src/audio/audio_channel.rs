@@ -3,7 +3,7 @@ use std::time::Duration;
 use crate::model::pattern::Column;
 
 use super::{
-    generation::{SawWaveDescriptor, SineWaveDescriptor, SquareWaveDescriptor},
+    generation::{SawWaveDescriptor, SineWaveDescriptor, SquareWaveDescriptor, SampleParametersInterpolator},
     signal::StereoSignal,
     Samples,
 };
@@ -18,9 +18,9 @@ pub fn handle_column(bps: f64, out: &mut StereoSignal, column: &Column) {
     for line in &column.lines {
         if let Some(new_instrument_index) = line.instrument_field.value {
             let instrument = match new_instrument_index {
-                0 => Some(Box::new(SineWaveDescriptor) as _),
-                1 => Some(Box::new(SquareWaveDescriptor) as _),
-                2 => Some(Box::new(SawWaveDescriptor) as _),
+                0 => Some(Box::new(SampleParametersInterpolator::new(SineWaveDescriptor)) as _),
+                1 => Some(Box::new(SampleParametersInterpolator::new(SquareWaveDescriptor)) as _),
+                2 => Some(Box::new(SampleParametersInterpolator::new(SawWaveDescriptor)) as _),
                 _ => None,
             };
             if let Some((_, current_instrument_index)) = current_instrument {

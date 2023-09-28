@@ -15,7 +15,7 @@ use iced::{
 };
 
 use keybinding::KeyBindings;
-use model::pattern::{HexDigit, NoteField, PatternCollection};
+use model::pattern::{HexDigit, HexField, NoteField, PatternCollection};
 use model::{HexValue, Note, NoteValue, OctaveValue};
 
 use crate::model::pattern::ColumnLineElement;
@@ -34,7 +34,32 @@ const MONOSPACED_FONT: Font = Font {
 };
 
 pub fn main() -> iced::Result {
+    // std::fs::remove_file("sig.wav");
+    // let mut column = model::pattern::Column::default();
+    // column.line_mut(0).note_field =
+    //     NoteField::new(NoteValue::Note(Note::A, OctaveValue::new(5).unwrap()));
+    // column.line_mut(0).instrument_field = HexField { value: Some(0) };
+    // let mut line_index = 0;
+    // let mut vel = 255;
+    // while line_index < 15 {
+    //     column.line_mut(line_index).velocity_field = HexField { value: Some(vel) };
+    //     line_index += 1;
+    //     vel -= 15;
+    // }
+
+    // let bps = 6.0;
+    // let mut player = audio::player::Player::new().unwrap();
+    // player.volume(Volume::new(0.1).unwrap());
+    // let mut channel = StereoSignal::new(
+    //     Duration::from_secs_f64((1.0 / bps) * column.lines.len() as f64),
+    //     player.sample_rate,
+    // );
+
+    // handle_column(bps, &mut channel, &column);
+    // channel.write_signal_to_disk("sig.wav".into()).unwrap();
+
     Tracky::run(Settings::default())
+    // Ok(()) 
 }
 
 pub enum PlayingState {
@@ -281,6 +306,7 @@ impl Application for Tracky {
                             &mut channel,
                             &self.pattern_collection.current_pattern().column(0),
                         );
+                        // channel.write_signal_to_disk("sig.wav".into()).unwrap();
                         player.play_signal(&channel).unwrap();
                         PlayingState::Playing(player)
                     }

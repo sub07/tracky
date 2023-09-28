@@ -81,4 +81,27 @@ impl StereoSignal {
         self.frames[frame_index..dest_upper_index]
             .copy_from_slice(&frames[..(dest_upper_index - frame_index)]);
     }
+
+    pub fn write_signal_to_disk(&self, file_name: String) -> anyhow::Result<()> {
+        let mut bytes = Vec::new();
+        for (l, r) in self.frames.iter() {
+            bytes.extend(l.to_le_bytes());
+            bytes.extend(r.to_le_bytes());
+        }
+
+        let temp_file_name = format!("{}-temp.raw", file_name);
+        std::fs::write(&temp_file_name, &bytes)?;
+
+        std::process::Command::new("C:\\Users\\mpardo\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-6.0-full_build\\bin\\ffmpeg.exe")
+        .arg("-f").arg("f32le")
+        .arg("-ar").arg(format!("{}", self.sample_rate as u32))
+        .arg("-ac").arg("2")
+        .arg("-i").arg(&temp_file_name)
+        .arg(file_name)
+        .output().unwrap();
+
+        std::fs::remove_file(&temp_file_name)?;
+
+        Ok(())
+    }
 }
