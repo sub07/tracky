@@ -1,6 +1,6 @@
 use iced::{Command, widget::scrollable, Event};
 
-use crate::{Tracky, model::{OctaveValue, NoteValue, Note, pattern::{NoteField, DigitIndex, ColumnLineElement}, value_object::HexDigit}, keybinding};
+use crate::{Tracky, model::{value_object::OctaveValue, NoteValue, Note, pattern::{NoteField, DigitIndex, ColumnLineElement}, value_object::HexDigit}, keybinding};
 
 impl Tracky {
     pub fn get_current_octave_or_default(&self) -> OctaveValue {

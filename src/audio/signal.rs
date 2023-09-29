@@ -75,11 +75,13 @@ impl StereoSignal {
         frame::interpolate(f1, f2, rem)
     }
 
-    pub fn write_frames_at_duration(&mut self, duration: Duration, frames: &[(f32, f32)]) {
+    pub fn write_frames_at_duration(&mut self, duration: Duration, signal: &StereoSignal) -> anyhow::Result<()> {
+        anyhow::ensure!(self.sample_rate == signal.sample_rate, "The two signal have different sample rate");
         let (frame_index, _) = self.frame_index_from_duration(duration);
-        let dest_upper_index = usize::min(self.frames.len() - 1, frame_index + frames.len());
+        let dest_upper_index = usize::min(self.frames.len() - 1, frame_index + signal.frames.len());
         self.frames[frame_index..dest_upper_index]
-            .copy_from_slice(&frames[..(dest_upper_index - frame_index)]);
+            .copy_from_slice(&signal.frames[..(dest_upper_index - frame_index)]);
+        Ok(())
     }
 
     pub fn write_signal_to_disk(&self, file_name: String) -> anyhow::Result<()> {
@@ -103,5 +105,11 @@ impl StereoSignal {
         std::fs::remove_file(&temp_file_name)?;
 
         Ok(())
+    }
+}
+
+impl <'a> From<&'a StereoSignal> for &'a [(f32, f32)] {
+    fn from(value: &'a StereoSignal) -> Self {
+        &value.frames
     }
 }

@@ -17,7 +17,7 @@ use iced::{
 use keybinding::KeyBindings;
 use model::pattern::{NoteField, PatternCollection, DigitIndex};
 use model::value_object::HexDigit;
-use model::{Note, NoteValue, OctaveValue};
+use model::{Note, NoteValue, value_object::OctaveValue};
 
 use crate::model::pattern::ColumnLineElement;
 use crate::view::component::patterns::patterns_component;

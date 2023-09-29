@@ -1,36 +1,23 @@
-use anyhow::bail;
-use anyhow::Result;
 use rust_utils_macro::EnumValue;
+
+use self::value_object::OctaveValue;
 
 pub mod pattern;
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, ordinalizer::Ordinal)]
 pub enum Note {
-    A,
-    B,
     C,
+    CSharp,
     D,
+    DSharp,
     E,
     F,
-    G,
-    CSharp,
-    DSharp,
     FSharp,
+    G,
     GSharp,
+    A,
     ASharp,
-}
-
-#[derive(Eq, PartialEq, Copy, Clone, Debug, Default)]
-pub struct OctaveValue(pub u8);
-
-impl OctaveValue {
-    pub fn new(value: u8) -> Result<OctaveValue> {
-        if value > 9 {
-            bail!("Invalid value for an octave : {value}")
-        } else {
-            Ok(OctaveValue(value))
-        }
-    }
+    B,
 }
 
 #[derive(Copy, Clone)]
@@ -53,6 +40,8 @@ pub enum Direction {
 
 pub mod value_object {
     use rust_utils::define_value_object;
+    pub const MAX_OCTAVE: u8 = 9;
 
     define_value_object!(pub HexDigit, u8, 0, |v| { v <= 0xF });
+    define_value_object!(pub OctaveValue, u8, 5, |v| { v <= MAX_OCTAVE });
 }

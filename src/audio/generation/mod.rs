@@ -1,6 +1,6 @@
 use std::{f32::consts::PI, time::Duration};
 
-use super::Samples;
+use super::FrameIterator;
 
 const VELOCITY_TRANSITION_DURATION: Duration = Duration::from_millis(20);
 
@@ -77,12 +77,12 @@ where
     }
 }
 
-pub struct SampleParametersInterpolator<S: Samples> {
+pub struct SampleParametersInterpolator<S> {
     samples: S,
     amp_interpolator: ParameterInterpolator<f32>,
 }
 
-impl<S: Samples> SampleParametersInterpolator<S> {
+impl<S: FrameIterator> SampleParametersInterpolator<S> {
     pub fn new(samples: S) -> SampleParametersInterpolator<S> {
         SampleParametersInterpolator {
             samples,
@@ -91,7 +91,7 @@ impl<S: Samples> SampleParametersInterpolator<S> {
     }
 }
 
-impl<S: Samples> Samples for SampleParametersInterpolator<S> {
+impl<S: FrameIterator> FrameIterator for SampleParametersInterpolator<S> {
     fn next(
         &mut self,
         freq: f32,
@@ -106,7 +106,7 @@ impl<S: Samples> Samples for SampleParametersInterpolator<S> {
 
 pub struct SineWaveDescriptor;
 
-impl Samples for SineWaveDescriptor {
+impl FrameIterator for SineWaveDescriptor {
     fn next(
         &mut self,
         freq: f32,
@@ -122,7 +122,7 @@ impl Samples for SineWaveDescriptor {
 
 pub struct SquareWaveDescriptor;
 
-impl Samples for SquareWaveDescriptor {
+impl FrameIterator for SquareWaveDescriptor {
     fn next(
         &mut self,
         freq: f32,
@@ -146,7 +146,7 @@ impl Samples for SquareWaveDescriptor {
 }
 pub struct SawWaveDescriptor;
 
-impl Samples for SawWaveDescriptor {
+impl FrameIterator for SawWaveDescriptor {
     fn next(
         &mut self,
         freq: f32,

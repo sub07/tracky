@@ -5,7 +5,7 @@ use iced::{
 use rust_utils_macro::New;
 
 use crate::{
-    model::{pattern::ColumnLine, Note, NoteValue, OctaveValue},
+    model::{pattern::ColumnLine, Note, NoteValue,value_object::OctaveValue},
     view::{
         widget::input_unit::{input_unit, input_unit_spacer},
         CustomRenderer,
@@ -55,7 +55,7 @@ where
                             Note::GSharp => ('G', '#'),
                             Note::ASharp => ('A', '#'),
                         };
-                        let OctaveValue(octave) = octave;
+                        let octave = octave.value();
                         let octave_char = match octave {
                             0 => '0',
                             1 => '1',
