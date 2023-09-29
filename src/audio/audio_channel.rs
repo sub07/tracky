@@ -3,7 +3,9 @@ use std::time::Duration;
 use crate::model::pattern::Column;
 
 use super::{
-    generation::{SawWaveDescriptor, SineWaveDescriptor, SquareWaveDescriptor, SampleParametersInterpolator},
+    generation::{
+        SampleParametersInterpolator, SawWaveDescriptor, SineWaveDescriptor, SquareWaveDescriptor,
+    },
     signal::StereoSignal,
     Samples,
 };

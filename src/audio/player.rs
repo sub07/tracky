@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::fmt::Debug;
 use std::iter::Peekable;
-use std::marker::PhantomData;
+
 use std::ops::DerefMut;
 use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};

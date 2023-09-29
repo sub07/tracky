@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use audio::audio_channel::handle_column;
 use audio::generation::SineWaveDescriptor;
-use audio::player::Player;
+
 use audio::signal::StereoSignal;
 use audio::Volume;
 
@@ -15,7 +15,7 @@ use iced::{
 };
 
 use keybinding::KeyBindings;
-use model::pattern::{HexDigit, HexField, NoteField, PatternCollection};
+use model::pattern::{HexDigit, NoteField, PatternCollection};
 use model::{HexValue, Note, NoteValue, OctaveValue};
 
 use crate::model::pattern::ColumnLineElement;
@@ -59,7 +59,7 @@ pub fn main() -> iced::Result {
     // channel.write_signal_to_disk("sig.wav".into()).unwrap();
 
     Tracky::run(Settings::default())
-    // Ok(()) 
+    // Ok(())
 }
 
 pub enum PlayingState {

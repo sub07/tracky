@@ -30,7 +30,7 @@ where
         + std::ops::Sub<Output = T>
         + std::ops::Div<Output = T>
         + std::ops::Add<Output = T>
-        + std::cmp::PartialOrd
+        + std::cmp::PartialOrd,
 {
     pub fn process_new_value(&mut self, new_value: T, sample_rate: f32) -> T {
         let last_value = if let Some(v) = self.last_value {
@@ -61,7 +61,8 @@ where
                 ref mut current,
                 incr,
             } => {
-                if (incr > 0.0.into() && *current > goal) || (incr < 0.0.into() && *current < goal) {
+                if (incr > 0.0.into() && *current > goal) || (incr < 0.0.into() && *current < goal)
+                {
                     // Interpolation done
                     self.state = InterpolationState::Stable;
                     self.process_new_value(new_value, sample_rate)
