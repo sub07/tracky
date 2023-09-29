@@ -12,8 +12,7 @@ use iced::{
     Background, BorderRadius, Color, Element, Length, Rectangle, Size,
 };
 
-use crate::view::CustomRenderer;
-use crate::MONOSPACED_FONT;
+use crate::view::{CustomRenderer, MONOSPACED_FONT};
 
 pub struct InputUnitWidget {
     pub value: Option<char>,

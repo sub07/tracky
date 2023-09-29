@@ -9,7 +9,7 @@ use iced::{
 };
 use iter_tools::Itertools;
 
-use crate::{model::pattern::PatternCollection, view::CustomRenderer, MONOSPACED_FONT};
+use crate::{model::pattern::PatternCollection, view::{CustomRenderer, MONOSPACED_FONT}};
 
 use super::pattern::pattern_component;
 
