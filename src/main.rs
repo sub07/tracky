@@ -4,8 +4,8 @@ use audio::audio_channel::handle_column;
 use audio::generation::SineWaveDescriptor;
 
 use audio::signal::StereoSignal;
-use audio::Volume;
 
+use audio::value_object::Volume;
 use iced::event::Event;
 use iced::font::{Stretch, Weight};
 use iced::widget::{scrollable, text};
@@ -15,8 +15,9 @@ use iced::{
 };
 
 use keybinding::KeyBindings;
-use model::pattern::{HexDigit, NoteField, PatternCollection};
-use model::{HexValue, Note, NoteValue, OctaveValue};
+use model::pattern::{NoteField, PatternCollection, DigitIndex};
+use model::value_object::HexDigit;
+use model::{Note, NoteValue, OctaveValue};
 
 use crate::model::pattern::ColumnLineElement;
 use crate::view::component::patterns::patterns_component;
@@ -34,32 +35,7 @@ const MONOSPACED_FONT: Font = Font {
 };
 
 pub fn main() -> iced::Result {
-    // std::fs::remove_file("sig.wav");
-    // let mut column = model::pattern::Column::default();
-    // column.line_mut(0).note_field =
-    //     NoteField::new(NoteValue::Note(Note::A, OctaveValue::new(5).unwrap()));
-    // column.line_mut(0).instrument_field = HexField { value: Some(0) };
-    // let mut line_index = 0;
-    // let mut vel = 255;
-    // while line_index < 15 {
-    //     column.line_mut(line_index).velocity_field = HexField { value: Some(vel) };
-    //     line_index += 1;
-    //     vel -= 15;
-    // }
-
-    // let bps = 6.0;
-    // let mut player = audio::player::Player::new().unwrap();
-    // player.volume(Volume::new(0.1).unwrap());
-    // let mut channel = StereoSignal::new(
-    //     Duration::from_secs_f64((1.0 / bps) * column.lines.len() as f64),
-    //     player.sample_rate,
-    // );
-
-    // handle_column(bps, &mut channel, &column);
-    // channel.write_signal_to_disk("sig.wav".into()).unwrap();
-
     Tracky::run(Settings::default())
-    // Ok(())
 }
 
 pub enum PlayingState {
@@ -136,23 +112,23 @@ impl Tracky {
             NoteField::new(Some(NoteValue::Note(note, octave)));
     }
 
-    pub fn set_velocity(&mut self, hex_value: HexValue) {
+    pub fn set_velocity(&mut self, hex_digit: HexDigit) {
         let velocity_digit_index = match self.pattern_collection.local_column_index() {
-            3 => HexDigit::First,
-            4 => HexDigit::Second,
+            3 => DigitIndex::First,
+            4 => DigitIndex::Second,
             _ => panic!("Should not happen"),
         };
 
         self.pattern_collection
             .current_line_mut()
             .velocity_field
-            .set_digit_hex(velocity_digit_index, hex_value)
+            .set_digit_hex(velocity_digit_index, hex_digit)
     }
 
-    pub fn set_instrument(&mut self, hex_value: HexValue) {
+    pub fn set_instrument(&mut self, hex_value: HexDigit) {
         let instr_digit_index = match self.pattern_collection.local_column_index() {
-            5 => HexDigit::First,
-            6 => HexDigit::Second,
+            5 => DigitIndex::First,
+            6 => DigitIndex::Second,
             _ => panic!("Should not happen"),
         };
 
@@ -162,7 +138,7 @@ impl Tracky {
             .set_digit_hex(instr_digit_index, hex_value)
     }
 
-    pub fn set_hex(&mut self, hex_value: HexValue) {
+    pub fn set_hex(&mut self, hex_value: HexDigit) {
         match self.pattern_collection.local_column_index() {
             3 | 4 => self.set_velocity(hex_value),
             5 | 6 => self.set_instrument(hex_value),

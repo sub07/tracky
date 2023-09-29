@@ -51,14 +51,8 @@ pub enum Direction {
     Down,
 }
 
-#[derive(Eq, PartialEq, Copy, Clone, Debug, Default)]
-pub struct HexValue(pub u8);
+pub mod value_object {
+    use rust_utils::define_value_object;
 
-impl HexValue {
-    pub fn new(value: u8) -> Result<HexValue> {
-        if value > 0xF {
-            bail!("Invalid value for an octave : {value}")
-        }
-        Ok(HexValue(value))
-    }
+    define_value_object!(pub HexDigit, u8, 0, |v| { v <= 0xF });
 }

@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use iter_tools::Itertools;
-use rust_utils::define_value_object;
 
 use self::signal::StereoSignal;
 
@@ -11,8 +10,12 @@ pub mod generation;
 pub mod player;
 pub mod signal;
 
-define_value_object!(pub Volume, f32, 1.0, |v| { (0.0..=1.0).contains(&v) });
-define_value_object!(pub Pan, f32, 0.0, |v| { (-1.0..=1.0).contains(&v) });
+pub mod value_object {
+    use rust_utils::define_value_object;
+
+    define_value_object!(pub Volume, f32, 1.0, |v| { (0.0..=1.0).contains(&v) });
+    define_value_object!(pub Pan, f32, 0.0, |v| { (-1.0..=1.0).contains(&v) });
+}
 
 pub fn resample(src: &StereoSignal, target_sample_rate: f32) -> StereoSignal {
     if src.sample_rate == target_sample_rate {

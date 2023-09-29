@@ -13,7 +13,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use rust_utils_macro::New;
 
 use super::signal::StereoSignal;
-use super::{Pan, Volume};
+use super::value_object::{Volume, Pan};
 
 #[derive(New, Default)]
 struct StreamData {

@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use iced::keyboard::{KeyCode, Modifiers};
 use rust_utils::hash_map_of;
 
-use crate::model::{Direction, HexValue, Note, OctaveValue};
+use crate::model::{Direction, Note, OctaveValue, value_object::HexDigit};
 
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 pub enum Action {
     Note(Note),
-    Hex(HexValue),
+    Hex(HexDigit),
     Octave(OctaveValue),
     ClearUnit,
     Move(Direction),
@@ -96,22 +96,22 @@ impl Default for KeyBindings {
                 KeyboardEvent::Key(KeyCode::Key9) => Action::Octave(OctaveValue::new(9).unwrap()),
             ),
             InputContext::Hex => hash_map_of!(
-                KeyboardEvent::Key(KeyCode::Key0) => Action::Hex(HexValue::new(0x0).unwrap()),
-                KeyboardEvent::Key(KeyCode::Key1) => Action::Hex(HexValue::new(0x1).unwrap()),
-                KeyboardEvent::Key(KeyCode::Key2) => Action::Hex(HexValue::new(0x2).unwrap()),
-                KeyboardEvent::Key(KeyCode::Key3) => Action::Hex(HexValue::new(0x3).unwrap()),
-                KeyboardEvent::Key(KeyCode::Key4) => Action::Hex(HexValue::new(0x4).unwrap()),
-                KeyboardEvent::Key(KeyCode::Key5) => Action::Hex(HexValue::new(0x5).unwrap()),
-                KeyboardEvent::Key(KeyCode::Key6) => Action::Hex(HexValue::new(0x6).unwrap()),
-                KeyboardEvent::Key(KeyCode::Key7) => Action::Hex(HexValue::new(0x7).unwrap()),
-                KeyboardEvent::Key(KeyCode::Key8) => Action::Hex(HexValue::new(0x8).unwrap()),
-                KeyboardEvent::Key(KeyCode::Key9) => Action::Hex(HexValue::new(0x9).unwrap()),
-                KeyboardEvent::Key(KeyCode::A) => Action::Hex(HexValue::new(0xA).unwrap()),
-                KeyboardEvent::Key(KeyCode::B) => Action::Hex(HexValue::new(0xB).unwrap()),
-                KeyboardEvent::Key(KeyCode::C) => Action::Hex(HexValue::new(0xC).unwrap()),
-                KeyboardEvent::Key(KeyCode::D) => Action::Hex(HexValue::new(0xD).unwrap()),
-                KeyboardEvent::Key(KeyCode::E) => Action::Hex(HexValue::new(0xE).unwrap()),
-                KeyboardEvent::Key(KeyCode::F) => Action::Hex(HexValue::new(0xF).unwrap()),
+                KeyboardEvent::Key(KeyCode::Key0) => Action::Hex(HexDigit::new(0x0).unwrap()),
+                KeyboardEvent::Key(KeyCode::Key1) => Action::Hex(HexDigit::new(0x1).unwrap()),
+                KeyboardEvent::Key(KeyCode::Key2) => Action::Hex(HexDigit::new(0x2).unwrap()),
+                KeyboardEvent::Key(KeyCode::Key3) => Action::Hex(HexDigit::new(0x3).unwrap()),
+                KeyboardEvent::Key(KeyCode::Key4) => Action::Hex(HexDigit::new(0x4).unwrap()),
+                KeyboardEvent::Key(KeyCode::Key5) => Action::Hex(HexDigit::new(0x5).unwrap()),
+                KeyboardEvent::Key(KeyCode::Key6) => Action::Hex(HexDigit::new(0x6).unwrap()),
+                KeyboardEvent::Key(KeyCode::Key7) => Action::Hex(HexDigit::new(0x7).unwrap()),
+                KeyboardEvent::Key(KeyCode::Key8) => Action::Hex(HexDigit::new(0x8).unwrap()),
+                KeyboardEvent::Key(KeyCode::Key9) => Action::Hex(HexDigit::new(0x9).unwrap()),
+                KeyboardEvent::Key(KeyCode::A) => Action::Hex(HexDigit::new(0xA).unwrap()),
+                KeyboardEvent::Key(KeyCode::B) => Action::Hex(HexDigit::new(0xB).unwrap()),
+                KeyboardEvent::Key(KeyCode::C) => Action::Hex(HexDigit::new(0xC).unwrap()),
+                KeyboardEvent::Key(KeyCode::D) => Action::Hex(HexDigit::new(0xD).unwrap()),
+                KeyboardEvent::Key(KeyCode::E) => Action::Hex(HexDigit::new(0xE).unwrap()),
+                KeyboardEvent::Key(KeyCode::F) => Action::Hex(HexDigit::new(0xF).unwrap()),
             ),
             InputContext::Global => hash_map_of!(
                 KeyboardEvent::Key(KeyCode::Down) => Action::Move(Direction::Down),

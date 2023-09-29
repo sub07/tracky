@@ -2,17 +2,17 @@ use rust_utils_macro::{EnumIter, EnumValue, New};
 
 use crate::{
     keybinding::InputContext,
-    model::{HexValue, OctaveValue},
+    model::OctaveValue,
 };
 
-use super::NoteValue;
+use super::{NoteValue, value_object::HexDigit};
 
 #[derive(New, Default, Copy, Clone)]
 pub struct NoteField {
     pub note: Option<NoteValue>,
 }
 
-pub enum HexDigit {
+pub enum DigitIndex {
     First,
     Second,
 }
@@ -23,10 +23,11 @@ pub struct HexField {
 }
 
 impl HexField {
-    pub fn set_digit_hex(&mut self, digit_index: HexDigit, HexValue(digit): HexValue) {
+    pub fn set_digit_hex(&mut self, digit_index: DigitIndex, digit: HexDigit) {
+        let digit = digit.value();
         let (mask, value) = match digit_index {
-            HexDigit::First => (0x0F, digit << 4),
-            HexDigit::Second => (0xF0, digit),
+            DigitIndex::First => (0x0F, digit << 4),
+            DigitIndex::Second => (0xF0, digit),
         };
 
         let mut current_value = self.value.unwrap_or(0);
@@ -36,12 +37,12 @@ impl HexField {
         self.value = Some(current_value);
     }
 
-    pub fn set_first_digit_hex(&mut self, value: HexValue) {
-        self.set_digit_hex(HexDigit::First, value);
+    pub fn set_first_digit_hex(&mut self, digit: HexDigit) {
+        self.set_digit_hex(DigitIndex::First, digit);
     }
 
-    pub fn set_second_digit_hex(&mut self, value: HexValue) {
-        self.set_digit_hex(HexDigit::Second, value);
+    pub fn set_second_digit_hex(&mut self, digit: HexDigit) {
+        self.set_digit_hex(DigitIndex::Second, digit);
     }
 
     pub fn clear(&mut self) {
