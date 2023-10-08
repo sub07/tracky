@@ -1,10 +1,8 @@
 use std::time::{Duration, Instant};
 
-use audio::audio_channel::handle_column;
 use audio::generation::SineWaveDescriptor;
 
-use audio::signal::StereoSignal;
-
+use audio::model::signal::StereoSignal;
 use audio::value_object::Volume;
 use iced::event::Event;
 use iced::font::{Stretch, Weight};
@@ -15,18 +13,17 @@ use iced::{
 };
 
 use keybinding::KeyBindings;
-use model::pattern::{NoteField, PatternCollection, DigitIndex};
-use model::value_object::HexDigit;
-use model::{Note, NoteValue, value_object::OctaveValue};
+use model::audio_channel::handle_column;
+use model::field::value_object::OctaveValue;
+use model::pattern::Patterns;
 
-use crate::model::pattern::ColumnLineElement;
 use crate::view::component::patterns::patterns_component;
 
 mod audio;
 mod keybinding;
 mod model;
-mod view;
 mod service;
+mod view;
 
 pub fn main() -> iced::Result {
     Tracky::run(Settings::default())
@@ -38,7 +35,7 @@ pub enum PlayingState {
 }
 
 struct Tracky {
-    pattern_collection: PatternCollection,
+    patterns: Patterns,
     pattern_scroll_id: scrollable::Id,
     default_octave: OctaveValue,
     keybindings: KeyBindings,
@@ -59,7 +56,7 @@ enum Message {
 impl Tracky {
     fn new() -> Self {
         Self {
-            pattern_collection: Default::default(),
+            patterns: Default::default(),
             keybindings: Default::default(),
             default_octave: OctaveValue::new(5).unwrap(),
             pattern_scroll_id: scrollable::Id::unique(),
@@ -95,7 +92,7 @@ impl Application for Tracky {
                 }
             }
             Message::TrackyAction(action) => match action {
-                keybinding::Action::Note(note) => self.set_note(note),
+                keybinding::Action::Note(note) => self.set_note_name(note),
                 keybinding::Action::Hex(value) => self.set_hex(value),
                 keybinding::Action::Octave(value) => self.set_octave(value),
                 keybinding::Action::ClearUnit => self.clear(),
@@ -114,13 +111,7 @@ impl Application for Tracky {
                         player.volume(Volume::new(0.1).unwrap());
                         let mut channel = StereoSignal::new(
                             Duration::from_secs_f64(
-                                (1.0 / bps)
-                                    * self
-                                        .pattern_collection
-                                        .current_pattern()
-                                        .column(0)
-                                        .lines
-                                        .len() as f64,
+                                (1.0 / bps) * self.patterns.current_pattern().len as f64,
                             ),
                             player.sample_rate,
                         );
@@ -128,17 +119,18 @@ impl Application for Tracky {
                         handle_column(
                             bps,
                             &mut channel,
-                            &self.pattern_collection.current_pattern().column(0),
+                            self.patterns.current_pattern().columns().next().unwrap(),
                         );
                         // channel.write_signal_to_disk("sig.wav".into()).unwrap();
-                        player.play_signal(&channel).unwrap();
+                        player.queue_signal(&channel).unwrap();
                         PlayingState::Playing(player)
                     }
                 }
-                keybinding::Action::SetNoteCut => {
-                    self.pattern_collection.current_line_mut().note_field.note =
-                        Some(NoteValue::Cut)
-                }
+                keybinding::Action::SetNoteCut => self
+                    .patterns
+                    .current_line_mut()
+                    .note
+                    .set(model::field::NoteFieldValue::Cut),
             },
             Message::FontLoaded(r) => {
                 if let Err(e) = r {
@@ -173,7 +165,7 @@ impl Application for Tracky {
             } else {
                 "editing"
             }),
-            patterns_component(&self.pattern_collection, self.pattern_scroll_id.clone()),
+            patterns_component(&self.patterns, self.pattern_scroll_id.clone()),
         ]
         .into()
     }

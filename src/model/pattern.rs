@@ -1,184 +1,183 @@
-use rust_utils_macro::{EnumIter, EnumValue, New};
+use rust_utils_macro::{EnumIter, EnumValue};
 
-use crate::{
-    keybinding::InputContext,
-    model::OctaveValue,
-};
+use crate::view::component::pattern;
 
-use super::{NoteValue, value_object::HexDigit};
+use super::field::{value_object::HexDigit, Field, NoteFieldValue};
 
-#[derive(New, Default, Copy, Clone)]
-pub struct NoteField {
-    pub note: Option<NoteValue>,
+macro_rules! declare_field {
+    ($($snake_case:ident $pascal_case:ident $size:literal $ty:ty),* $(,)?) => {
+        #[derive(Default)]
+        pub struct PatternLine {
+            $(
+                pub $snake_case: Field<$ty>,
+            )*
+        }
+
+        #[derive(EnumIter, EnumValue)]
+        pub enum LineField {
+            $(
+                #[value(len: usize = $size)]
+                $pascal_case,
+            )*
+        }
+    };
 }
 
-pub enum DigitIndex {
-    First,
-    Second,
+declare_field! {
+    note Note 3 NoteFieldValue,
+    velocity Velocity 2 (HexDigit, HexDigit),
+    instrument Instrument 2 (HexDigit, HexDigit),
 }
 
-#[derive(Default, Copy, Clone)]
-pub struct HexField {
-    pub value: Option<u8>,
-}
-
-impl HexField {
-    pub fn set_digit_hex(&mut self, digit_index: DigitIndex, digit: HexDigit) {
-        let digit = digit.value();
-        let (mask, value) = match digit_index {
-            DigitIndex::First => (0x0F, digit << 4),
-            DigitIndex::Second => (0xF0, digit),
-        };
-
-        let mut current_value = self.value.unwrap_or(0);
-        current_value &= mask;
-        current_value |= value;
-
-        self.value = Some(current_value);
-    }
-
-    pub fn set_first_digit_hex(&mut self, digit: HexDigit) {
-        self.set_digit_hex(DigitIndex::First, digit);
-    }
-
-    pub fn set_second_digit_hex(&mut self, digit: HexDigit) {
-        self.set_digit_hex(DigitIndex::Second, digit);
-    }
-
-    pub fn clear(&mut self) {
-        self.value = None;
-    }
-}
-
-#[derive(New, Default, Clone)]
-pub struct ColumnLine {
-    pub note_field: NoteField,
-    pub velocity_field: HexField,
-    pub instrument_field: HexField,
-}
-
-#[derive(EnumIter, EnumValue)]
-pub enum ColumnLineElement {
-    #[value(len: usize = 3)]
-    Note,
-    #[value(len: usize = 2)]
-    Velocity,
-    #[value(len: usize = 2)]
-    Instrument,
-}
-
-impl ColumnLineElement {
-    pub const LINE_LEN: i32 = ColumnLineElement::line_len() as i32;
+impl LineField {
+    pub const LINE_LEN: i32 = LineField::line_len() as i32;
 
     pub const fn line_len() -> usize {
         let mut sum = 0;
         let mut i = 0;
-        while i < ColumnLineElement::size() as i32 {
-            sum += ColumnLineElement::VARIANTS[i as usize].len();
+        while i < LineField::size() as i32 {
+            sum += LineField::VARIANTS[i as usize].len();
             i += 1;
         }
         sum
     }
 }
 
-#[derive(Clone)]
-pub struct Column {
-    pub lines: Vec<ColumnLine>,
-}
-
-impl Column {
-    pub fn line_mut(&mut self, index: i32) -> &mut ColumnLine {
-        &mut self.lines[index as usize]
-    }
-
-    pub fn line(&self, index: i32) -> &ColumnLine {
-        &self.lines[index as usize]
-    }
-}
-
-const DEFAULT_COLUMN_LEN: usize = 128;
-
-impl Default for Column {
-    fn default() -> Self {
-        let lines = vec![ColumnLine::default(); DEFAULT_COLUMN_LEN];
-        Column { lines }
-    }
-}
-
-#[derive(Default, Clone)]
-pub struct Pattern {
-    pub columns: Vec<Column>,
-}
-
-impl Pattern {
-    pub fn column_mut(&mut self, index: i32) -> &mut Column {
-        &mut self.columns[index as usize]
-    }
-
-    pub fn column(&self, index: i32) -> &Column {
-        &self.columns[index as usize]
-    }
-}
-
-pub struct PatternCollection {
-    patterns: Vec<Pattern>,
-    pub selected_pattern_index: usize,
+pub struct Patterns {
+    pub lines: Vec<PatternLine>,
+    patterns_len: Vec<u32>,
+    nb_column: u32,
     pub cursor_x: i32,
     pub cursor_y: i32,
-    pub default_octave: OctaveValue,
+    selected_pattern_index: usize,
 }
 
-impl PatternCollection {
-    pub fn input_type(&self) -> InputContext {
-        let cursor_x = self.cursor_x % ColumnLineElement::LINE_LEN;
-        match cursor_x {
-            0 => InputContext::Note,
-            2 => InputContext::Octave,
-            3 | 4 | 5 | 6 => InputContext::Hex,
-            _ => panic!("Invalid cursor position: {cursor_x}"),
-        }
-    }
-
-    pub fn current_pattern_mut(&mut self) -> &mut Pattern {
-        &mut self.patterns[self.selected_pattern_index]
-    }
-
-    pub fn current_pattern(&self) -> &Pattern {
-        &self.patterns[self.selected_pattern_index]
-    }
-
-    pub fn current_line_mut(&mut self) -> &mut ColumnLine {
-        let current_column_index = self.cursor_x / ColumnLineElement::LINE_LEN;
-        let cursor_y = self.cursor_y;
-        self.current_pattern_mut()
-            .column_mut(current_column_index)
-            .line_mut(cursor_y)
-    }
-
-    pub fn current_line(&self) -> &ColumnLine {
-        let current_column_index = self.cursor_x / ColumnLineElement::LINE_LEN;
-        let cursor_y = self.cursor_y;
-        self.current_pattern()
-            .column(current_column_index)
-            .line(cursor_y)
-    }
-
-    pub fn local_column_index(&self) -> i32 {
-        self.cursor_x % ColumnLineElement::LINE_LEN
-    }
-}
-
-impl Default for PatternCollection {
+impl Default for Patterns {
     fn default() -> Self {
-        let pattern = Pattern {
-            columns: vec![Column::default(); 15],
-        };
-        Self {
-            patterns: vec![pattern],
-            selected_pattern_index: Default::default(),
-            cursor_x: Default::default(),
-            cursor_y: Default::default(),
-            default_octave: Default::default(),
+        let patterns_len = vec![128];
+        let nb_column = 4;
+        Patterns::new(nb_column, patterns_len)
+    }
+}
+
+impl Patterns {
+    pub fn new(nb_column: u32, patterns_len: Vec<u32>) -> Patterns {
+        let initial_capacity = patterns_len.iter().sum::<u32>() * nb_column;
+        let initial_capacity = initial_capacity as usize;
+        let mut lines = Vec::with_capacity(initial_capacity);
+        lines.resize_with(initial_capacity, Default::default);
+
+        Patterns {
+            lines,
+            patterns_len,
+            nb_column,
+            cursor_x: 0,
+            cursor_y: 0,
+            selected_pattern_index: 0,
         }
     }
+
+    fn pattern_range(&self, index: usize) -> anyhow::Result<std::ops::Range<usize>> {
+        let start = self.patterns_len[..index].iter().sum::<u32>() as usize;
+        let end = start + (self.patterns_len[index] * self.nb_column) as usize;
+
+        anyhow::ensure!(start <= self.lines.len(), "pattern index out of bounds");
+        anyhow::ensure!(end <= self.lines.len(), "pattern index out of bounds");
+
+        Ok(start..end)
+    }
+
+    fn pattern<'a>(&'a self, index: usize) -> anyhow::Result<PatternView<'a>> {
+        Ok(PatternView {
+            lines: &self.lines[self.pattern_range(index)?],
+            nb_column: self.nb_column,
+            len: self.patterns_len[index],
+        })
+    }
+
+    fn pattern_mut<'a>(&'a mut self, index: usize) -> anyhow::Result<PatternViewMut<'a>> {
+        let range = self.pattern_range(index)?;
+        Ok(PatternViewMut {
+            lines: &mut self.lines[range],
+            nb_column: self.nb_column,
+            len: self.patterns_len[index],
+        })
+    }
+
+    pub fn current_pattern<'a>(&'a self) -> PatternView<'a> {
+        self.pattern(self.selected_pattern_index).unwrap()
+    }
+
+    pub fn current_pattern_mut<'a>(&'a mut self) -> PatternViewMut<'a> {
+        self.pattern_mut(self.selected_pattern_index).unwrap()
+    }
+
+    pub fn current_pattern_len(&self) -> u32 {
+        self.patterns_len[self.selected_pattern_index]
+    }
+
+    pub fn current_line_mut(&mut self) -> &mut PatternLine {
+        let current_column_index = self.cursor_x / LineField::LINE_LEN;
+        let pattern_len = self.current_pattern_len() as usize;
+        let cursor_y = self.cursor_y as usize;
+        let range = self.pattern_range(self.selected_pattern_index).unwrap();
+        let pattern = &mut self.lines[range];
+        &mut pattern[current_column_index as usize * pattern_len + cursor_y]
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct PatternView<'a> {
+    lines: &'a [PatternLine],
+    pub nb_column: u32,
+    pub len: u32,
+}
+
+pub struct PatternViewMut<'a> {
+    lines: &'a mut [PatternLine],
+    pub nb_column: u32,
+    pub len: u32,
+}
+
+impl<'a> PatternView<'a> {
+    pub fn column(&self, index: usize) -> anyhow::Result<ColumnView<'a>> {
+        anyhow::ensure!(
+            index < self.nb_column as usize,
+            "column index out of bounds"
+        );
+
+        let start = index * self.len as usize;
+        let end = start + self.len as usize;
+        let column = &self.lines[start..end];
+
+        Ok(ColumnView { lines: column })
+    }
+
+    pub fn columns(&'a self) -> impl Iterator<Item = ColumnView<'a>> {
+        (0..self.nb_column as usize).map(move |column_index| self.column(column_index).unwrap())
+    }
+}
+
+impl<'a> PatternViewMut<'a> {
+    pub fn column_mut(&'a mut self, index: usize) -> anyhow::Result<ColumnViewMut<'a>> {
+        anyhow::ensure!(
+            index < self.nb_column as usize,
+            "column index out of bounds"
+        );
+
+        let start = index * self.len as usize;
+        let end = start + self.len as usize;
+        let column = &mut self.lines[start..end];
+
+        Ok(ColumnViewMut { lines: column })
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct ColumnView<'a> {
+    pub lines: &'a [PatternLine],
+}
+
+pub struct ColumnViewMut<'a> {
+    pub lines: &'a mut [PatternLine],
 }

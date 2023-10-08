@@ -12,8 +12,8 @@ use anyhow::{anyhow, bail};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use rust_utils_macro::New;
 
-use super::signal::StereoSignal;
-use super::value_object::{Volume, Pan};
+use super::model::signal::StereoSignal;
+use super::value_object::{Pan, Volume};
 
 #[derive(New, Default)]
 struct StreamData {
@@ -181,8 +181,7 @@ impl Player {
         })
     }
 
-    pub fn play_signal(&mut self, signal: &StereoSignal) -> anyhow::Result<()> {
-        self.clear();
+    pub fn queue_signal(&mut self, signal: &StereoSignal) -> anyhow::Result<()> {
         self.data_mut()
             .queue
             .push_back(signal.frames.clone().into_iter().peekable());
@@ -203,7 +202,7 @@ impl Player {
         Ok(())
     }
 
-    fn clear(&mut self) {
+    pub fn clear(&mut self) {
         self.data_mut().queue.clear();
     }
 

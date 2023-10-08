@@ -6,21 +6,20 @@ use iter_tools::Itertools;
 use rust_utils_macro::New;
 
 use crate::{
-    model::pattern::{ColumnLineElement, Pattern},
-    view::CustomRenderer,
+    view::CustomRenderer, model::pattern::{PatternView, self},
 };
 
 use super::column::column_component;
 
 #[derive(New)]
 pub struct PatternComponent<'a> {
-    pattern: &'a Pattern,
+    pattern: PatternView<'a>,
     cursor_x: i32,
     cursor_y: i32,
 }
 
 pub fn pattern_component<'a>(
-    pattern: &'a Pattern,
+    pattern: PatternView<'a>,
     cursor_x: i32,
     cursor_y: i32,
 ) -> PatternComponent<'a> {
@@ -40,12 +39,11 @@ where
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, R> {
-        let cursor_column_index = self.cursor_x / ColumnLineElement::LINE_LEN;
-        let cursor_column_local = self.cursor_x % ColumnLineElement::LINE_LEN;
+        let cursor_column_index = self.cursor_x / pattern::LineField::LINE_LEN;
+        let cursor_column_local = self.cursor_x % pattern::LineField::LINE_LEN;
         let columns = self
             .pattern
-            .columns
-            .iter()
+            .columns()
             .enumerate()
             .map(|(column_index, column)| {
                 let cursor_x = if column_index as i32 == cursor_column_index {

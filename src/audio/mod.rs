@@ -2,16 +2,13 @@ use std::time::Duration;
 
 use iter_tools::Itertools;
 
-use crate::model::{value_object::OctaveValue, Note};
+use self::{midi::{value_object::MidiNumber, IntoMidiNumber}, model::signal::StereoSignal};
 
-use self::{signal::StereoSignal, midi::{value_object::MidiNumber, IntoMidiNumber}};
-
-pub mod audio_channel;
 pub mod frame;
 pub mod generation;
 pub mod player;
-pub mod signal;
 pub mod midi;
+pub mod model;
 
 pub mod value_object {
     use rust_utils::define_value_object;
@@ -96,17 +93,19 @@ impl <T: IntoMidiNumber> IntoFrequency for T {
 
 #[cfg(test)]
 mod tests {
+    use crate::model::field::{NoteName, value_object::OctaveValue};
+
     use super::*;
 
     #[test]
     fn A4_should_be_freq_440_0() {
-        let freq = (Note::A, OctaveValue::new(4).unwrap()).into_frequency();
+        let freq = (NoteName::A, OctaveValue::new(4).unwrap()).into_frequency();
         assert_eq!(440.0, freq);
     }
 
     #[test]
     fn B2_should_be_freq_123_47() {
-        let freq = (Note::B, OctaveValue::new(2).unwrap()).into_frequency();
+        let freq = (NoteName::B, OctaveValue::new(2).unwrap()).into_frequency();
         approx::assert_relative_eq!(123.47, freq, epsilon = 0.001);
     }
 }

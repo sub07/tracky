@@ -5,19 +5,19 @@ use iced::{
 use iter_tools::Itertools;
 use rust_utils_macro::New;
 
-use crate::{model::pattern::Column, view::CustomRenderer};
+use crate::{view::CustomRenderer, model::pattern::ColumnView};
 
 use super::column_line::column_line_component;
 
 #[derive(New)]
 pub struct ColumnComponent<'a> {
-    column: &'a Column,
+    column: ColumnView<'a>,
     cursor_x: Option<i32>,
     cursor_y: i32,
 }
 
 pub fn column_component<'a>(
-    column: &'a Column,
+    column: ColumnView<'a>,
     cursor_x: Option<i32>,
     cursor_y: i32,
 ) -> ColumnComponent<'a> {

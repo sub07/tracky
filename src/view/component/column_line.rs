@@ -5,7 +5,10 @@ use iced::{
 use rust_utils_macro::New;
 
 use crate::{
-    model::{pattern::ColumnLine, Note, NoteValue,value_object::OctaveValue},
+    model::{
+        field::{NoteFieldValue, NoteName},
+        pattern::PatternLine,
+    },
     view::{
         widget::input_unit::{input_unit, input_unit_spacer},
         CustomRenderer,
@@ -14,12 +17,12 @@ use crate::{
 
 #[derive(New)]
 pub struct ColumnLineComponent<'a> {
-    line: &'a ColumnLine,
+    line: &'a PatternLine,
     cursor_x: Option<i32>,
 }
 
 pub fn column_line_component<'a>(
-    model: &'a ColumnLine,
+    model: &'a PatternLine,
     cursor_x: Option<i32>,
 ) -> ColumnLineComponent<'a> {
     ColumnLineComponent::new(model, cursor_x)
@@ -38,22 +41,22 @@ where
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, R> {
         let (note_char_1, note_char_2, octave_char) =
-            if let Some(note_value) = self.line.note_field.note {
+            if let Some(note_value) = self.line.note.value() {
                 match note_value {
-                    NoteValue::Note(note, octave) => {
+                    NoteFieldValue::Note((note, octave)) => {
                         let (note_1, note_2) = match note {
-                            Note::A => ('A', '-'),
-                            Note::B => ('B', '-'),
-                            Note::C => ('C', '-'),
-                            Note::D => ('D', '-'),
-                            Note::E => ('E', '-'),
-                            Note::F => ('F', '-'),
-                            Note::G => ('G', '-'),
-                            Note::CSharp => ('C', '#'),
-                            Note::DSharp => ('D', '#'),
-                            Note::FSharp => ('F', '#'),
-                            Note::GSharp => ('G', '#'),
-                            Note::ASharp => ('A', '#'),
+                            NoteName::A => ('A', '-'),
+                            NoteName::B => ('B', '-'),
+                            NoteName::C => ('C', '-'),
+                            NoteName::D => ('D', '-'),
+                            NoteName::E => ('E', '-'),
+                            NoteName::F => ('F', '-'),
+                            NoteName::G => ('G', '-'),
+                            NoteName::CSharp => ('C', '#'),
+                            NoteName::DSharp => ('D', '#'),
+                            NoteName::FSharp => ('F', '#'),
+                            NoteName::GSharp => ('G', '#'),
+                            NoteName::ASharp => ('A', '#'),
                         };
                         let octave = octave.value();
                         let octave_char = match octave {
@@ -71,21 +74,21 @@ where
                         };
                         (Some(note_1), Some(note_2), Some(octave_char))
                     }
-                    NoteValue::Cut => (Some('C'), Some('U'), Some('T')),
+                    NoteFieldValue::Cut => (Some('C'), Some('U'), Some('T')),
                 }
             } else {
                 (None, None, None)
             };
 
-        let (vel_char_1, vel_char_2) = if let Some(velocity) = self.line.velocity_field.value {
+        let (vel_char_1, vel_char_2) = if let Some((first, second)) = self.line.velocity.value() {
             (
                 Some(
-                    char::from_digit((velocity >> 4) as u32, 16)
+                    char::from_digit(first.value() as u32, 16)
                         .unwrap()
                         .to_ascii_uppercase(),
                 ),
                 Some(
-                    char::from_digit((velocity & 0x0F) as u32, 16)
+                    char::from_digit(second.value() as u32, 16)
                         .unwrap()
                         .to_ascii_uppercase(),
                 ),
@@ -95,15 +98,15 @@ where
         };
 
         let (instr_char_1, instr_char_2) =
-            if let Some(instrument_id) = self.line.instrument_field.value {
+            if let Some((first, second)) = self.line.instrument.value() {
                 (
                     Some(
-                        char::from_digit((instrument_id >> 4) as u32, 16)
+                        char::from_digit(first.value() as u32, 16)
                             .unwrap()
                             .to_ascii_uppercase(),
                     ),
                     Some(
-                        char::from_digit((instrument_id & 0x0F) as u32, 16)
+                        char::from_digit(second.value() as u32, 16)
                             .unwrap()
                             .to_ascii_uppercase(),
                     ),

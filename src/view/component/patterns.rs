@@ -9,21 +9,21 @@ use iced::{
 };
 use iter_tools::Itertools;
 
-use crate::{model::pattern::PatternCollection, view::{CustomRenderer, MONOSPACED_FONT}};
+use crate::{model::pattern::Patterns, view::{CustomRenderer, MONOSPACED_FONT}};
 
 use super::pattern::pattern_component;
 
 pub struct PatternsComponent<'a> {
-    pattern_collection: &'a PatternCollection,
+    patterns: &'a Patterns,
     scroll_id: iced::widget::scrollable::Id,
 }
 
 pub fn patterns_component<'a>(
-    pattern_collection: &'a PatternCollection,
+    patterns: &'a Patterns,
     scroll_id: iced::widget::scrollable::Id,
 ) -> PatternsComponent<'a> {
     PatternsComponent {
-        pattern_collection,
+        patterns,
         scroll_id,
     }
 }
@@ -40,14 +40,13 @@ where
     }
 
     fn view(&self, _state: &Self::State) -> iced::Element<'_, Self::Event, R> {
+        let current_pattern = self.patterns.current_pattern();
         let pattern = pattern_component(
-            self.pattern_collection.current_pattern(),
-            self.pattern_collection.cursor_x,
-            self.pattern_collection.cursor_y,
+            current_pattern,
+            self.patterns.cursor_x,
+            self.patterns.cursor_y,
         );
-        let line_text_numbers = (0..self.pattern_collection.current_pattern().columns[0]
-            .lines
-            .len())
+        let line_text_numbers = (0..current_pattern.len)
             .map(|line_index| {
                 text(format!("{: >3}", line_index))
                     .font(MONOSPACED_FONT)

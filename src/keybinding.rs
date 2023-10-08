@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use iced::keyboard::{KeyCode, Modifiers};
 use rust_utils::hash_map_of;
 
-use crate::model::{Direction, Note, value_object::OctaveValue, value_object::HexDigit};
+use crate::model::{field::{NoteName, value_object::{HexDigit, OctaveValue}}, Direction};
 
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum Action {
-    Note(Note),
+    Note(NoteName),
     Hex(HexDigit),
     Octave(OctaveValue),
     ClearUnit,
@@ -69,18 +69,18 @@ impl Default for KeyBindings {
     fn default() -> Self {
         let context_bindings = hash_map_of!(
             InputContext::Note => hash_map_of!(
-                KeyboardEvent::Key(KeyCode::A) => Action::Note(Note::C),
-                KeyboardEvent::Key(KeyCode::Key2) => Action::Note(Note::CSharp),
-                KeyboardEvent::Key(KeyCode::Z) => Action::Note(Note::D),
-                KeyboardEvent::Key(KeyCode::Key3) => Action::Note(Note::DSharp),
-                KeyboardEvent::Key(KeyCode::E) => Action::Note(Note::E),
-                KeyboardEvent::Key(KeyCode::R) => Action::Note(Note::F),
-                KeyboardEvent::Key(KeyCode::Key5) => Action::Note(Note::FSharp),
-                KeyboardEvent::Key(KeyCode::T) => Action::Note(Note::G),
-                KeyboardEvent::Key(KeyCode::Key6) => Action::Note(Note::GSharp),
-                KeyboardEvent::Key(KeyCode::Y) => Action::Note(Note::A),
-                KeyboardEvent::Key(KeyCode::Key7) => Action::Note(Note::ASharp),
-                KeyboardEvent::Key(KeyCode::U) => Action::Note(Note::B),
+                KeyboardEvent::Key(KeyCode::A) => Action::Note(NoteName::C),
+                KeyboardEvent::Key(KeyCode::Key2) => Action::Note(NoteName::CSharp),
+                KeyboardEvent::Key(KeyCode::Z) => Action::Note(NoteName::D),
+                KeyboardEvent::Key(KeyCode::Key3) => Action::Note(NoteName::DSharp),
+                KeyboardEvent::Key(KeyCode::E) => Action::Note(NoteName::E),
+                KeyboardEvent::Key(KeyCode::R) => Action::Note(NoteName::F),
+                KeyboardEvent::Key(KeyCode::Key5) => Action::Note(NoteName::FSharp),
+                KeyboardEvent::Key(KeyCode::T) => Action::Note(NoteName::G),
+                KeyboardEvent::Key(KeyCode::Key6) => Action::Note(NoteName::GSharp),
+                KeyboardEvent::Key(KeyCode::Y) => Action::Note(NoteName::A),
+                KeyboardEvent::Key(KeyCode::Key7) => Action::Note(NoteName::ASharp),
+                KeyboardEvent::Key(KeyCode::U) => Action::Note(NoteName::B),
                 KeyboardEvent::Key(KeyCode::Key1) => Action::SetNoteCut,
             ),
             InputContext::Octave => hash_map_of!(
