@@ -30,7 +30,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn A4_should_be_midi_number_69() {
+    fn a4_should_be_midi_number_69() {
         let note = NoteName::A;
         let octave = OctaveValue::new(4).unwrap();
         let midi_number = (note, octave).into_midi_note();
@@ -38,7 +38,7 @@ mod tests {
     }
 
     #[test]
-    fn D6_should_be_midi_number_86() {
+    fn d6_should_be_midi_number_86() {
         let note = NoteName::D;
         let octave = OctaveValue::new(6).unwrap();
         let midi_number = (note, octave).into_midi_note();

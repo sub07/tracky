@@ -101,13 +101,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn A4_should_be_freq_440_0() {
+    fn a4_should_be_freq_440_0() {
         let freq = (NoteName::A, OctaveValue::new(4).unwrap()).into_frequency();
         assert_eq!(440.0, freq);
     }
 
     #[test]
-    fn B2_should_be_freq_123_47() {
+    fn b2_should_be_freq_123_47() {
         let freq = (NoteName::B, OctaveValue::new(2).unwrap()).into_frequency();
         approx::assert_relative_eq!(123.47, freq, epsilon = 0.001);
     }
