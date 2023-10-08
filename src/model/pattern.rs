@@ -1,7 +1,5 @@
 use rust_utils_macro::{EnumIter, EnumValue};
 
-use crate::view::component::pattern;
-
 use super::field::{value_object::HexDigit, Field, NoteFieldValue};
 
 macro_rules! declare_field {

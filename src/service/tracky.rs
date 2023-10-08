@@ -5,7 +5,7 @@ use crate::{
     model::{
         field::{
             value_object::{HexDigit, OctaveValue},
-            NoteFieldValue, NoteName,
+            NoteName,
         },
         pattern::LineField,
     },

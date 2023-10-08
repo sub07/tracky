@@ -2,7 +2,6 @@ use iced::{
     advanced::{
         layout::{Limits, Node},
         renderer::{Quad, Style},
-        text::Renderer,
         widget::Tree,
         Layout, Text, Widget,
     },

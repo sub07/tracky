@@ -5,10 +5,10 @@ use audio::generation::SineWaveDescriptor;
 use audio::model::signal::StereoSignal;
 use audio::value_object::Volume;
 use iced::event::Event;
-use iced::font::{Stretch, Weight};
+
 use iced::widget::{scrollable, text};
 use iced::{
-    executor, font, subscription, time, Application, Command, Element, Font, Renderer, Settings,
+    executor, font, subscription, time, Application, Command, Element, Renderer, Settings,
     Subscription, Theme,
 };
 

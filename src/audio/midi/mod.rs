@@ -1,4 +1,4 @@
-use crate::model::field::{Note};
+use crate::model::field::Note;
 
 use self::value_object::MidiNumber;
 

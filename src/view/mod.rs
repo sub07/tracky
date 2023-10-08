@@ -1,4 +1,7 @@
-use iced::{Font, Theme, font::{self, Stretch, Weight}};
+use iced::{
+    font::{self, Stretch, Weight},
+    Font, Theme,
+};
 
 pub mod component;
 pub mod widget;

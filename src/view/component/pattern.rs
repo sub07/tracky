@@ -6,7 +6,8 @@ use iter_tools::Itertools;
 use rust_utils_macro::New;
 
 use crate::{
-    view::CustomRenderer, model::pattern::{PatternView, self},
+    model::pattern::{self, PatternView},
+    view::CustomRenderer,
 };
 
 use super::column::column_component;

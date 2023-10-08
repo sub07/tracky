@@ -5,7 +5,7 @@ use iced::{
 use iter_tools::Itertools;
 use rust_utils_macro::New;
 
-use crate::{view::CustomRenderer, model::pattern::ColumnView};
+use crate::{model::pattern::ColumnView, view::CustomRenderer};
 
 use super::column_line::column_line_component;
 

@@ -3,7 +3,13 @@ use std::collections::HashMap;
 use iced::keyboard::{KeyCode, Modifiers};
 use rust_utils::hash_map_of;
 
-use crate::model::{field::{NoteName, value_object::{HexDigit, OctaveValue}}, Direction};
+use crate::model::{
+    field::{
+        value_object::{HexDigit, OctaveValue},
+        NoteName,
+    },
+    Direction,
+};
 
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum Action {

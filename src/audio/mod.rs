@@ -2,13 +2,16 @@ use std::time::Duration;
 
 use iter_tools::Itertools;
 
-use self::{midi::{value_object::MidiNumber, IntoMidiNumber}, model::signal::StereoSignal};
+use self::{
+    midi::{value_object::MidiNumber, IntoMidiNumber},
+    model::signal::StereoSignal,
+};
 
 pub mod frame;
 pub mod generation;
-pub mod player;
 pub mod midi;
 pub mod model;
+pub mod player;
 
 pub mod value_object {
     use rust_utils::define_value_object;
@@ -85,7 +88,7 @@ impl IntoFrequency for MidiNumber {
     }
 }
 
-impl <T: IntoMidiNumber> IntoFrequency for T {
+impl<T: IntoMidiNumber> IntoFrequency for T {
     fn into_frequency(self) -> f32 {
         self.into_midi_note().into_frequency()
     }
@@ -93,7 +96,7 @@ impl <T: IntoMidiNumber> IntoFrequency for T {
 
 #[cfg(test)]
 mod tests {
-    use crate::model::field::{NoteName, value_object::OctaveValue};
+    use crate::model::field::{value_object::OctaveValue, NoteName};
 
     use super::*;
 

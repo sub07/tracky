@@ -1,8 +1,17 @@
 use std::time::Duration;
 
-use crate::{audio::{model::signal::StereoSignal, FrameIterator, generation::{SampleParametersInterpolator, SineWaveDescriptor, SquareWaveDescriptor, SawWaveDescriptor}, IntoFrequency}};
+use crate::audio::{
+    generation::{
+        SampleParametersInterpolator, SawWaveDescriptor, SineWaveDescriptor, SquareWaveDescriptor,
+    },
+    model::signal::StereoSignal,
+    FrameIterator, IntoFrequency,
+};
 
-use super::{pattern::ColumnView, field::{NoteFieldValue, Note}};
+use super::{
+    field::{Note, NoteFieldValue},
+    pattern::ColumnView,
+};
 
 // struct Instrument {
 //     frame_iter: Box<dyn FrameIterator>,

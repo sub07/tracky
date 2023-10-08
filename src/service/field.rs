@@ -1,6 +1,6 @@
 use crate::model::field::{
     value_object::{HexDigit, OctaveValue},
-    Field, Note, NoteFieldValue, NoteName,
+    Field, NoteFieldValue, NoteName,
 };
 
 impl Field<NoteFieldValue> {

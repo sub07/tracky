@@ -8,7 +8,7 @@ pub mod value_object {
 
 pub struct Field<T>(Option<T>);
 
-impl <T> Default for Field<T> {
+impl<T> Default for Field<T> {
     fn default() -> Self {
         Self(Default::default())
     }
