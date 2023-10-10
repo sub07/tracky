@@ -121,19 +121,38 @@ impl Application for Tracky {
                         PlayingState::Stopped
                     } else {
                         assert_eq!(self.patterns.nb_column, self.audio_channels.len() as u32);
-                        
+
                         let mut player = audio::player::Player::new().unwrap();
                         player.volume(Volume::new(0.1).unwrap());
-                        
-                        for (column, audio_channel) in self.patterns.current_pattern().columns().zip(self.audio_channels.iter_mut()) {
+
+                        for (column, audio_channel) in self
+                            .patterns
+                            .current_pattern()
+                            .columns()
+                            .zip(self.audio_channels.iter_mut())
+                        {
                             audio_channel.handle_column(column);
                         }
 
-                        let pattern_duration = self.audio_channels.iter().next().unwrap().signal().duration();
+                        let pattern_duration = self
+                            .audio_channels
+                            .iter()
+                            .next()
+                            .unwrap()
+                            .signal()
+                            .duration();
                         self.mixer_output_signal.ensure_duration(pattern_duration);
 
                         for audio_channel in self.audio_channels.iter() {
-                            for ((mix_left, mix_right), (audio_channel_left, audio_channel_right)) in self.mixer_output_signal.frames.iter_mut().zip(audio_channel.signal().frames.iter()) {
+                            for (
+                                (mix_left, mix_right),
+                                (audio_channel_left, audio_channel_right),
+                            ) in self
+                                .mixer_output_signal
+                                .frames
+                                .iter_mut()
+                                .zip(audio_channel.signal().frames.iter())
+                            {
                                 *mix_left += *audio_channel_left;
                                 *mix_right += *audio_channel_right;
                             }

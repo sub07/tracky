@@ -118,7 +118,10 @@ impl StereoSignal {
         if self.duration() >= duration {
             return;
         }
-        self.frames.resize((duration.as_secs_f32() * self.sample_rate) as usize, (0f32, 0f32));
+        self.frames.resize(
+            (duration.as_secs_f32() * self.sample_rate) as usize,
+            (0f32, 0f32),
+        );
     }
 }
 

@@ -70,7 +70,7 @@ impl AudioChannel {
                     _ => None,
                 };
                 if let Some(Instrument {
-                    frame_iter,
+                    frame_iter: _,
                     index,
                     phase,
                 }) = &mut self.current_instrument
