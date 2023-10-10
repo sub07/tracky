@@ -44,7 +44,7 @@ impl LineField {
 pub struct Patterns {
     pub lines: Vec<PatternLine>,
     patterns_len: Vec<u32>,
-    nb_column: u32,
+    pub nb_column: u32,
     pub cursor_x: i32,
     pub cursor_y: i32,
     selected_pattern_index: usize,
@@ -53,7 +53,7 @@ pub struct Patterns {
 impl Default for Patterns {
     fn default() -> Self {
         let patterns_len = vec![128];
-        let nb_column = 4;
+        let nb_column = 20;
         Patterns::new(nb_column, patterns_len)
     }
 }

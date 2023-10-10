@@ -14,10 +14,13 @@ use crate::{
 
 impl Tracky {
     pub fn set_note_name(&mut self, note: NoteName) {
-        self.patterns
-            .current_line_mut()
-            .note
-            .set_note_name(note, self.default_octave)
+        let current_line = self.patterns.current_line_mut();
+        
+        current_line.note.set_note_name(note, self.default_octave);
+
+        if let None = current_line.instrument.value() {
+            current_line.instrument.set_u8(self.selected_instrument);
+        }
     }
 
     pub fn set_velocity(&mut self, digit: HexDigit) {

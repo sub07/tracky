@@ -3,6 +3,7 @@ use std::time::{Duration, Instant};
 use audio::generation::SineWaveDescriptor;
 
 use audio::model::signal::StereoSignal;
+use audio::player::Player;
 use audio::value_object::Volume;
 use iced::event::Event;
 
@@ -13,7 +14,7 @@ use iced::{
 };
 
 use keybinding::KeyBindings;
-use model::audio_channel::handle_column;
+use model::audio_channel::AudioChannel;
 use model::field::value_object::OctaveValue;
 use model::pattern::Patterns;
 
@@ -26,7 +27,11 @@ mod service;
 mod view;
 
 pub fn main() -> iced::Result {
-    Tracky::run(Settings::default())
+    let player_sample_rate = Player::new().unwrap().sample_rate;
+    Tracky::run(Settings {
+        flags: player_sample_rate,
+        ..Settings::default()
+    })
 }
 
 pub enum PlayingState {
@@ -38,8 +43,11 @@ struct Tracky {
     patterns: Patterns,
     pattern_scroll_id: scrollable::Id,
     default_octave: OctaveValue,
+    selected_instrument: u8,
     keybindings: KeyBindings,
     playing_state: PlayingState,
+    audio_channels: Vec<AudioChannel>,
+    mixer_output_signal: StereoSignal,
     sine_hz: i32,
     sine_generator: SineWaveDescriptor,
 }
@@ -54,13 +62,19 @@ enum Message {
 }
 
 impl Tracky {
-    fn new() -> Self {
+    fn new(patterns: Patterns, sample_rate: f32) -> Self {
+        let nb_column = patterns.nb_column as usize;
+        let mut audio_channels = Vec::with_capacity(nb_column);
+        audio_channels.resize_with(nb_column, || AudioChannel::new(6.0, sample_rate));
         Self {
-            patterns: Default::default(),
+            patterns: patterns,
             keybindings: Default::default(),
             default_octave: OctaveValue::new(5).unwrap(),
+            selected_instrument: 0,
             pattern_scroll_id: scrollable::Id::unique(),
             playing_state: PlayingState::Stopped,
+            audio_channels,
+            mixer_output_signal: StereoSignal::new(Duration::ZERO, sample_rate),
             sine_hz: 100,
             sine_generator: SineWaveDescriptor,
         }
@@ -71,11 +85,11 @@ impl Application for Tracky {
     type Executor = executor::Default;
     type Message = Message;
     type Theme = Theme;
-    type Flags = ();
+    type Flags = f32;
 
-    fn new(_: Self::Flags) -> (Self, Command<Self::Message>) {
+    fn new(sample_rate: Self::Flags) -> (Self, Command<Self::Message>) {
         (
-            Tracky::new(),
+            Tracky::new(Default::default(), sample_rate),
             font::load(include_bytes!("../roboto_mono.ttf").as_slice()).map(Message::FontLoaded),
         )
     }
@@ -106,23 +120,27 @@ impl Application for Tracky {
                     self.playing_state = if let PlayingState::Playing(_) = self.playing_state {
                         PlayingState::Stopped
                     } else {
-                        let bps = 6.0;
+                        assert_eq!(self.patterns.nb_column, self.audio_channels.len() as u32);
+                        
                         let mut player = audio::player::Player::new().unwrap();
                         player.volume(Volume::new(0.1).unwrap());
-                        let mut channel = StereoSignal::new(
-                            Duration::from_secs_f64(
-                                (1.0 / bps) * self.patterns.current_pattern().len as f64,
-                            ),
-                            player.sample_rate,
-                        );
+                        
+                        for (column, audio_channel) in self.patterns.current_pattern().columns().zip(self.audio_channels.iter_mut()) {
+                            audio_channel.handle_column(column);
+                        }
 
-                        handle_column(
-                            bps,
-                            &mut channel,
-                            self.patterns.current_pattern().columns().next().unwrap(),
-                        );
-                        // channel.write_signal_to_disk("sig.wav".into()).unwrap();
-                        player.queue_signal(&channel).unwrap();
+                        let pattern_duration = self.audio_channels.iter().next().unwrap().signal().duration();
+                        self.mixer_output_signal.ensure_duration(pattern_duration);
+
+                        for audio_channel in self.audio_channels.iter() {
+                            for ((mix_left, mix_right), (audio_channel_left, audio_channel_right)) in self.mixer_output_signal.frames.iter_mut().zip(audio_channel.signal().frames.iter()) {
+                                *mix_left += *audio_channel_left;
+                                *mix_right += *audio_channel_right;
+                            }
+                        }
+
+                        // self.mixer_output_signal.write_signal_to_disk("sig.wav".into()).unwrap();
+                        player.queue_signal(&self.mixer_output_signal).unwrap();
                         PlayingState::Playing(player)
                     }
                 }

@@ -113,6 +113,13 @@ impl StereoSignal {
 
         Ok(())
     }
+
+    pub fn ensure_duration(&mut self, duration: Duration) {
+        if self.duration() >= duration {
+            return;
+        }
+        self.frames.resize((duration.as_secs_f32() * self.sample_rate) as usize, (0f32, 0f32));
+    }
 }
 
 impl<'a> From<&'a StereoSignal> for &'a [(f32, f32)] {
