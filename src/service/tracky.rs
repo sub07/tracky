@@ -7,7 +7,7 @@ use crate::{
             value_object::{HexDigit, OctaveValue},
             NoteName,
         },
-        pattern::LineField,
+        pattern::PatternLineDescriptor,
     },
     Tracky,
 };
@@ -93,17 +93,17 @@ impl Tracky {
             (current_pattern.len, current_pattern.nb_column)
         };
 
-        if self.patterns.cursor_x % LineField::LINE_LEN == 1 {
+        if self.patterns.cursor_x % PatternLineDescriptor::LINE_LEN == 1 {
             self.patterns.cursor_x += x;
         }
 
         self.patterns.cursor_x = i32::rem_euclid(
             self.patterns.cursor_x,
-            LineField::LINE_LEN * nb_column as i32,
+            PatternLineDescriptor::LINE_LEN * nb_column as i32,
         );
         self.patterns.cursor_y = i32::rem_euclid(self.patterns.cursor_y, pattern_len as i32);
 
-        let cursor_x_column_index = self.patterns.cursor_x / LineField::LINE_LEN;
+        let cursor_x_column_index = self.patterns.cursor_x / PatternLineDescriptor::LINE_LEN;
 
         return scrollable::snap_to(
             self.pattern_scroll_id.clone(),

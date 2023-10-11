@@ -1,4 +1,4 @@
 pub mod audio_channel;
 pub mod field;
-pub mod patterns;
+pub mod pattern;
 pub mod tracky;

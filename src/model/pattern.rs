@@ -12,7 +12,7 @@ macro_rules! declare_field {
         }
 
         #[derive(EnumIter, EnumValue)]
-        pub enum LineField {
+        pub enum PatternLineDescriptor {
             $(
                 #[value(len: usize = $size)]
                 $pascal_case,
@@ -27,14 +27,14 @@ declare_field! {
     instrument Instrument 2 (HexDigit, HexDigit),
 }
 
-impl LineField {
-    pub const LINE_LEN: i32 = LineField::line_len() as i32;
+impl PatternLineDescriptor {
+    pub const LINE_LEN: i32 = PatternLineDescriptor::line_len() as i32;
 
     pub const fn line_len() -> usize {
         let mut sum = 0;
         let mut i = 0;
-        while i < LineField::size() as i32 {
-            sum += LineField::VARIANTS[i as usize].len();
+        while i < PatternLineDescriptor::size() {
+            sum += PatternLineDescriptor::VARIANTS[i].len();
             i += 1;
         }
         sum
@@ -115,7 +115,7 @@ impl Patterns {
     }
 
     pub fn current_line_mut(&mut self) -> &mut PatternLine {
-        let current_column_index = self.cursor_x / LineField::LINE_LEN;
+        let current_column_index = self.cursor_x / PatternLineDescriptor::LINE_LEN;
         let pattern_len = self.current_pattern_len() as usize;
         let cursor_y = self.cursor_y as usize;
         let range = self.pattern_range(self.selected_pattern_index).unwrap();

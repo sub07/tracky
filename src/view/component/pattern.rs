@@ -6,7 +6,7 @@ use iter_tools::Itertools;
 use rust_utils_macro::New;
 
 use crate::{
-    model::pattern::{self, PatternView},
+    model::pattern::{self, PatternView, PatternLineDescriptor},
     view::CustomRenderer,
 };
 
@@ -40,8 +40,8 @@ where
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, R> {
-        let cursor_column_index = self.cursor_x / pattern::LineField::LINE_LEN;
-        let cursor_column_local = self.cursor_x % pattern::LineField::LINE_LEN;
+        let cursor_column_index = self.cursor_x / PatternLineDescriptor::LINE_LEN;
+        let cursor_column_local = self.cursor_x % PatternLineDescriptor::LINE_LEN;
         let columns = self
             .pattern
             .columns()
