@@ -113,15 +113,14 @@ impl StereoSignal {
 
         Ok(())
     }
+}
 
-    pub fn ensure_duration(&mut self, duration: Duration) {
-        if self.duration() >= duration {
-            return;
+impl std::ops::AddAssign<&StereoSignal> for StereoSignal {
+    fn add_assign(&mut self, rhs: &StereoSignal) {
+        for ((l1, r1), (l2, r2)) in self.frames.iter_mut().zip(rhs.frames.iter()) {
+            *l1 += *l2;
+            *r1 += *r2;
         }
-        self.frames.resize(
-            (duration.as_secs_f32() * self.sample_rate) as usize,
-            (0f32, 0f32),
-        );
     }
 }
 

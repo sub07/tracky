@@ -44,7 +44,7 @@ impl PatternLineDescriptor {
 pub struct Patterns {
     pub lines: Vec<PatternLine>,
     patterns_len: Vec<u32>,
-    pub nb_column: u32,
+    pub nb_channel: u32,
     pub cursor_x: i32,
     pub cursor_y: i32,
     selected_pattern_index: usize,
@@ -68,7 +68,7 @@ impl Patterns {
         Patterns {
             lines,
             patterns_len,
-            nb_column,
+            nb_channel: nb_column,
             cursor_x: 0,
             cursor_y: 0,
             selected_pattern_index: 0,
@@ -77,7 +77,7 @@ impl Patterns {
 
     fn pattern_range(&self, index: usize) -> anyhow::Result<std::ops::Range<usize>> {
         let start = self.patterns_len[..index].iter().sum::<u32>() as usize;
-        let end = start + (self.patterns_len[index] * self.nb_column) as usize;
+        let end = start + (self.patterns_len[index] * self.nb_channel) as usize;
 
         anyhow::ensure!(start <= self.lines.len(), "pattern index out of bounds");
         anyhow::ensure!(end <= self.lines.len(), "pattern index out of bounds");
@@ -88,7 +88,7 @@ impl Patterns {
     fn pattern<'a>(&'a self, index: usize) -> anyhow::Result<PatternView<'a>> {
         Ok(PatternView {
             lines: &self.lines[self.pattern_range(index)?],
-            nb_column: self.nb_column,
+            nb_column: self.nb_channel,
             len: self.patterns_len[index],
         })
     }
@@ -97,7 +97,7 @@ impl Patterns {
         let range = self.pattern_range(index)?;
         Ok(PatternViewMut {
             lines: &mut self.lines[range],
-            nb_column: self.nb_column,
+            nb_column: self.nb_channel,
             len: self.patterns_len[index],
         })
     }
