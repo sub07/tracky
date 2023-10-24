@@ -136,6 +136,11 @@ impl Application for Tracky {
                 self.sine_hz = value;
             }
             Message::Tick(_now) => {
+                if let PlayingState::Playing(player) = &mut self.playing_state {
+                    if player.is_finished() {
+                        self.playing_state = PlayingState::Stopped;
+                    }
+                }
                 // let frames = Samples::<audio::frame::Mono>::collect_for_duration(
                 //     &mut self.sine_generator,
                 //     Duration::from_millis(10),
@@ -171,7 +176,7 @@ impl Application for Tracky {
 
     fn subscription(&self) -> Subscription<Self::Message> {
         Subscription::batch([
-            time::every(Duration::from_millis(10)).map(Message::Tick),
+            time::every(Duration::from_millis(100)).map(Message::Tick),
             subscription::events().map(Message::EventOccurred),
         ])
     }

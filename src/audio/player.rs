@@ -2,13 +2,13 @@ use std::collections::VecDeque;
 use std::fmt::Debug;
 use std::iter::Peekable;
 
-use std::ops::DerefMut;
+use std::ops::{DerefMut, Deref};
 use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::vec::IntoIter;
 
-use anyhow::{anyhow, bail};
+use anyhow::{anyhow, bail, ensure};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use rust_utils_macro::New;
 
@@ -115,23 +115,25 @@ impl Player {
                             let pan = stream_data.pan.value();
                             let volume = stream_data.volume.value();
 
-                            let left_volume = (1.0 - pan.clamp(0.0, 1.0)) * volume;
-                            let right_volume = (1.0 + pan.clamp(-1.0, 0.0)) * volume;
+                            let left_amp = (1.0 - pan.clamp(0.0, 1.0)) * volume;
+                            let right_amp = (1.0 + pan.clamp(-1.0, 0.0)) * volume;
 
                             let mut out = data.iter_mut().peekable();
 
                             while out.peek().is_some() {
                                 let current_iter = match stream_data.queue.front_mut() {
                                     Some(front) => front,
-                                    None => return,
+                                    None => break,
                                 };
                                 let (l, r) = current_iter.next().unwrap();
-                                *out.next().unwrap() = l * left_volume;
-                                *out.next().unwrap() = r * right_volume;
+                                *out.next().unwrap() = l * left_amp;
+                                *out.next().unwrap() = r * right_amp;
                                 if current_iter.peek().is_none() {
                                     stream_data.queue.pop_front();
                                 }
                             }
+
+                            out.for_each(|v| *v = 0.0);
                         },
                         error_callback,
                         None,
@@ -166,6 +168,8 @@ impl Player {
         } else {
             bail!("Stream infos were not returned: {message:?}");
         };
+
+        ensure!(nb_channel == 2, "Only stereo output is supported");
 
         let message = stream_creation_receiver.recv()??;
 
@@ -208,6 +212,14 @@ impl Player {
 
     fn data_mut(&mut self) -> impl DerefMut<Target = StreamData> + '_ {
         self.stream_data.lock().unwrap()
+    }
+
+    fn data(&self) -> impl Deref<Target = StreamData> + '_ {
+        self.stream_data.lock().unwrap()
+    }
+
+    pub fn is_finished(&self) -> bool {
+        self.data().queue.is_empty()
     }
 }
 
