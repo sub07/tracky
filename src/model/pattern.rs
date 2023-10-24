@@ -1,3 +1,4 @@
+use iter_tools::Itertools;
 use rust_utils_macro::{EnumIter, EnumValue};
 
 use super::field::{value_object::HexDigit, Field, NoteFieldValue};
@@ -43,7 +44,7 @@ impl PatternLineDescriptor {
 
 pub struct Patterns {
     pub lines: Vec<PatternLine>,
-    patterns_len: Vec<u32>,
+    pub lengths: Vec<u32>,
     pub nb_channel: u32,
     pub cursor_x: i32,
     pub cursor_y: i32,
@@ -67,7 +68,7 @@ impl Patterns {
 
         Patterns {
             lines,
-            patterns_len,
+            lengths: patterns_len,
             nb_channel: nb_column,
             cursor_x: 0,
             cursor_y: 0,
@@ -76,8 +77,8 @@ impl Patterns {
     }
 
     fn pattern_range(&self, index: usize) -> anyhow::Result<std::ops::Range<usize>> {
-        let start = self.patterns_len[..index].iter().sum::<u32>() as usize;
-        let end = start + (self.patterns_len[index] * self.nb_channel) as usize;
+        let start = self.lengths[..index].iter().sum::<u32>() as usize;
+        let end = start + (self.lengths[index] * self.nb_channel) as usize;
 
         anyhow::ensure!(start <= self.lines.len(), "pattern index out of bounds");
         anyhow::ensure!(end <= self.lines.len(), "pattern index out of bounds");
@@ -89,7 +90,7 @@ impl Patterns {
         Ok(PatternView {
             lines: &self.lines[self.pattern_range(index)?],
             nb_column: self.nb_channel,
-            len: self.patterns_len[index],
+            len: self.lengths[index],
         })
     }
 
@@ -98,8 +99,12 @@ impl Patterns {
         Ok(PatternViewMut {
             lines: &mut self.lines[range],
             nb_column: self.nb_channel,
-            len: self.patterns_len[index],
+            len: self.lengths[index],
         })
+    }
+
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item = PatternView<'a>> {
+        (0..self.lengths.len()).map(|pattern_index| self.pattern(pattern_index).unwrap())
     }
 
     pub fn current_pattern<'a>(&'a self) -> PatternView<'a> {
@@ -111,7 +116,7 @@ impl Patterns {
     }
 
     pub fn current_pattern_len(&self) -> u32 {
-        self.patterns_len[self.selected_pattern_index]
+        self.lengths[self.selected_pattern_index]
     }
 
     pub fn current_line_mut(&mut self) -> &mut PatternLine {
@@ -121,6 +126,14 @@ impl Patterns {
         let range = self.pattern_range(self.selected_pattern_index).unwrap();
         let pattern = &mut self.lines[range];
         &mut pattern[current_column_index as usize * pattern_len + cursor_y]
+    }
+
+    fn track(&self, index: usize) -> impl Iterator<Item = anyhow::Result<ColumnView>> {
+        self.iter().map(move |pattern| pattern.column(index))
+    }
+
+    pub fn tracks(&self) -> impl Iterator<Item = impl Iterator<Item = ColumnView>> {
+        (0..self.nb_channel as usize).map(move |index| self.track(index).map(Result::unwrap))
     }
 }
 

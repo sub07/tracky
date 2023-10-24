@@ -64,7 +64,7 @@ impl Tracky {
             patterns: patterns,
             keybindings: Default::default(),
             default_octave: OctaveValue::new(5).unwrap(),
-            selected_instrument: 0,
+            selected_instrument: 2,
             pattern_scroll_id: scrollable::Id::unique(),
             playing_state: PlayingState::Stopped,
             sine_hz: 100,
@@ -115,7 +115,8 @@ impl Application for Tracky {
                         let mut player = audio::player::Player::new().unwrap();
                         player.volume(Volume::new(0.1).unwrap());
 
-                        let pattern_audio = audio_channel::handle_pattern(&self.patterns.current_pattern(), 6.0, player.sample_rate);
+                        let pattern_audio =
+                            audio_channel::handle_patterns(&self.patterns, player.sample_rate, 6.0);
 
                         // self.mixer_output_signal.write_signal_to_disk("sig.wav".into()).unwrap();
                         player.queue_signal(&pattern_audio).unwrap();

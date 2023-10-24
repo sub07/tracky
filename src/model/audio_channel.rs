@@ -25,6 +25,7 @@ pub struct AudioChannel {
     current_instrument: Option<Instrument>,
     current_amp: f32,
     current_note: Option<Note>,
+    current_duration: Duration
 }
 
 impl AudioChannel {
@@ -36,6 +37,7 @@ impl AudioChannel {
             current_instrument: None,
             current_amp: 1.0,
             current_note: None,
+            current_duration: Duration::ZERO,
         }
     }
 
@@ -49,8 +51,6 @@ impl AudioChannel {
     }
 
     pub fn handle_lines(&mut self, lines: &[PatternLine]) {
-        let mut current_duration = Duration::ZERO;
-
         for line in lines {
             if let Some(note_value) = line.note.value() {
                 match note_value {
@@ -110,12 +110,12 @@ impl AudioChannel {
                     );
 
                     self.signal
-                        .write_frames_at_duration(current_duration, &signal)
+                        .write_frames_at_duration(self.current_duration, &signal)
                         .unwrap();
                 }
                 _ => {}
             }
-            current_duration += self.step_duration;
+            self.current_duration += self.step_duration;
         }
     }
 }
