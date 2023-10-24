@@ -6,7 +6,7 @@ use iter_tools::Itertools;
 use rust_utils_macro::New;
 
 use crate::{
-    model::pattern::{self, PatternView, PatternLineDescriptor},
+    model::pattern::{PatternLineDescriptor, PatternView},
     view::CustomRenderer,
 };
 

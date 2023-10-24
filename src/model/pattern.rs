@@ -1,4 +1,3 @@
-use iter_tools::Itertools;
 use rust_utils_macro::{EnumIter, EnumValue};
 
 use super::field::{value_object::HexDigit, Field, NoteFieldValue};

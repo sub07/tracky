@@ -10,7 +10,7 @@ use crate::audio::{
 
 use super::{
     field::{Note, NoteFieldValue},
-    pattern::{ColumnView, PatternLine},
+    pattern::PatternLine,
 };
 
 struct Instrument {
@@ -25,7 +25,7 @@ pub struct AudioChannel {
     current_instrument: Option<Instrument>,
     current_amp: f32,
     current_note: Option<Note>,
-    current_duration: Duration
+    current_duration: Duration,
 }
 
 impl AudioChannel {
@@ -43,7 +43,10 @@ impl AudioChannel {
 
     pub fn compute_duration(bps: f32, pattern_len: u32) -> (Duration, Duration) {
         let step_duration = Duration::from_secs_f32(1.0 / bps);
-        (step_duration, step_duration.checked_mul(pattern_len).unwrap())
+        (
+            step_duration,
+            step_duration.checked_mul(pattern_len).unwrap(),
+        )
     }
 
     pub fn signal(&self) -> &StereoSignal {

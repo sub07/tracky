@@ -2,8 +2,6 @@ use std::time::{Duration, Instant};
 
 use audio::generation::SineWaveDescriptor;
 
-use audio::model::signal::StereoSignal;
-use audio::player::Player;
 use audio::value_object::Volume;
 use iced::event::Event;
 
@@ -14,7 +12,7 @@ use iced::{
 };
 
 use keybinding::KeyBindings;
-use model::audio_channel::AudioChannel;
+
 use model::field::value_object::OctaveValue;
 use model::pattern::Patterns;
 
@@ -79,7 +77,7 @@ impl Application for Tracky {
     type Theme = Theme;
     type Flags = ();
 
-    fn new(flags_: Self::Flags) -> (Self, Command<Self::Message>) {
+    fn new(_flags_: Self::Flags) -> (Self, Command<Self::Message>) {
         (
             Tracky::new(Default::default()),
             font::load(include_bytes!("../roboto_mono.ttf").as_slice()).map(Message::FontLoaded),
