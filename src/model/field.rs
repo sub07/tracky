@@ -1,9 +1,11 @@
 pub mod value_object {
+    use std::ops::RangeInclusive;
+
     use rust_utils::define_value_object;
-    pub const MAX_OCTAVE: u8 = 9;
+    pub const OCTAVE_VALID_RANGE: RangeInclusive<u8> = 0..=9;
 
     define_value_object!(pub HexDigit, u8, 0, |v| { v <= 0xF });
-    define_value_object!(pub OctaveValue, u8, 5, |v| { v <= MAX_OCTAVE });
+    define_value_object!(pub OctaveValue, u8, 5, |v| { OCTAVE_VALID_RANGE.contains(&v) });
 }
 
 pub struct Field<T>(Option<T>);

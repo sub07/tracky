@@ -23,6 +23,7 @@ pub enum Action {
     PreviousPattern,
     TogglePlay,
     SetNoteCut,
+    ModifyDefaultOctave(i32),
 }
 
 #[derive(PartialEq, Eq, Debug, Hash)]
@@ -129,8 +130,13 @@ impl Default for KeyBindings {
                 KeyboardEvent::Key(KeyCode::Minus) => Action::PreviousPattern,
                 KeyboardEvent::Key(KeyCode::Delete) => Action::ClearUnit,
                 KeyboardEvent::Key(KeyCode::Space) => Action::TogglePlay,
+                KeyboardEvent::Key(KeyCode::NumpadMultiply) => Action::ModifyDefaultOctave(1),
+                KeyboardEvent::Key(KeyCode::NumpadDivide) => Action::ModifyDefaultOctave(-1),
             ),
         );
+
+        // KeyCode::Asterisk
+        // KeyCode::
 
         KeyBindings { context_bindings }
     }

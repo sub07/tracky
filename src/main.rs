@@ -13,7 +13,7 @@ use iced::{
 
 use keybinding::KeyBindings;
 
-use model::field::value_object::OctaveValue;
+use model::field::value_object::{OctaveValue, OCTAVE_VALID_RANGE};
 use model::pattern::Patterns;
 
 use crate::service::audio_channel;
@@ -126,6 +126,16 @@ impl Application for Tracky {
                     .current_line_mut()
                     .note
                     .set(model::field::NoteFieldValue::Cut),
+                keybinding::Action::ModifyDefaultOctave(increment) => {
+                    let new_octave_value = self.default_octave.value() as i32 + increment;
+                    if new_octave_value >= *OCTAVE_VALID_RANGE.start() as i32
+                        && new_octave_value <= *OCTAVE_VALID_RANGE.end() as i32
+                    {
+                        self.default_octave =
+                            OctaveValue::new(self.default_octave.value() + increment as u8)
+                                .unwrap();
+                    }
+                }
             },
             Message::FontLoaded(r) => {
                 if let Err(e) = r {
@@ -160,11 +170,15 @@ impl Application for Tracky {
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
         iced::widget::column![
-            text(if let PlayingState::Playing(_) = &self.playing_state {
-                "playing"
-            } else {
-                "editing"
-            }),
+            iced::widget::row![
+                text(if let PlayingState::Playing(_) = &self.playing_state {
+                    "playing"
+                } else {
+                    "editing"
+                }),
+                text(format!("Octave: {}", self.default_octave.value()))
+            ]
+            .spacing(16.0),
             patterns_component(&self.patterns, self.pattern_scroll_id.clone()),
         ]
         .into()

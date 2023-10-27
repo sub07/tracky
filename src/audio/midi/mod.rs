@@ -6,7 +6,7 @@ pub mod value_object {
     use rust_utils::define_value_object;
 
     // From C0 to B8
-    define_value_object!(pub MidiNumber, u8, 69, |v| {v >= 12 && v <= (12 * crate::model::field::value_object::MAX_OCTAVE) + 23});
+    define_value_object!(pub MidiNumber, u8, 69, |v| {v >= 12 && v <= (12 * crate::model::field::value_object::OCTAVE_VALID_RANGE.end()) + 23});
 }
 
 pub trait IntoMidiNumber {
