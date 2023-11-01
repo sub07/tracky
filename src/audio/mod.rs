@@ -4,20 +4,50 @@ use iter_tools::Itertools;
 
 use self::{
     midi::{value_object::MidiNumber, IntoMidiNumber},
-    model::signal::StereoSignal,
+    signal::StereoSignal,
+    value_object::{Pan, Volume},
 };
 
 pub mod frame;
 pub mod generation;
 pub mod midi;
-pub mod model;
 pub mod player;
+pub mod signal;
 
 pub mod value_object {
     use rust_utils::define_value_object;
 
     define_value_object!(pub Volume, f32, 1.0, |v| { (0.0..=1.0).contains(&v) });
     define_value_object!(pub Pan, f32, 0.0, |v| { (-1.0..=1.0).contains(&v) });
+
+    impl Pan {
+        pub fn left(&self) -> Volume {
+            Volume::new(1.0 - self.value().clamp(0.0, 1.0)).unwrap()
+        }
+
+        pub fn right(&self) -> Volume {
+            Volume::new(1.0 + self.value().clamp(-1.0, 0.0)).unwrap()
+        }
+    }
+
+    impl std::ops::Mul<(f32, f32)> for Volume {
+        type Output = (f32, f32);
+
+        fn mul(self, (l, r): (f32, f32)) -> Self::Output {
+            let v = self.value();
+            (l * v, r * v)
+        }
+    }
+
+    impl std::ops::Mul<(f32, f32)> for Pan {
+        type Output = (f32, f32);
+
+        fn mul(self, (l, r): (f32, f32)) -> Self::Output {
+            let l_amp = self.left();
+            let r_amp = self.right();
+            (l * l_amp.value(), r * r_amp.value())
+        }
+    }
 }
 
 pub fn resample(src: &StereoSignal, target_sample_rate: f32) -> StereoSignal {
@@ -48,7 +78,8 @@ pub trait FrameIterator {
     fn next(
         &mut self,
         freq: f32,
-        amp: f32,
+        amp: Volume,
+        pan: Pan,
         phase: &mut f32,
         sample_rate: f32,
     ) -> Option<(f32, f32)>;
@@ -57,13 +88,14 @@ pub trait FrameIterator {
         &mut self,
         duration: Duration,
         freq: f32,
-        amp: f32,
+        amp: Volume,
+        pan: Pan,
         phase: &mut f32,
         sample_rate: f32,
     ) -> StereoSignal {
         let nb_sample = sample_rate * duration.as_secs_f32();
         let frames = (0..nb_sample as usize)
-            .map_while(|_| self.next(freq, amp, phase, sample_rate))
+            .map_while(|_| self.next(freq, amp, pan, phase, sample_rate))
             .collect_vec();
         StereoSignal::from_frames(frames, sample_rate)
     }

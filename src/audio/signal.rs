@@ -6,6 +6,8 @@ use rust_utils::iter::zip_self::ZipSelf;
 
 use crate::audio::frame;
 
+use super::{FrameIterator, value_object::*};
+
 #[derive(Clone)]
 pub struct StereoSignal {
     pub frames: Vec<(f32, f32)>,
@@ -127,5 +129,24 @@ impl std::ops::AddAssign<&StereoSignal> for StereoSignal {
 impl<'a> From<&'a StereoSignal> for &'a [(f32, f32)] {
     fn from(value: &'a StereoSignal) -> Self {
         &value.frames
+    }
+}
+
+impl FrameIterator for StereoSignal {
+    fn next(
+        &mut self,
+        freq: f32,
+        amp: Volume,
+        pan: Pan,
+        phase: &mut f32,
+        sample_rate: f32,
+    ) -> Option<(f32, f32)> {
+        let mut p = *phase;
+        let frame = self.frames_at_duration(Duration::from_secs_f32(p / sample_rate)).ok()?;
+
+        p += ;
+
+        *phase = p;
+        Some(amp * (pan * frame))
     }
 }

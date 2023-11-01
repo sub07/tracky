@@ -1,6 +1,9 @@
 use std::{f32::consts::PI, time::Duration};
 
-use super::FrameIterator;
+use super::{
+    value_object::{Pan, Volume},
+    FrameIterator,
+};
 
 const VELOCITY_TRANSITION_DURATION: Duration = Duration::from_millis(20);
 
@@ -95,12 +98,21 @@ impl<S: FrameIterator> FrameIterator for SampleParametersInterpolator<S> {
     fn next(
         &mut self,
         freq: f32,
-        amp: f32,
+        amp: Volume,
+        pan: Pan,
         phase: &mut f32,
         sample_rate: f32,
     ) -> Option<(f32, f32)> {
-        let current_amp = self.amp_interpolator.process_new_value(amp, sample_rate);
-        self.samples.next(freq, current_amp, phase, sample_rate)
+        let current_amp = self
+            .amp_interpolator
+            .process_new_value(amp.value(), sample_rate);
+        self.samples.next(
+            freq,
+            Volume::new(current_amp).unwrap(),
+            pan,
+            phase,
+            sample_rate,
+        )
     }
 }
 
@@ -110,13 +122,14 @@ impl FrameIterator for SineWaveDescriptor {
     fn next(
         &mut self,
         freq: f32,
-        amp: f32,
+        amp: Volume,
+        pan: Pan,
         phase: &mut f32,
         sample_rate: f32,
     ) -> Option<(f32, f32)> {
-        let s = phase.sin() * amp;
+        let s = phase.sin() * amp.value();
         *phase += 2.0 * PI * freq / sample_rate;
-        Some((s, s))
+        Some(pan * (s, s))
     }
 }
 
@@ -126,14 +139,15 @@ impl FrameIterator for SquareWaveDescriptor {
     fn next(
         &mut self,
         freq: f32,
-        amp: f32,
+        amp: Volume,
+        pan: Pan,
         phase: &mut f32,
         sample_rate: f32,
     ) -> Option<(f32, f32)> {
         let half_freq_period = 1.0 / freq / 2.0;
         let freq_period = 1.0 / freq;
 
-        let sample = if *phase < half_freq_period { 1.0 } else { -1.0 } * amp;
+        let sample = if *phase < half_freq_period { 1.0 } else { -1.0 } * amp.value();
         let s = sample as f32;
 
         *phase += 1.0 / sample_rate;
@@ -141,7 +155,7 @@ impl FrameIterator for SquareWaveDescriptor {
             *phase -= freq_period;
         }
 
-        Some((s, s))
+        Some(pan * (s, s))
     }
 }
 pub struct SawWaveDescriptor;
@@ -150,19 +164,19 @@ impl FrameIterator for SawWaveDescriptor {
     fn next(
         &mut self,
         freq: f32,
-        amp: f32,
+        amp: Volume,
+        pan: Pan,
         phase: &mut f32,
         sample_rate: f32,
     ) -> Option<(f32, f32)> {
         let freq_period = 1.0 / freq;
         let normalized_position = *phase / freq_period;
-        let sample = -1.0 + (1.0 - -1.0) * normalized_position * amp;
-        let s = sample as f32;
+        let s = -1.0 + (1.0 - -1.0) * normalized_position * amp.value();
         *phase += 1.0 / sample_rate;
         if *phase > freq_period {
             *phase -= freq_period;
         }
 
-        Some((s, s))
+        Some(pan * (s, s))
     }
 }

@@ -12,7 +12,7 @@ use anyhow::{anyhow, bail, ensure};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use rust_utils_macro::New;
 
-use super::model::signal::StereoSignal;
+use super::signal::StereoSignal;
 use super::value_object::{Pan, Volume};
 
 #[derive(New, Default)]

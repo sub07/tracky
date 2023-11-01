@@ -1,7 +1,7 @@
 use iter_tools::Itertools;
 
 use crate::{
-    audio::model::signal::StereoSignal,
+    audio::signal::StereoSignal,
     model::{
         audio_channel::AudioChannel,
         pattern::{PatternView, Patterns},

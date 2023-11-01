@@ -4,7 +4,8 @@ use crate::audio::{
     generation::{
         SampleParametersInterpolator, SawWaveDescriptor, SineWaveDescriptor, SquareWaveDescriptor,
     },
-    model::signal::StereoSignal,
+    signal::StereoSignal,
+    value_object::{Pan, Volume},
     FrameIterator, IntoFrequency,
 };
 
@@ -23,7 +24,7 @@ pub struct AudioChannel {
     signal: StereoSignal,
     step_duration: Duration,
     current_instrument: Option<Instrument>,
-    current_amp: f32,
+    current_amp: Volume,
     current_note: Option<Note>,
     current_duration: Duration,
 }
@@ -35,7 +36,7 @@ impl AudioChannel {
             signal: StereoSignal::new(signal_duration, sample_rate),
             step_duration,
             current_instrument: None,
-            current_amp: 1.0,
+            current_amp: Volume::default(),
             current_note: None,
             current_duration: Duration::ZERO,
         }
@@ -87,7 +88,7 @@ impl AudioChannel {
                 });
             }
             if let Some(velocity) = line.velocity.get_u8() {
-                self.current_amp = velocity as f32 / u8::MAX as f32;
+                self.current_amp = Volume::new(velocity as f32 / u8::MAX as f32).unwrap();
             }
 
             match (
@@ -108,6 +109,7 @@ impl AudioChannel {
                         self.step_duration,
                         note.into_frequency(),
                         amp,
+                        Pan::default(),
                         phase,
                         self.signal.sample_rate,
                     );
