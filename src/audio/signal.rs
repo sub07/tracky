@@ -4,9 +4,9 @@ use anyhow::bail;
 use iter_tools::Itertools;
 use rust_utils::iter::zip_self::ZipSelf;
 
-use crate::audio::frame;
+use crate::{audio::frame, model::field::{Note, NoteName, value_object::OctaveValue}};
 
-use super::{FrameIterator, value_object::*};
+use super::{FrameIterator, value_object::*, IntoFrequency};
 
 #[derive(Clone)]
 pub struct StereoSignal {
@@ -144,7 +144,8 @@ impl FrameIterator for StereoSignal {
         let mut p = *phase;
         let frame = self.frames_at_duration(Duration::from_secs_f32(p / sample_rate)).ok()?;
 
-        p += ;
+        let c5_freq: f32 = (NoteName::C, OctaveValue::new(5).unwrap()).into_frequency();
+        p += freq / c5_freq;
 
         *phase = p;
         Some(amp * (pan * frame))

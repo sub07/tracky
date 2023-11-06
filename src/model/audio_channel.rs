@@ -69,6 +69,7 @@ impl AudioChannel {
                         Some(Box::new(SampleParametersInterpolator::new(SquareWaveDescriptor)) as _)
                     }
                     2 => Some(Box::new(SampleParametersInterpolator::new(SawWaveDescriptor)) as _),
+                    3 => Some(Box::new(StereoSignal::from_path("piano.wav").unwrap()) as _),
                     _ => None,
                 };
                 if let Some(Instrument {
