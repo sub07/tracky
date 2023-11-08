@@ -1,12 +1,20 @@
-use std::{path::Path, time::Duration};
+use std::{
+    cell::OnceCell,
+    path::Path,
+    sync::{Mutex, OnceLock},
+    time::Duration,
+};
 
 use anyhow::bail;
 use iter_tools::Itertools;
 use rust_utils::iter::zip_self::ZipSelf;
 
-use crate::{audio::frame, model::field::{Note, NoteName, value_object::OctaveValue}};
+use crate::{
+    audio::frame,
+    model::field::{value_object::OctaveValue, Note, NoteName},
+};
 
-use super::{FrameIterator, value_object::*, IntoFrequency};
+use super::{value_object::*, FrameIterator, IntoFrequency};
 
 #[derive(Clone)]
 pub struct StereoSignal {
@@ -141,10 +149,16 @@ impl FrameIterator for StereoSignal {
         phase: &mut f32,
         sample_rate: f32,
     ) -> Option<(f32, f32)> {
-        let mut p = *phase;
-        let (l, r) = self.frames_at_duration(Duration::from_secs_f32(p / sample_rate)).ok()?;
+        static C5_FREQ: OnceLock<f32> = OnceLock::new();
 
-        let c5_freq: f32 = (NoteName::C, OctaveValue::new(5).unwrap()).into_frequency();
+        let mut p = *phase;
+        let (l, r) = self
+            .frames_at_duration(Duration::from_secs_f32(p / sample_rate))
+            .ok()?;
+
+        let c5_freq =
+            C5_FREQ.get_or_init(|| (NoteName::C, OctaveValue::new(5).unwrap()).into_frequency());
+
         p += freq / c5_freq;
 
         *phase = p;
