@@ -142,12 +142,15 @@ impl FrameIterator for StereoSignal {
         sample_rate: f32,
     ) -> Option<(f32, f32)> {
         let mut p = *phase;
-        let frame = self.frames_at_duration(Duration::from_secs_f32(p / sample_rate)).ok()?;
+        let (l, r) = self.frames_at_duration(Duration::from_secs_f32(p / sample_rate)).ok()?;
 
         let c5_freq: f32 = (NoteName::C, OctaveValue::new(5).unwrap()).into_frequency();
         p += freq / c5_freq;
 
         *phase = p;
-        Some(amp * (pan * frame))
+
+        let left_amp = amp.value() * pan.left().value();
+        let right_amp = amp.value() * pan.right().value();
+        Some((l * left_amp, r * right_amp))
     }
 }

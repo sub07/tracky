@@ -62,7 +62,7 @@ impl Tracky {
             patterns: patterns,
             keybindings: Default::default(),
             default_octave: OctaveValue::new(5).unwrap(),
-            selected_instrument: 2,
+            selected_instrument: 3,
             pattern_scroll_id: scrollable::Id::unique(),
             playing_state: PlayingState::Stopped,
             sine_hz: 100,

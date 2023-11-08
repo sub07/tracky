@@ -29,25 +29,6 @@ pub mod value_object {
             Volume::new(1.0 + self.value().clamp(-1.0, 0.0)).unwrap()
         }
     }
-
-    impl std::ops::Mul<(f32, f32)> for Volume {
-        type Output = (f32, f32);
-
-        fn mul(self, (l, r): (f32, f32)) -> Self::Output {
-            let v = self.value();
-            (l * v, r * v)
-        }
-    }
-
-    impl std::ops::Mul<(f32, f32)> for Pan {
-        type Output = (f32, f32);
-
-        fn mul(self, (l, r): (f32, f32)) -> Self::Output {
-            let l_amp = self.left();
-            let r_amp = self.right();
-            (l * l_amp.value(), r * r_amp.value())
-        }
-    }
 }
 
 pub fn resample(src: &StereoSignal, target_sample_rate: f32) -> StereoSignal {

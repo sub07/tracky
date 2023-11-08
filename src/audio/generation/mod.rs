@@ -127,9 +127,13 @@ impl FrameIterator for SineWaveDescriptor {
         phase: &mut f32,
         sample_rate: f32,
     ) -> Option<(f32, f32)> {
-        let s = phase.sin() * amp.value();
+        let s = phase.sin();
         *phase += 2.0 * PI * freq / sample_rate;
-        Some(pan * (s, s))
+
+        let left_amp = amp.value() * pan.left().value();
+        let right_amp = amp.value() * pan.right().value();
+
+        Some((s * left_amp, s * right_amp))
     }
 }
 
@@ -147,7 +151,7 @@ impl FrameIterator for SquareWaveDescriptor {
         let half_freq_period = 1.0 / freq / 2.0;
         let freq_period = 1.0 / freq;
 
-        let sample = if *phase < half_freq_period { 1.0 } else { -1.0 } * amp.value();
+        let sample = if *phase < half_freq_period { 1.0 } else { -1.0 };
         let s = sample as f32;
 
         *phase += 1.0 / sample_rate;
@@ -155,7 +159,10 @@ impl FrameIterator for SquareWaveDescriptor {
             *phase -= freq_period;
         }
 
-        Some(pan * (s, s))
+        let left_amp = amp.value() * pan.left().value();
+        let right_amp = amp.value() * pan.right().value();
+
+        Some((s * left_amp, s * right_amp))
     }
 }
 pub struct SawWaveDescriptor;
@@ -171,12 +178,15 @@ impl FrameIterator for SawWaveDescriptor {
     ) -> Option<(f32, f32)> {
         let freq_period = 1.0 / freq;
         let normalized_position = *phase / freq_period;
-        let s = -1.0 + (1.0 - -1.0) * normalized_position * amp.value();
+        let s = -1.0 + (1.0 - -1.0) * normalized_position;
         *phase += 1.0 / sample_rate;
         if *phase > freq_period {
             *phase -= freq_period;
         }
 
-        Some(pan * (s, s))
+        let left_amp = amp.value() * pan.left().value();
+        let right_amp = amp.value() * pan.right().value();
+
+        Some((s * left_amp, s * right_amp))
     }
 }
