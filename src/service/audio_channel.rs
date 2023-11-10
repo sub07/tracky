@@ -1,10 +1,10 @@
-use iter_tools::Itertools;
+
 
 use crate::{
     audio::signal::StereoSignal,
     model::{
         audio_channel::AudioChannel,
-        pattern::{PatternView, Patterns},
+        pattern::{Patterns},
     },
 };
 

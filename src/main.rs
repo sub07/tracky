@@ -13,7 +13,7 @@ use iced::{
 
 use keybinding::KeyBindings;
 
-use model::field::value_object::{OctaveValue, OCTAVE_VALID_RANGE};
+use model::field::value_object::OctaveValue;
 use model::pattern::Patterns;
 
 use crate::service::audio_channel;
@@ -61,7 +61,7 @@ impl Tracky {
         Self {
             patterns: patterns,
             keybindings: Default::default(),
-            default_octave: OctaveValue::new(5).unwrap(),
+            default_octave: OctaveValue::OCTAVE_5,
             selected_instrument: 3,
             pattern_scroll_id: scrollable::Id::unique(),
             playing_state: PlayingState::Stopped,
@@ -111,7 +111,7 @@ impl Application for Tracky {
                         PlayingState::Stopped
                     } else {
                         let mut player = audio::player::Player::new().unwrap();
-                        player.volume(Volume::new(0.1).unwrap());
+                        player.volume(Volume::new(0.5).unwrap());
 
                         let pattern_audio =
                             audio_channel::handle_patterns(&self.patterns, player.sample_rate, 6.0);
@@ -127,13 +127,9 @@ impl Application for Tracky {
                     .note
                     .set(model::field::NoteFieldValue::Cut),
                 keybinding::Action::ModifyDefaultOctave(increment) => {
-                    let new_octave_value = self.default_octave.value() as i32 + increment;
-                    if new_octave_value >= *OCTAVE_VALID_RANGE.start() as i32
-                        && new_octave_value <= *OCTAVE_VALID_RANGE.end() as i32
-                    {
-                        self.default_octave =
-                            OctaveValue::new(self.default_octave.value() + increment as u8)
-                                .unwrap();
+                    let default_octave = self.default_octave.value() as i32;
+                    if let Some(new_default_octave) = OctaveValue::new(default_octave + increment) {
+                        self.default_octave = new_default_octave;
                     }
                 }
             },

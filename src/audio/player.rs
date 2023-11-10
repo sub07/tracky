@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::fmt::Debug;
 use std::iter::Peekable;
 
-use std::ops::{DerefMut, Deref};
+use std::ops::{Deref, DerefMut};
 use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;

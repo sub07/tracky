@@ -1,7 +1,6 @@
 use std::{
-    cell::OnceCell,
     path::Path,
-    sync::{Mutex, OnceLock},
+    sync::{OnceLock},
     time::Duration,
 };
 
@@ -11,7 +10,7 @@ use rust_utils::iter::zip_self::ZipSelf;
 
 use crate::{
     audio::frame,
-    model::field::{value_object::OctaveValue, Note, NoteName},
+    model::field::{value_object::OctaveValue, NoteName},
 };
 
 use super::{value_object::*, FrameIterator, IntoFrequency};
@@ -156,8 +155,7 @@ impl FrameIterator for StereoSignal {
             .frames_at_duration(Duration::from_secs_f32(p / sample_rate))
             .ok()?;
 
-        let c5_freq =
-            C5_FREQ.get_or_init(|| (NoteName::C, OctaveValue::new(5).unwrap()).into_frequency());
+        let c5_freq = C5_FREQ.get_or_init(|| (NoteName::C, OctaveValue::OCTAVE_5).into_frequency());
 
         p += freq / c5_freq;
 

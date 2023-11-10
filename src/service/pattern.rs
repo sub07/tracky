@@ -1,6 +1,6 @@
 use crate::{
     keybinding::InputContext,
-    model::pattern::{PatternLineDescriptor, PatternLine, Patterns},
+    model::pattern::{PatternLine, PatternLineDescriptor, Patterns},
 };
 
 impl Patterns {

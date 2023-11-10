@@ -115,13 +115,13 @@ mod tests {
 
     #[test]
     fn a4_should_be_freq_440_0() {
-        let freq = (NoteName::A, OctaveValue::new(4).unwrap()).into_frequency();
+        let freq = (NoteName::A, OctaveValue::OCTAVE_4).into_frequency();
         assert_eq!(440.0, freq);
     }
 
     #[test]
     fn b2_should_be_freq_123_47() {
-        let freq = (NoteName::B, OctaveValue::new(2).unwrap()).into_frequency();
+        let freq = (NoteName::B, OctaveValue::OCTAVE_2).into_frequency();
         approx::assert_relative_eq!(123.47, freq, epsilon = 0.001);
     }
 }

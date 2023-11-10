@@ -7,9 +7,9 @@ edition = "2021"
 
 [dependencies]
 iced = { version = "0.10", features = ["advanced", "lazy", "wgpu", "smol", "debug"] }
-rust-utils = { git = "https://github.com/sub07/rust-utils" }
+rust-utils = { git = "https://github.com/sub07/rust-utils"}
 rust-utils-macro = { git = "https://github.com/sub07/rust-utils" }
-iter_tools = "0.1"
+iter_tools = "0.4.0"
 anyhow = "1.0"
 cpal = "0.15.0"
 audrey = "0.3"
