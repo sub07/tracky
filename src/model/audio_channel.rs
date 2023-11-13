@@ -92,35 +92,33 @@ impl AudioChannel {
                 self.current_amp = Volume::new(velocity as f32 / u8::MAX as f32).unwrap();
             }
 
-            match (
+            if let (
+                Some(Instrument {
+                    frame_iter,
+                    index: _,
+                    phase,
+                }),
+                Some(note),
+                amp,
+            ) = (
                 &mut self.current_instrument,
                 self.current_note,
                 self.current_amp,
             ) {
-                (
-                    Some(Instrument {
-                        frame_iter,
-                        index: _,
-                        phase,
-                    }),
-                    Some(note),
+                let signal = frame_iter.collect_for_duration(
+                    self.step_duration,
+                    note.into_frequency(),
                     amp,
-                ) => {
-                    let signal = frame_iter.collect_for_duration(
-                        self.step_duration,
-                        note.into_frequency(),
-                        amp,
-                        Pan::default(),
-                        phase,
-                        self.signal.sample_rate,
-                    );
+                    Pan::default(),
+                    phase,
+                    self.signal.sample_rate,
+                );
 
-                    self.signal
-                        .write_frames_at_duration(self.current_duration, &signal)
-                        .unwrap();
-                }
-                _ => {}
+                self.signal
+                    .write_frames_at_duration(self.current_duration, &signal)
+                    .unwrap();
             }
+
             self.current_duration += self.step_duration;
         }
     }

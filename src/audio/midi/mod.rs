@@ -3,12 +3,17 @@ use crate::model::field::Note;
 use self::value_object::MidiNumber;
 
 pub mod value_object {
-    use rust_utils::{define_bounded_value_object};
+    use rust_utils::define_bounded_value_object;
 
     use crate::model::field::value_object::OctaveValue;
 
     // From C0 to B(OctaveValue::MAX)
-    define_bounded_value_object!(pub MidiNumber, i32, 69, 12, OctaveValue::MAX * 12 + 23);
+    define_bounded_value_object! {
+        pub MidiNumber: i32,
+        default: 69,
+        min: 12,
+        max: OctaveValue::MAX * 12 + 23,
+    }
 }
 
 pub trait IntoMidiNumber {

@@ -1,8 +1,4 @@
-use std::{
-    path::Path,
-    sync::{OnceLock},
-    time::Duration,
-};
+use std::{path::Path, sync::OnceLock, time::Duration};
 
 use anyhow::bail;
 use iter_tools::Itertools;

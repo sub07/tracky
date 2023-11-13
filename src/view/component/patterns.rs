@@ -21,10 +21,10 @@ pub struct PatternsComponent<'a> {
     scroll_id: iced::widget::scrollable::Id,
 }
 
-pub fn patterns_component<'a>(
-    patterns: &'a Patterns,
+pub fn patterns_component(
+    patterns: &Patterns,
     scroll_id: iced::widget::scrollable::Id,
-) -> PatternsComponent<'a> {
+) -> PatternsComponent<'_> {
     PatternsComponent {
         patterns,
         scroll_id,

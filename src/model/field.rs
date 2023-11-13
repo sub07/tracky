@@ -1,6 +1,11 @@
 pub mod value_object {
     use rust_utils::{define_bounded_value_object, generate_bounded_value_object_consts};
-    define_bounded_value_object!(pub HexDigit, u8, 0, 0, 0xF);
+    define_bounded_value_object! {
+        pub HexDigit: u8,
+        default: 0,
+        min: 0,
+        max: 0xF,
+    }
 
     generate_bounded_value_object_consts! {
         HexDigit,
@@ -22,7 +27,12 @@ pub mod value_object {
         HEX_F => 0xF,
     }
 
-    define_bounded_value_object!(pub OctaveValue, i32, 5, 0, 9);
+    define_bounded_value_object! {
+        pub OctaveValue: i32,
+        default: 5,
+        min: 0,
+        max: 9,
+    }
 
     generate_bounded_value_object_consts! {
         OctaveValue,

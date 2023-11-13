@@ -15,12 +15,11 @@ impl Field<NoteFieldValue> {
     }
 
     pub fn set_octave(&mut self, octave: OctaveValue) {
-        match self.value() {
-            Some(note_value) => match note_value {
+        if let Some(note_value) = self.value() {
+            match note_value {
                 NoteFieldValue::Note((note, _)) => self.set(NoteFieldValue::Note((*note, octave))),
                 NoteFieldValue::Cut => {}
-            },
-            None => {}
+            }
         }
     }
 }

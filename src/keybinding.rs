@@ -60,11 +60,9 @@ impl KeyBindings {
         if let Some(key_map) = self.context_bindings.get(&input_context) {
             if let Some(action) = key_map.get(&keyboard_event) {
                 return Some(*action);
-            } else {
-                if let Some(global_keybinds) = self.context_bindings.get(&InputContext::Global) {
-                    if let Some(action) = global_keybinds.get(&keyboard_event) {
-                        return Some(*action);
-                    }
+            } else if let Some(global_keybinds) = self.context_bindings.get(&InputContext::Global) {
+                if let Some(action) = global_keybinds.get(&keyboard_event) {
+                    return Some(*action);
                 }
             }
         }

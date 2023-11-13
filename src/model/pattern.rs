@@ -85,7 +85,7 @@ impl Patterns {
         Ok(start..end)
     }
 
-    fn pattern<'a>(&'a self, index: usize) -> anyhow::Result<PatternView<'a>> {
+    fn pattern(&self, index: usize) -> anyhow::Result<PatternView<'_>> {
         Ok(PatternView {
             lines: &self.lines[self.pattern_range(index)?],
             nb_column: self.nb_channel,
@@ -93,7 +93,7 @@ impl Patterns {
         })
     }
 
-    fn pattern_mut<'a>(&'a mut self, index: usize) -> anyhow::Result<PatternViewMut<'a>> {
+    fn pattern_mut(&mut self, index: usize) -> anyhow::Result<PatternViewMut<'_>> {
         let range = self.pattern_range(index)?;
         Ok(PatternViewMut {
             lines: &mut self.lines[range],
@@ -102,15 +102,15 @@ impl Patterns {
         })
     }
 
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = PatternView<'a>> {
+    pub fn iter(&self) -> impl Iterator<Item = PatternView<'_>> {
         (0..self.lengths.len()).map(|pattern_index| self.pattern(pattern_index).unwrap())
     }
 
-    pub fn current_pattern<'a>(&'a self) -> PatternView<'a> {
+    pub fn current_pattern(&self) -> PatternView<'_> {
         self.pattern(self.selected_pattern_index).unwrap()
     }
 
-    pub fn current_pattern_mut<'a>(&'a mut self) -> PatternViewMut<'a> {
+    pub fn current_pattern_mut(&mut self) -> PatternViewMut<'_> {
         self.pattern_mut(self.selected_pattern_index).unwrap()
     }
 

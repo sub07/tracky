@@ -1,18 +1,9 @@
 use crate::{
     keybinding::InputContext,
-    model::pattern::{PatternLine, PatternLineDescriptor, Patterns},
+    model::pattern::{PatternLineDescriptor, Patterns},
 };
 
 impl Patterns {
-    pub fn current_line(&mut self) -> &PatternLine {
-        let current_column_index = self.cursor_x / PatternLineDescriptor::LINE_LEN;
-        &self
-            .current_pattern()
-            .column(current_column_index as usize)
-            .unwrap()
-            .lines[self.cursor_y as usize]
-    }
-
     pub fn local_column_index(&self) -> i32 {
         self.cursor_x % PatternLineDescriptor::LINE_LEN
     }
@@ -22,7 +13,7 @@ impl Patterns {
         match cursor_x {
             0 => InputContext::Note,
             2 => InputContext::Octave,
-            3 | 4 | 5 | 6 => InputContext::Hex,
+            3..=6 => InputContext::Hex,
             _ => panic!("Invalid cursor position: {cursor_x}"),
         }
     }

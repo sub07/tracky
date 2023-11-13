@@ -16,11 +16,11 @@ pub struct ColumnComponent<'a> {
     cursor_y: i32,
 }
 
-pub fn column_component<'a>(
-    column: ColumnView<'a>,
+pub fn column_component(
+    column: ColumnView<'_>,
     cursor_x: Option<i32>,
     cursor_y: i32,
-) -> ColumnComponent<'a> {
+) -> ColumnComponent<'_> {
     ColumnComponent::new(column, cursor_x, cursor_y)
 }
 

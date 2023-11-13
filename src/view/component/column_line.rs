@@ -21,10 +21,10 @@ pub struct ColumnLineComponent<'a> {
     cursor_x: Option<i32>,
 }
 
-pub fn column_line_component<'a>(
-    model: &'a PatternLine,
+pub fn column_line_component(
+    model: &PatternLine,
     cursor_x: Option<i32>,
-) -> ColumnLineComponent<'a> {
+) -> ColumnLineComponent<'_> {
     ColumnLineComponent::new(model, cursor_x)
 }
 

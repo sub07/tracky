@@ -1,11 +1,6 @@
-
-
 use crate::{
     audio::signal::StereoSignal,
-    model::{
-        audio_channel::AudioChannel,
-        pattern::{Patterns},
-    },
+    model::{audio_channel::AudioChannel, pattern::Patterns},
 };
 
 pub fn handle_patterns(patterns: &Patterns, sample_rate: f32, bps: f32) -> StereoSignal {

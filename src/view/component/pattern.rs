@@ -19,11 +19,11 @@ pub struct PatternComponent<'a> {
     cursor_y: i32,
 }
 
-pub fn pattern_component<'a>(
-    pattern: PatternView<'a>,
+pub fn pattern_component(
+    pattern: PatternView<'_>,
     cursor_x: i32,
     cursor_y: i32,
-) -> PatternComponent<'a> {
+) -> PatternComponent<'_> {
     PatternComponent::new(pattern, cursor_x, cursor_y)
 }
 

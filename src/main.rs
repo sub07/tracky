@@ -1,7 +1,5 @@
 use std::time::{Duration, Instant};
 
-use audio::generation::SineWaveDescriptor;
-
 use audio::value_object::Volume;
 use iced::event::Event;
 
@@ -43,8 +41,6 @@ struct Tracky {
     selected_instrument: u8,
     keybindings: KeyBindings,
     playing_state: PlayingState,
-    sine_hz: i32,
-    sine_generator: SineWaveDescriptor,
 }
 
 #[derive(Debug)]
@@ -52,21 +48,18 @@ enum Message {
     EventOccurred(Event),
     TrackyAction(keybinding::Action),
     FontLoaded(Result<(), font::Error>),
-    OnSineChanged(i32),
     Tick(Instant),
 }
 
 impl Tracky {
     fn new(patterns: Patterns) -> Self {
         Self {
-            patterns: patterns,
+            patterns,
             keybindings: Default::default(),
             default_octave: OctaveValue::OCTAVE_5,
             selected_instrument: 3,
             pattern_scroll_id: scrollable::Id::unique(),
             playing_state: PlayingState::Stopped,
-            sine_hz: 100,
-            sine_generator: SineWaveDescriptor,
         }
     }
 }
@@ -127,8 +120,9 @@ impl Application for Tracky {
                     .note
                     .set(model::field::NoteFieldValue::Cut),
                 keybinding::Action::ModifyDefaultOctave(increment) => {
-                    let default_octave = self.default_octave.value() as i32;
-                    if let Some(new_default_octave) = OctaveValue::new(default_octave + increment) {
+                    if let Some(new_default_octave) =
+                        OctaveValue::new(self.default_octave.value() + increment)
+                    {
                         self.default_octave = new_default_octave;
                     }
                 }
@@ -137,9 +131,6 @@ impl Application for Tracky {
                 if let Err(e) = r {
                     panic!("{e:?}");
                 }
-            }
-            Message::OnSineChanged(value) => {
-                self.sine_hz = value;
             }
             Message::Tick(_now) => {
                 if let PlayingState::Playing(player) = &mut self.playing_state {

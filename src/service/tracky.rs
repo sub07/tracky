@@ -18,7 +18,7 @@ impl Tracky {
 
         current_line.note.set_note_name(note, self.default_octave);
 
-        if let None = current_line.instrument.value() {
+        if current_line.instrument.value().is_none() {
             current_line.instrument.set_u8(self.selected_instrument);
         }
     }
@@ -105,13 +105,13 @@ impl Tracky {
 
         let cursor_x_column_index = self.patterns.cursor_x / PatternLineDescriptor::LINE_LEN;
 
-        return scrollable::snap_to(
+        scrollable::snap_to(
             self.pattern_scroll_id.clone(),
             scrollable::RelativeOffset {
                 x: cursor_x_column_index as f32 / (nb_column - 1) as f32,
                 y: self.patterns.cursor_y as f32 / (pattern_len - 1) as f32,
             },
-        );
+        )
     }
 
     pub fn convert_event_to_action(&self, event: Event) -> Option<keybinding::Action> {
