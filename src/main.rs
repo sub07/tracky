@@ -138,18 +138,6 @@ impl Application for Tracky {
                         self.playing_state = PlayingState::Stopped;
                     }
                 }
-                // let frames = Samples::<audio::frame::Mono>::collect_for_duration(
-                //     &mut self.sine_generator,
-                //     Duration::from_millis(10),
-                //     self.sine_hz as f32,
-                //     self.sample_player.sample_rate,
-                // );
-                // self.sample_player
-                //     .queue_pcm_signal(&BufferSignal::from_frames(
-                //         frames,
-                //         self.sample_player.sample_rate,
-                //     ))
-                //     .unwrap();
             }
         }
         Command::none()
