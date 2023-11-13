@@ -134,4 +134,8 @@ impl Tracky {
             Event::Touch(_) => None,
         }
     }
+
+    pub fn line_per_second(&self) -> f32 {
+        self.line_per_minute / 60.0
+    }
 }

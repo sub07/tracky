@@ -41,6 +41,7 @@ struct Tracky {
     selected_instrument: u8,
     keybindings: KeyBindings,
     playing_state: PlayingState,
+    line_per_minute: f32,
 }
 
 #[derive(Debug)]
@@ -60,6 +61,7 @@ impl Tracky {
             selected_instrument: 3,
             pattern_scroll_id: scrollable::Id::unique(),
             playing_state: PlayingState::Stopped,
+            line_per_minute: 300.0,
         }
     }
 }
@@ -107,10 +109,10 @@ impl Application for Tracky {
                         player.volume(Volume::new(0.5).unwrap());
 
                         let pattern_audio =
-                            audio_channel::handle_patterns(&self.patterns, player.sample_rate, 6.0);
+                            audio_channel::handle_patterns(&self.patterns, player.sample_rate, self.line_per_second());
 
-                        // self.mixer_output_signal.write_signal_to_disk("sig.wav".into()).unwrap();
-                        player.queue_signal(&pattern_audio).unwrap();
+                        pattern_audio.write_signal_to_disk("sig.wav".into()).unwrap();
+                        // player.queue_signal(&pattern_audio).unwrap();
                         PlayingState::Playing(player)
                     }
                 }

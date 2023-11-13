@@ -106,7 +106,7 @@ impl StereoSignal {
         let temp_file_name = format!("{}-temp.raw", file_name);
         std::fs::write(&temp_file_name, &bytes)?;
 
-        std::process::Command::new("C:\\Users\\mpardo\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-6.0-full_build\\bin\\ffmpeg.exe")
+        std::process::Command::new("ffmpeg.exe")
         .arg("-f").arg("f32le")
         .arg("-ar").arg(format!("{}", self.sample_rate as u32))
         .arg("-ac").arg("2")
