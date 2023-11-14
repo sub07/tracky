@@ -9,7 +9,7 @@ use crate::{
     model::field::{value_object::OctaveValue, NoteName},
 };
 
-use super::{value_object::*, FrameIterator, IntoFrequency};
+use super::{player::AsPlayerData, value_object::*, FrameIterator, IntoFrequency};
 
 #[derive(Clone)]
 pub struct StereoSignal {
@@ -80,7 +80,7 @@ impl StereoSignal {
         frame::interpolate(f1, f2, rem)
     }
 
-    pub fn write_frames_at_duration(
+    pub fn write_signal_at_duration(
         &mut self,
         duration: Duration,
         signal: &StereoSignal,
@@ -96,6 +96,10 @@ impl StereoSignal {
         Ok(())
     }
 
+    pub fn write_signal(&mut self, signal: &StereoSignal) -> anyhow::Result<()> {
+        self.write_signal_at_duration(Duration::ZERO, signal)
+    }
+
     pub fn write_signal_to_disk(&self, file_name: String) -> anyhow::Result<()> {
         let mut bytes = Vec::new();
         for (l, r) in self.frames.iter() {
@@ -107,12 +111,17 @@ impl StereoSignal {
         std::fs::write(&temp_file_name, &bytes)?;
 
         std::process::Command::new("ffmpeg.exe")
-        .arg("-f").arg("f32le")
-        .arg("-ar").arg(format!("{}", self.sample_rate as u32))
-        .arg("-ac").arg("2")
-        .arg("-i").arg(&temp_file_name)
-        .arg(file_name)
-        .output().unwrap();
+            .arg("-f")
+            .arg("f32le")
+            .arg("-ar")
+            .arg(format!("{}", self.sample_rate as u32))
+            .arg("-ac")
+            .arg("2")
+            .arg("-i")
+            .arg(&temp_file_name)
+            .arg(file_name)
+            .output()
+            .unwrap();
 
         std::fs::remove_file(&temp_file_name)?;
 
@@ -157,8 +166,14 @@ impl FrameIterator for StereoSignal {
 
         *phase = p;
 
-        let left_amp = amp.value() * pan.left().value();
-        let right_amp = amp.value() * pan.right().value();
+        let left_amp = amp.value() * pan.left_volume().value();
+        let right_amp = amp.value() * pan.right_volume().value();
         Some((l * left_amp, r * right_amp))
+    }
+}
+
+impl AsPlayerData for StereoSignal {
+    fn as_player_data(&self) -> (&[(f32, f32)], f32) {
+        (&self.frames, self.sample_rate)
     }
 }

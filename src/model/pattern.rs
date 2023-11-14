@@ -118,6 +118,14 @@ impl Patterns {
         self.lengths[self.selected_pattern_index]
     }
 
+    pub fn column_index(&self) -> usize {
+        self.cursor_x as usize / PatternLineDescriptor::LINE_LEN as usize
+    }
+
+    pub fn current_line(&self) -> &PatternLine {
+        &self.current_pattern().column(self.column_index()).unwrap().lines[self.cursor_y as usize]
+    }
+
     pub fn current_line_mut(&mut self) -> &mut PatternLine {
         let current_column_index = self.cursor_x / PatternLineDescriptor::LINE_LEN;
         let pattern_len = self.current_pattern_len() as usize;

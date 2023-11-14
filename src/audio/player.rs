@@ -10,9 +10,9 @@ use std::vec::IntoIter;
 
 use anyhow::{anyhow, bail, ensure};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use rust_utils::number::EpsilonEq;
 use rust_utils_macro::New;
 
-use super::signal::StereoSignal;
 use super::value_object::{Pan, Volume};
 
 #[derive(New, Default)]
@@ -40,8 +40,14 @@ impl Debug for Player {
         f.debug_struct("Player")
             .field("sample_rate", &self.sample_rate)
             .field("nb_channel", &self.nb_channel)
+            .field("volume", &self.data().volume)
+            .field("pan", &self.data().pan)
             .finish()
     }
+}
+
+pub trait AsPlayerData {
+    fn as_player_data(&self) -> (&[(f32, f32)], f32);
 }
 
 pub struct Player {
@@ -185,10 +191,16 @@ impl Player {
         })
     }
 
-    pub fn queue_signal(&mut self, signal: &StereoSignal) -> anyhow::Result<()> {
+    pub fn queue<Data: AsPlayerData>(&mut self, data: &Data) -> anyhow::Result<()> {
+        let (frames, sample_rate) = data.as_player_data();
+        ensure!(
+            sample_rate.epsilon_eq(&self.sample_rate, 0.2),
+            "Sample rate must be equals",
+        );
+        let frames = frames.to_vec();
         self.data_mut()
             .queue
-            .push_back(signal.frames.clone().into_iter().peekable());
+            .push_back(frames.into_iter().peekable());
         self.stream_commands_sender.send(StreamCommand::Play)?;
         Ok(())
     }

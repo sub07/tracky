@@ -130,8 +130,8 @@ impl FrameIterator for SineWaveDescriptor {
         let s = phase.sin();
         *phase += 2.0 * PI * freq / sample_rate;
 
-        let left_amp = amp.value() * pan.left().value();
-        let right_amp = amp.value() * pan.right().value();
+        let left_amp = amp.value() * pan.left_volume().value();
+        let right_amp = amp.value() * pan.right_volume().value();
 
         Some((s * left_amp, s * right_amp))
     }
@@ -159,8 +159,8 @@ impl FrameIterator for SquareWaveDescriptor {
             *phase -= freq_period;
         }
 
-        let left_amp = amp.value() * pan.left().value();
-        let right_amp = amp.value() * pan.right().value();
+        let left_amp = amp.value() * pan.left_volume().value();
+        let right_amp = amp.value() * pan.right_volume().value();
 
         Some((s * left_amp, s * right_amp))
     }
@@ -184,8 +184,8 @@ impl FrameIterator for SawWaveDescriptor {
             *phase -= freq_period;
         }
 
-        let left_amp = amp.value() * pan.left().value();
-        let right_amp = amp.value() * pan.right().value();
+        let left_amp = amp.value() * pan.left_volume().value();
+        let right_amp = amp.value() * pan.right_volume().value();
 
         Some((s * left_amp, s * right_amp))
     }

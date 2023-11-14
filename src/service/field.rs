@@ -1,7 +1,7 @@
-use crate::model::field::{
+use crate::{model::field::{
     value_object::{HexDigit, OctaveValue},
     Field, NoteFieldValue, NoteName,
-};
+}, audio::value_object::Volume};
 
 impl Field<NoteFieldValue> {
     pub fn set_note_name(&mut self, note: NoteName, default_octave: OctaveValue) {
@@ -42,6 +42,11 @@ impl Field<(HexDigit, HexDigit)> {
     pub fn get_u8(&self) -> Option<u8> {
         self.value()
             .map(|(first_digit, second_digit)| first_digit.value() * 0x10 + second_digit.value())
+    }
+
+    // Should be elsewhere
+    pub fn get_volume(&self) -> Option<Volume> {
+        Volume::new(self.get_u8()? as f32 / u8::MAX as f32)
     }
 
     pub fn set_u8(&mut self, value: u8) {

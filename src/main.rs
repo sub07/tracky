@@ -1,5 +1,10 @@
+#![feature(const_fn_floating_point_arithmetic)]
+#![feature(duration_constants)]
+#![feature(let_chains)]
+
 use std::time::{Duration, Instant};
 
+use audio::audio_channel::AudioChannel;
 use audio::value_object::Volume;
 use iced::event::Event;
 
@@ -9,12 +14,12 @@ use iced::{
     Subscription, Theme,
 };
 
+use iter_tools::Itertools;
 use keybinding::KeyBindings;
 
 use model::field::value_object::OctaveValue;
 use model::pattern::Patterns;
 
-use crate::service::audio_channel;
 use crate::view::component::patterns::patterns_component;
 
 mod audio;
@@ -31,7 +36,12 @@ pub fn main() -> iced::Result {
 
 pub enum PlayingState {
     Stopped,
-    Playing(audio::player::Player),
+    Playing {
+        player: audio::player::Player,
+        current_line: f32,
+        last_time: Instant,
+        should_handle_next_line: bool,
+    },
 }
 
 struct Tracky {
@@ -61,7 +71,7 @@ impl Tracky {
             selected_instrument: 3,
             pattern_scroll_id: scrollable::Id::unique(),
             playing_state: PlayingState::Stopped,
-            line_per_minute: 300.0,
+            line_per_minute: 120.0,
         }
     }
 }
@@ -102,18 +112,18 @@ impl Application for Tracky {
                 keybinding::Action::NextPattern => todo!(),
                 keybinding::Action::PreviousPattern => todo!(),
                 keybinding::Action::TogglePlay => {
-                    self.playing_state = if let PlayingState::Playing(_) = self.playing_state {
+                    self.playing_state = if let PlayingState::Playing { .. } = self.playing_state {
                         PlayingState::Stopped
                     } else {
                         let mut player = audio::player::Player::new().unwrap();
-                        player.volume(Volume::new(0.5).unwrap());
-
-                        let pattern_audio =
-                            audio_channel::handle_patterns(&self.patterns, player.sample_rate, self.line_per_second());
-
-                        pattern_audio.write_signal_to_disk("sig.wav".into()).unwrap();
-                        // player.queue_signal(&pattern_audio).unwrap();
-                        PlayingState::Playing(player)
+                        player.volume(Volume::new(0.4).unwrap());
+                        self.patterns.cursor_y = -1;
+                        PlayingState::Playing {
+                            player,
+                            current_line: 0.0,
+                            last_time: Instant::now(),
+                            should_handle_next_line: false,
+                        }
                     }
                 }
                 keybinding::Action::SetNoteCut => self
@@ -129,17 +139,13 @@ impl Application for Tracky {
                     }
                 }
             },
-            Message::FontLoaded(r) => {
-                if let Err(e) = r {
+            Message::FontLoaded(font_loading_result) => {
+                if let Err(e) = font_loading_result {
                     panic!("{e:?}");
                 }
             }
-            Message::Tick(_now) => {
-                if let PlayingState::Playing(player) = &mut self.playing_state {
-                    if player.is_finished() {
-                        self.playing_state = PlayingState::Stopped;
-                    }
-                }
+            Message::Tick(now) => {
+                self.play_line(now);
             }
         }
         Command::none()
@@ -148,7 +154,7 @@ impl Application for Tracky {
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
         iced::widget::column![
             iced::widget::row![
-                text(if let PlayingState::Playing(_) = &self.playing_state {
+                text(if let PlayingState::Playing { .. } = &self.playing_state {
                     "playing"
                 } else {
                     "editing"

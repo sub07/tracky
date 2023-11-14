@@ -1,6 +1,10 @@
+use std::time::Instant;
+
 use iced::{widget::scrollable, Command, Event};
+use iter_tools::Itertools;
 
 use crate::{
+    audio::{audio_channel::AudioChannel, signal::StereoSignal},
     keybinding,
     model::{
         field::{
@@ -9,7 +13,7 @@ use crate::{
         },
         pattern::PatternLineDescriptor,
     },
-    Tracky,
+    PlayingState, Tracky,
 };
 
 impl Tracky {
@@ -137,5 +141,49 @@ impl Tracky {
 
     pub fn line_per_second(&self) -> f32 {
         self.line_per_minute / 60.0
+    }
+
+    pub fn play_line(&mut self, now: Instant) {
+        let line_per_second = self.line_per_second();
+        if let PlayingState::Playing {
+            player,
+            current_line,
+            last_time,
+            should_handle_next_line,
+        } = &mut self.playing_state
+        {
+            let dt = now - *last_time;
+            *last_time = now;
+            *current_line += line_per_second * dt.as_secs_f32();
+            let old_cursor_y = self.patterns.cursor_y;
+            self.patterns.cursor_y = *current_line as i32;
+            *should_handle_next_line = old_cursor_y != self.patterns.cursor_y;
+
+            let mut channels = (0..self.patterns.nb_channel)
+                .map(|_| AudioChannel::new(player.sample_rate, line_per_second))
+                .collect_vec();
+            for (line, channel) in self
+                .patterns
+                .current_pattern()
+                .columns()
+                .map(|c| &c.lines[self.patterns.cursor_y as usize])
+                .zip(&mut channels)
+            {
+                channel.process_line(line);
+            }
+
+            let mixer = channels.iter().fold(
+                StereoSignal::new(
+                    AudioChannel::compute_buffer_duration(line_per_second),
+                    player.sample_rate,
+                ),
+                |mut mixer, channel| {
+                    mixer += channel.buffer();
+                    mixer
+                },
+            );
+
+            player.queue(&mixer).unwrap();
+        }
     }
 }

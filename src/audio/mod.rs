@@ -13,19 +13,45 @@ pub mod generation;
 pub mod midi;
 pub mod player;
 pub mod signal;
+pub mod audio_channel;
+pub mod instrument;
 
 pub mod value_object {
-    use rust_utils::define_value_object;
+    use rust_utils::{define_bounded_value_object, generate_bounded_value_object_consts};
 
-    define_value_object!(pub Volume, f32, 1.0, |v| { (0.0..=1.0).contains(&v) });
-    define_value_object!(pub Pan, f32, 0.0, |v| { (-1.0..=1.0).contains(&v) });
+    define_bounded_value_object! {
+        pub Volume: f32,
+        default: Volume::FULL.value(),
+        min: 0.0,
+        max: 1.0,
+    }
+
+    generate_bounded_value_object_consts! {
+        Volume,
+        ZERO => 0.0,
+        FULL => Volume::MAX,
+    }
+
+    define_bounded_value_object! {
+        pub Pan: f32,
+        default: 0.0,
+        min: -1.0,
+        max: 1.0,
+    }
+
+    generate_bounded_value_object_consts! {
+        Pan,
+        LEFT => -1.0,
+        CENTER => 0.0,
+        RIGHT => 1.0,
+    }
 
     impl Pan {
-        pub fn left(&self) -> Volume {
+        pub fn left_volume(&self) -> Volume {
             Volume::new(1.0 - self.value().clamp(0.0, 1.0)).unwrap()
         }
 
-        pub fn right(&self) -> Volume {
+        pub fn right_volume(&self) -> Volume {
             Volume::new(1.0 + self.value().clamp(-1.0, 0.0)).unwrap()
         }
     }
