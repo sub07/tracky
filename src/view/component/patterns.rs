@@ -5,7 +5,7 @@ use iced::{
         scrollable::{Direction, Properties},
         text, Component,
     },
-    Element,
+    Element, Theme,
 };
 use iter_tools::Itertools;
 
@@ -31,7 +31,7 @@ pub fn patterns_component(
     }
 }
 
-impl<'a, M, R> Component<M, R> for PatternsComponent<'a>
+impl<'a, M, R> Component<M, Theme, R> for PatternsComponent<'a>
 where
     R: CustomRenderer + 'static,
 {
@@ -42,7 +42,7 @@ where
         None
     }
 
-    fn view(&self, _state: &Self::State) -> iced::Element<'_, Self::Event, R> {
+    fn view(&self, _state: &Self::State) -> iced::Element<'_, Self::Event, Theme, R> {
         let current_pattern = self.patterns.current_pattern();
         let pattern = pattern_component(
             current_pattern,
@@ -71,7 +71,7 @@ where
     }
 }
 
-impl<'a, 'm, M, R> From<PatternsComponent<'a>> for Element<'m, M, R>
+impl<'a, 'm, M, R> From<PatternsComponent<'a>> for Element<'m, M, Theme, R>
 where
     M: 'm,
     R: 'static + CustomRenderer,

@@ -1,6 +1,6 @@
 use iced::{
     widget::{component, container, Component, Row},
-    Element,
+    Element, Theme,
 };
 use iter_tools::Itertools;
 use rust_utils_macro::New;
@@ -27,7 +27,7 @@ pub fn pattern_component(
     PatternComponent::new(pattern, cursor_x, cursor_y)
 }
 
-impl<'a, M, R> Component<M, R> for PatternComponent<'a>
+impl<'a, M, R> Component<M, Theme, R> for PatternComponent<'a>
 where
     R: CustomRenderer + 'static,
 {
@@ -39,7 +39,7 @@ where
         None
     }
 
-    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, R> {
+    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, Theme, R> {
         let cursor_column_index = self.cursor_x / PatternLineDescriptor::LINE_LEN;
         let cursor_column_local = self.cursor_x % PatternLineDescriptor::LINE_LEN;
         let columns = self
@@ -59,7 +59,7 @@ where
     }
 }
 
-impl<'a, 'm, M, R> From<PatternComponent<'a>> for Element<'m, M, R>
+impl<'a, 'm, M, R> From<PatternComponent<'a>> for Element<'m, M, Theme, R>
 where
     M: 'm,
     R: 'static + CustomRenderer,

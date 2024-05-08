@@ -8,12 +8,11 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::vec::IntoIter;
 
+use super::signal::StereoSignal;
+use super::value_object::{Pan, Volume};
 use anyhow::{anyhow, bail, ensure};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use rust_utils_macro::New;
-
-use super::signal::StereoSignal;
-use super::value_object::{Pan, Volume};
 
 #[derive(New, Default)]
 struct StreamData {

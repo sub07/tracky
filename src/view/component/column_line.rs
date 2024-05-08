@@ -1,6 +1,6 @@
 use iced::{
     widget::{component, row, Component},
-    Element,
+    Element, Theme,
 };
 use rust_utils_macro::New;
 
@@ -28,7 +28,7 @@ pub fn column_line_component(
     ColumnLineComponent::new(model, cursor_x)
 }
 
-impl<'a, M, R> Component<M, R> for ColumnLineComponent<'a>
+impl<'a, M, R> Component<M, Theme, R> for ColumnLineComponent<'a>
 where
     R: CustomRenderer + 'static,
 {
@@ -39,7 +39,7 @@ where
         None
     }
 
-    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, R> {
+    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, Theme, R> {
         let (note_char_1, note_char_2, octave_char) =
             if let Some(note_value) = self.line.note.value() {
                 match note_value {
@@ -130,7 +130,7 @@ where
     }
 }
 
-impl<'a, 'm, M, R> From<ColumnLineComponent<'a>> for Element<'m, M, R>
+impl<'a, 'm, M, R> From<ColumnLineComponent<'a>> for Element<'m, M, Theme, R>
 where
     M: 'm,
     R: 'static + CustomRenderer,

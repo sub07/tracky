@@ -1,6 +1,6 @@
 use iced::{
     font::{self, Stretch, Weight},
-    Font, Theme,
+    Font,
 };
 
 pub mod component;
@@ -8,10 +8,14 @@ pub mod widget;
 
 const MONOSPACED_FONT: Font = Font {
     family: font::Family::Name("Roboto Mono"),
-    monospaced: true,
-    stretch: Stretch::Normal,
     weight: Weight::Light,
+    stretch: Stretch::Normal,
+    style: font::Style::Normal,
 };
 
-pub trait CustomRenderer: iced::advanced::text::Renderer<Theme = Theme, Font = Font> {}
+pub trait CustomRenderer:
+    iced::advanced::text::Renderer<Font = iced::Font, Paragraph = iced_graphics::text::Paragraph>
+{
+}
+
 impl CustomRenderer for iced::Renderer {}

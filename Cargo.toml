@@ -6,14 +6,16 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-iced = { version = "0.10", features = ["advanced", "lazy", "wgpu", "smol", "debug"] }
+iced = { version = "0.12", features = ["advanced", "lazy", "wgpu", "smol", "debug"] }
+iced_graphics = "0.12"
 rust-utils = { git = "https://github.com/sub07/rust-utils"}
 rust-utils-macro = { git = "https://github.com/sub07/rust-utils" }
-iter_tools = "0.4.0"
-anyhow = "1.0"
-cpal = "0.15.0"
+iter_tools = "0.15"
+anyhow = "1"
+cpal = "0.15"
 audrey = "0.3"
-ordinalizer = "0.1.0"
+ordinalizer = "0.1"
+smol_str = "0.2"
 
 [dev-dependencies]
 approx = "0.5.1"

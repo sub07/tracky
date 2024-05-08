@@ -1,6 +1,6 @@
 use iced::{
     widget::{component, container, Component},
-    Element,
+    Element, Theme,
 };
 use iter_tools::Itertools;
 use rust_utils_macro::New;
@@ -24,7 +24,7 @@ pub fn column_component(
     ColumnComponent::new(column, cursor_x, cursor_y)
 }
 
-impl<'a, M, R> Component<M, R> for ColumnComponent<'a>
+impl<'a, M, R> Component<M, Theme, R> for ColumnComponent<'a>
 where
     R: CustomRenderer + 'static,
 {
@@ -35,7 +35,7 @@ where
         None
     }
 
-    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, R> {
+    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, Theme, R> {
         let lines = self
             .column
             .lines
@@ -59,7 +59,7 @@ where
     }
 }
 
-impl<'a, 'm, M, R> From<ColumnComponent<'a>> for Element<'m, M, R>
+impl<'a, 'm, M, R> From<ColumnComponent<'a>> for Element<'m, M, Theme, R>
 where
     M: 'm,
     R: 'static + CustomRenderer,

@@ -119,18 +119,20 @@ impl Tracky {
         match event {
             Event::Keyboard(kb_event) => match kb_event {
                 iced::keyboard::Event::KeyPressed {
-                    key_code,
+                    key,
+                    location,
+                    text,
                     modifiers,
-                } => self.keybindings.action(modifiers, key_code, input_context),
+                } => self.keybindings.action(modifiers, key, input_context),
                 iced::keyboard::Event::KeyReleased {
-                    key_code: _,
-                    modifiers: _,
+                    key,
+                    location,
+                    modifiers,
                 } => None,
-                iced::keyboard::Event::CharacterReceived(_) => None,
                 iced::keyboard::Event::ModifiersChanged(_) => None,
             },
             Event::Mouse(_) => None,
-            Event::Window(_) => None,
+            Event::Window(_, _) => None,
             Event::Touch(_) => None,
         }
     }

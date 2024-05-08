@@ -8,6 +8,7 @@ use self::{
     value_object::{Pan, Volume},
 };
 
+pub mod devices;
 pub mod frame;
 pub mod generation;
 pub mod midi;

@@ -53,7 +53,7 @@ pub struct Patterns {
 impl Default for Patterns {
     fn default() -> Self {
         let patterns_len = vec![32];
-        let nb_column = 6;
+        let nb_column = 3;
         Patterns::new(nb_column, patterns_len)
     }
 }

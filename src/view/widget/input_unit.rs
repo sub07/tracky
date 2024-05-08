@@ -2,13 +2,15 @@ use iced::{
     advanced::{
         layout::{Limits, Node},
         renderer::{Quad, Style},
+        text::Paragraph,
         widget::Tree,
         Layout, Text, Widget,
     },
     alignment::{Horizontal, Vertical},
+    border::Radius,
     mouse::Cursor,
     widget::text::{LineHeight, Shaping},
-    Background, BorderRadius, Color, Element, Length, Rectangle, Size,
+    Background, Border, Color, Element, Length, Pixels, Point, Rectangle, Shadow, Size, Theme,
 };
 
 use crate::view::{CustomRenderer, MONOSPACED_FONT};
@@ -24,43 +26,38 @@ impl InputUnitWidget {
     }
 }
 
-pub const DEFAULT_FONT_SIZE: f32 = 18.0;
+pub const DEFAULT_FONT_SIZE: Pixels = Pixels(18.0);
 
-impl<M, R> Widget<M, R> for InputUnitWidget
+fn get_paragraph(content: &str, bounds: Size) -> iced_graphics::text::Paragraph {
+    iced_graphics::text::Paragraph::with_text(Text {
+        content,
+        bounds,
+        size: DEFAULT_FONT_SIZE,
+        line_height: LineHeight::default(),
+        font: MONOSPACED_FONT,
+        horizontal_alignment: Horizontal::Left,
+        vertical_alignment: Vertical::Top,
+        shaping: Shaping::default(),
+    })
+}
+
+impl<M, R> Widget<M, iced::Theme, R> for InputUnitWidget
 where
     R: CustomRenderer,
 {
-    fn width(&self) -> Length {
-        Length::Shrink
-    }
-
-    fn height(&self) -> Length {
-        Length::Shrink
-    }
-
-    fn layout(&self, renderer: &R, limits: &Limits) -> Node {
-        let mut str_buf = [0; 4];
-        let Size { width, height } = renderer.measure(
-            self.value().encode_utf8(&mut str_buf),
-            DEFAULT_FONT_SIZE,
-            LineHeight::default(),
-            MONOSPACED_FONT,
-            limits.max(),
-            Shaping::default(),
-        );
-
-        Node::new(Size::new(width, height))
+    fn layout(&self, _: &mut Tree, _: &R, limits: &Limits) -> Node {
+        Node::new(get_paragraph(self.value().encode_utf8(&mut [0; 4]), limits.max()).min_bounds())
     }
 
     fn draw(
         &self,
         _state: &Tree,
         renderer: &mut R,
-        theme: &R::Theme,
+        theme: &Theme,
         _style: &Style,
         layout: Layout<'_>,
         _cursor: Cursor,
-        _viewport: &Rectangle,
+        viewport: &Rectangle,
     ) {
         let (text_color, background_color) = if self.selected {
             (theme.palette().background, theme.palette().text)
@@ -71,31 +68,36 @@ where
             renderer.fill_quad(
                 Quad {
                     bounds: layout.bounds(),
-                    border_color: Color::TRANSPARENT,
-                    border_width: 0.0,
-                    border_radius: BorderRadius::from(0.0),
+                    border: Border {
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: Radius::from(0.0),
+                    },
+                    shadow: Shadow::default(),
                 },
                 Background::from(background_color),
             );
         }
+        renderer.fill_paragraph(
+            &get_paragraph(
+                self.value().encode_utf8(&mut [0; 4]),
+                layout.bounds().size(),
+            ),
+            Point::ORIGIN,
+            text_color,
+            *viewport,
+        );
+    }
 
-        let mut str_buf = [0; 4];
-        let text = Text {
-            font: MONOSPACED_FONT,
-            size: DEFAULT_FONT_SIZE,
-            bounds: layout.bounds(),
-            content: self.value().encode_utf8(&mut str_buf),
-            horizontal_alignment: Horizontal::Left,
-            vertical_alignment: Vertical::Top,
-            color: text_color,
-            line_height: Default::default(),
-            shaping: Default::default(),
-        };
-        renderer.fill_text(text);
+    fn size(&self) -> Size<Length> {
+        Size {
+            width: Length::Shrink,
+            height: Length::Shrink,
+        }
     }
 }
 
-impl<'a, M, R> From<InputUnitWidget> for Element<'a, M, R>
+impl<'a, M, R> From<InputUnitWidget> for Element<'a, M, Theme, R>
 where
     R: CustomRenderer,
 {

@@ -107,12 +107,17 @@ impl StereoSignal {
         std::fs::write(&temp_file_name, &bytes)?;
 
         std::process::Command::new("ffmpeg.exe")
-        .arg("-f").arg("f32le")
-        .arg("-ar").arg(format!("{}", self.sample_rate as u32))
-        .arg("-ac").arg("2")
-        .arg("-i").arg(&temp_file_name)
-        .arg(file_name)
-        .output().unwrap();
+            .arg("-f")
+            .arg("f32le")
+            .arg("-ar")
+            .arg(format!("{}", self.sample_rate as u32))
+            .arg("-ac")
+            .arg("2")
+            .arg("-i")
+            .arg(&temp_file_name)
+            .arg(file_name)
+            .output()
+            .unwrap();
 
         std::fs::remove_file(&temp_file_name)?;
 

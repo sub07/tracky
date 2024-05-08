@@ -1,14 +1,18 @@
-use std::time::{Duration, Instant};
+#![feature(let_chains)]
+#![feature(min_specialization)]
+
+use std::time::Instant;
 
 use audio::value_object::Volume;
+use cpal::traits::DeviceTrait;
 use iced::event::Event;
 
 use iced::widget::{scrollable, text};
 use iced::{
-    executor, font, subscription, time, Application, Command, Element, Renderer, Settings,
-    Subscription, Theme,
+    executor, font, keyboard, Application, Command, Element, Settings, Subscription, Theme,
 };
 
+use iter_tools::Itertools;
 use keybinding::KeyBindings;
 
 use model::field::value_object::OctaveValue;
@@ -24,6 +28,14 @@ mod service;
 mod view;
 
 pub fn main() -> iced::Result {
+    // println!(
+    //     "{:#?}",
+    //     audio::devices::stereo_devices()
+    //         .unwrap()
+    //         .into_iter()
+    //         .filter_map(|d| d.name().ok())
+    //         .collect_vec()
+    // );
     Tracky::run(Settings {
         ..Settings::default()
     })
@@ -49,7 +61,6 @@ enum Message {
     EventOccurred(Event),
     TrackyAction(keybinding::Action),
     FontLoaded(Result<(), font::Error>),
-    Tick(Instant),
 }
 
 impl Tracky {
@@ -108,10 +119,15 @@ impl Application for Tracky {
                         let mut player = audio::player::Player::new().unwrap();
                         player.volume(Volume::new(0.5).unwrap());
 
-                        let pattern_audio =
-                            audio_channel::handle_patterns(&self.patterns, player.sample_rate, self.line_per_second());
+                        let pattern_audio = audio_channel::handle_patterns(
+                            &self.patterns,
+                            player.sample_rate,
+                            self.line_per_second(),
+                        );
 
-                        pattern_audio.write_signal_to_disk("sig.wav".into()).unwrap();
+                        pattern_audio
+                            .write_signal_to_disk("sig.wav".into())
+                            .unwrap();
                         // player.queue_signal(&pattern_audio).unwrap();
                         PlayingState::Playing(player)
                     }
@@ -133,19 +149,18 @@ impl Application for Tracky {
                 if let Err(e) = r {
                     panic!("{e:?}");
                 }
-            }
-            Message::Tick(_now) => {
-                if let PlayingState::Playing(player) = &mut self.playing_state {
-                    if player.is_finished() {
-                        self.playing_state = PlayingState::Stopped;
-                    }
-                }
-            }
+            } // Message::Tick(_now) => {
+              //     if let PlayingState::Playing(player) = &mut self.playing_state {
+              //         if player.is_finished() {
+              //             self.playing_state = PlayingState::Stopped;
+              //         }
+              //     }
+              // }
         }
         Command::none()
     }
 
-    fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
+    fn view(&self) -> Element<Message> {
         iced::widget::column![
             iced::widget::row![
                 text(if let PlayingState::Playing(_) = &self.playing_state {
@@ -166,9 +181,16 @@ impl Application for Tracky {
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        Subscription::batch([
-            time::every(Duration::from_millis(100)).map(Message::Tick),
-            subscription::events().map(Message::EventOccurred),
-        ])
+        // Subscription::batch([subscription::events().map(Message::EventOccurred)])
+        keyboard::on_key_press(|key, modifiers| {
+            Some(Message::EventOccurred(Event::Keyboard(
+                keyboard::Event::KeyPressed {
+                    key,
+                    location: keyboard::Location::Standard,
+                    modifiers,
+                    text: None,
+                },
+            )))
+        })
     }
 }
