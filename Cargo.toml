@@ -1,0 +1,26 @@
+[package]
+name = "tracky"
+version = "0.1.0"
+authors = ["Marius Pardo <pardomarius@gmail.com>"]
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+crossterm = { version = "0.27", features = ["event-stream"] }
+futures = "0.3"
+ratatui = "0.27"
+tokio = { version = "1.35", features = ["full"] }
+joy-value-object = { git = "https://github.com/sub07/rust-utils", version = "0.3.3" }
+joy-collection-utils = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
+joy-macro = { git = "https://github.com/sub07/rust-utils", version = "0.1.4" }
+joy-iter = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
+color-eyre = "0.6"
+eyre = "0.6"
+itertools = "*"
+cpal = "0.15"
+derivative = "2.2.0"
+audrey = "0.3"
+plotters = "0.3"
+
+[profile.dev.package."*"]
+opt-level = 3
