@@ -1,6 +1,6 @@
 use pattern::PatternView;
 use ratatui::{
-    layout::{Constraint, Layout},
+    layout::{Constraint, Layout, Rect},
     widgets::Widget,
     Frame,
 };
@@ -10,9 +10,32 @@ use crate::{log::render_log_panel, tracky::Tracky};
 pub mod channel;
 pub mod line;
 pub mod pattern;
+pub mod popup;
+
+fn centered_rect(area: Rect, width: Constraint, height: Constraint) -> Rect {
+    let [_, center, _] =
+        Layout::horizontal([Constraint::Fill(1), width, Constraint::Fill(1)]).areas(area);
+
+    let [_, center, _] =
+        Layout::vertical([Constraint::Fill(1), height, Constraint::Fill(1)]).areas(center);
+
+    center
+}
+
+fn center_row(area: Rect) -> Rect {
+    let [_, center, _] = Layout::vertical([
+        Constraint::Fill(1),
+        Constraint::Length(1),
+        Constraint::Fill(1),
+    ])
+    .areas(area);
+
+    center
+}
 
 pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
     let area = frame.size();
+    let buf = frame.buffer_mut();
 
     let pattern_view = PatternView::new(
         app.patterns.current_pattern_channels(),
@@ -23,7 +46,13 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
         app.patterns.channel_count,
     );
 
-    pattern_view.render(area, frame.buffer_mut());
+    pattern_view.render(area, buf);
+
+    if let Some(popup) = &mut app.popup_state {
+        match popup {
+            popup::Popup::AudioDeviceSelection(popup) => popup.render(area, buf),
+        }
+    }
 
     if app.display_log_console {
         let [_, console_area] =

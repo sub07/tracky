@@ -3,9 +3,9 @@ use std::fmt::Debug;
 use derivative::Derivative;
 use eyre::eyre;
 
-use crate::keybindings::PatternEditInputContext;
-
 use joy_value_object::{mk_vo, mk_vo_consts};
+
+use crate::keybindings;
 
 mk_vo! {
     pub HexDigit: u8,
@@ -263,18 +263,18 @@ impl Patterns {
             .chunks_exact(self.channel_len as usize)
     }
 
-    pub fn current_input_context(&self) -> PatternEditInputContext {
+    pub fn current_input_context(&self) -> keybindings::InputContext {
         match (
             PatternLineDescriptor::field_by_cursor(self.current_field),
             PatternLineDescriptor::local_field_cursor(self.current_field),
         ) {
             (PatternLineDescriptor::Note, local_cursor) => match local_cursor {
-                0 | 1 => PatternEditInputContext::Note,
-                2 => PatternEditInputContext::Octave,
+                0 | 1 => keybindings::InputContext::Note,
+                2 => keybindings::InputContext::Octave,
                 _ => unreachable!(),
             },
-            (PatternLineDescriptor::Velocity, _) => PatternEditInputContext::Hex,
-            (PatternLineDescriptor::Instrument, _) => PatternEditInputContext::Hex,
+            (PatternLineDescriptor::Velocity, _) => keybindings::InputContext::Hex,
+            (PatternLineDescriptor::Instrument, _) => keybindings::InputContext::Hex,
         }
     }
 

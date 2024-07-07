@@ -14,7 +14,10 @@ use cpal::{
 };
 use eyre::{ensure, OptionExt};
 
-use crate::log::{info, DebugLogExt};
+use crate::{
+    log::{info, DebugLogExt},
+    DEBUG,
+};
 
 use super::{frame::StereoFrame, signal::StereoSignal, Pan, Volume};
 
@@ -40,17 +43,14 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new_debug() -> eyre::Result<Self> {
-        let mut player = Self::new()?;
-        player.stream_state_mut().debug_sample_sink = Some(Vec::new());
-        Ok(player)
-    }
-
     pub fn new() -> eyre::Result<Self> {
         let (stream_creation_sender, stream_creation_receiver) = mpsc::channel();
         let (stream_command_sender, stream_command_receiver) = mpsc::channel();
 
-        let stream_state = Arc::new(Mutex::new(StreamState::default()));
+        let stream_state = Arc::new(Mutex::new(StreamState {
+            debug_sample_sink: if DEBUG { Some(Vec::new()) } else { None },
+            ..Default::default()
+        }));
         let audio_thread_stream_state = stream_state.clone();
 
         thread::Builder::new()
@@ -198,7 +198,7 @@ mod test {
     use super::*;
 
     fn get_player() -> Player {
-        Player::new_debug().expect("Cannot build player for unit tests")
+        Player::new().expect("Cannot build player for unit tests")
     }
 
     fn assert_that_player_played_signal(player: Player, signal: StereoSignal) {

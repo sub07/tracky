@@ -17,7 +17,7 @@ joy-iter = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
 color-eyre = "0.6"
 eyre = "0.6"
 itertools = "*"
-cpal = "0.15"
+cpal = { version = "0.15", features = ["asio"] }
 derivative = "2.2.0"
 audrey = "0.3"
 plotters = "0.3"

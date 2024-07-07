@@ -21,7 +21,14 @@ mod model;
 mod service;
 mod tracky;
 mod tui;
+mod utils;
 mod view;
+
+#[cfg(debug_assertions)]
+const DEBUG: bool = true;
+
+#[cfg(not(debug_assertions))]
+const DEBUG: bool = false;
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
