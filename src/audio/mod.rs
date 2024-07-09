@@ -1,5 +1,6 @@
 use joy_value_object::{mk_vo, mk_vo_consts};
 
+pub mod device;
 pub mod dsp;
 pub mod frame;
 pub mod player;

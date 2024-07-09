@@ -1,9 +1,4 @@
-use std::collections::HashMap;
-
-use cpal::{
-    traits::{DeviceTrait, HostTrait},
-    Device, Host, HostId, ALL_HOSTS,
-};
+use cpal::HostId;
 use itertools::Itertools;
 use ratatui::{
     buffer::Buffer,
@@ -17,8 +12,8 @@ use ratatui::{
 };
 
 use crate::{
+    audio::device::{Device, Devices},
     keybindings::Action,
-    log::DebugLogExt,
     model::Direction,
     view::{center_row, centered_rect},
 };
@@ -31,32 +26,18 @@ enum ListId {
 pub struct AudioDeviceSelectionPopup {
     host_list_state: ListState,
     device_list_state: ListState,
-    hosts: HashMap<HostId, Host>,
-    devices: Vec<(String, Device)>,
+    devices: Devices,
     selected_list: ListId,
 }
 
 impl Default for AudioDeviceSelectionPopup {
     fn default() -> Self {
-        let hosts = ALL_HOSTS
-            .iter()
-            .filter_map(|id| cpal::host_from_id(*id).ok().map(|host| (*id, host)))
-            .collect();
-
-        let host_list_state = ListState::default().with_selected(Some(0));
-        let device_list_state = ListState::default().with_selected(Some(0));
-
-        let mut state = Self {
-            host_list_state,
-            device_list_state,
-            hosts,
-            devices: Vec::new(),
+        Self {
+            host_list_state: ListState::default().with_selected(Some(0)),
+            device_list_state: ListState::default().with_selected(Some(0)),
+            devices: Devices::load(),
             selected_list: ListId::Device,
-        };
-
-        state.load_selected_host_devices();
-
-        state
+        }
     }
 }
 
@@ -77,80 +58,57 @@ impl AudioDeviceSelectionPopup {
     const KEYBINDINGS_LABEL: &str = " <Tab> Shift - <Esc> Cancel - <Enter> Confirm ";
     const KEYBINDINGS_LABEL_LEN: u16 = Self::KEYBINDINGS_LABEL.len() as u16;
 
-    fn selected_host_id(&self) -> Option<HostId> {
-        self.host_list_state.selected().and_then(|list_index| {
-            self.hosts
-                .keys()
-                .nth(list_index.clamp(0, self.hosts.len() - 1))
-                .cloned()
-        })
-    }
-
-    fn load_host_devices(&mut self, host_id: HostId) {
-        let devices = self.hosts[&host_id].output_devices().map(|devices| {
-            devices
-                .map(|device| {
-                    (
-                        device
-                            .name()
-                            .unwrap_or("Output (error while getting name)".into()),
-                        device,
-                    )
-                })
-                .collect::<Vec<_>>()
-        });
-
-        match devices {
-            Ok(devices) => self.devices = devices,
-            Err(err) => err.error("device loading"),
-        }
-    }
-
-    fn load_selected_host_devices(&mut self) {
-        if let Some(host) = self.selected_host_id() {
-            self.load_host_devices(host);
-        }
+    fn get_current_host_devices(&self) -> Option<&[Device]> {
+        self.host_list_state
+            .selected()
+            .and_then(|list_index| {
+                self.devices
+                    .hosts()
+                    .nth(list_index.clamp(0, self.devices.host_count() - 1))
+            })
+            .and_then(|host_id| self.devices.devices(&host_id))
     }
 
     fn selected_device(&self) -> Option<Device> {
         self.device_list_state.selected().and_then(|list_index| {
-            self.devices
-                .get(list_index.clamp(0, self.devices.len() - 1))
-                .map(|(_, device)| device.clone())
+            self.get_current_host_devices()
+                .and_then(|devices| devices.get(list_index.clamp(0, devices.len() - 1)).cloned())
         })
     }
 
-    fn hosts(&self) -> Option<impl Iterator<Item = &'static str> + '_> {
-        if self.hosts.is_empty() {
-            None
-        } else {
-            Some(self.hosts.keys().map(|id| id.name()))
-        }
+    fn hosts_names(&self) -> Vec<&'static str> {
+        self.devices.hosts().map(|id| id.name()).collect_vec()
     }
 
-    fn devices(&self) -> Option<impl Iterator<Item = String> + '_> {
-        if self.devices.is_empty() {
-            None
-        } else {
-            Some(self.devices.iter().map(|(name, _)| name.to_owned()))
-        }
+    fn devices_names(&self) -> Vec<String> {
+        self.get_current_host_devices()
+            .map(|devices| {
+                devices
+                    .iter()
+                    .map(|Device(name, _)| name.clone())
+                    .collect_vec()
+            })
+            .unwrap_or_default()
     }
 
     fn popup_widths(&self) -> (u16, u16, u16) {
         let host_list_width = self
-            .hosts
-            .keys()
-            .map(|id: &HostId| id.name().len() as u16)
+            .devices
+            .hosts()
+            .map(|id: HostId| id.name().len() as u16)
             .max()
             .map(|max| max + Self::LIST_SELECTION_SYMBOL_LEN)
             .unwrap_or(Self::NO_HOST_LABEL_LEN);
 
         let device_list_width = self
-            .devices
-            .iter()
-            .map(|(name, _)| name.len() as u16)
-            .max()
-            .map(|max| max + Self::LIST_SELECTION_SYMBOL_LEN)
+            .get_current_host_devices()
+            .and_then(|devices| {
+                devices
+                    .iter()
+                    .map(|Device(name, _)| name.len() as u16)
+                    .max()
+                    .map(|max| max + Self::LIST_SELECTION_SYMBOL_LEN)
+            })
             .unwrap_or(Self::NO_DEVICE_LABEL_LEN);
 
         let inner_width = u16::max(
@@ -184,9 +142,16 @@ impl AudioDeviceSelectionPopup {
             .into_centered_line()
             .render(title_area, buf);
 
-        if let Some(hosts) = self.hosts().map(|iter| iter.collect_vec()) {
+        let hosts_names = self.hosts_names();
+
+        if hosts_names.is_empty() {
+            Self::NO_HOST_LABEL
+                .dark_gray()
+                .into_centered_line()
+                .render(center_row(area), buf);
+        } else {
             StatefulWidget::render(
-                List::new(hosts)
+                List::new(hosts_names)
                     .highlight_spacing(HighlightSpacing::Always)
                     .highlight_symbol(Self::LIST_SELECTION_SYMBOL)
                     .highlight_style(highlight_style),
@@ -194,11 +159,6 @@ impl AudioDeviceSelectionPopup {
                 buf,
                 &mut self.host_list_state,
             );
-        } else {
-            Self::NO_HOST_LABEL
-                .dark_gray()
-                .into_centered_line()
-                .render(center_row(area), buf);
         }
     }
 
@@ -214,9 +174,16 @@ impl AudioDeviceSelectionPopup {
             .into_centered_line()
             .render(title_area, buf);
 
-        if let Some(devices) = self.devices().map(|iter| iter.collect_vec()) {
+        let devices_names = self.devices_names();
+
+        if devices_names.is_empty() {
+            Self::NO_DEVICE_LABEL
+                .dark_gray()
+                .into_centered_line()
+                .render(center_row(area), buf);
+        } else {
             StatefulWidget::render(
-                List::new(devices)
+                List::new(devices_names)
                     .highlight_spacing(HighlightSpacing::Always)
                     .highlight_symbol(Self::LIST_SELECTION_SYMBOL)
                     .highlight_style(highlight_style),
@@ -224,11 +191,6 @@ impl AudioDeviceSelectionPopup {
                 buf,
                 &mut self.device_list_state,
             );
-        } else {
-            Self::NO_DEVICE_LABEL
-                .dark_gray()
-                .into_centered_line()
-                .render(center_row(area), buf);
         }
     }
 
@@ -283,17 +245,11 @@ impl AudioDeviceSelectionPopup {
         match action {
             Action::Move(direction, _) => match direction {
                 Direction::Up => match self.selected_list {
-                    ListId::Host => {
-                        self.host_list_state.select_previous();
-                        self.load_selected_host_devices();
-                    }
+                    ListId::Host => self.host_list_state.select_previous(),
                     ListId::Device => self.device_list_state.select_previous(),
                 },
                 Direction::Down => match self.selected_list {
-                    ListId::Host => {
-                        self.host_list_state.select_next();
-                        self.load_selected_host_devices();
-                    }
+                    ListId::Host => self.host_list_state.select_next(),
                     ListId::Device => self.device_list_state.select_next(),
                 },
                 _ => {

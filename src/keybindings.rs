@@ -5,6 +5,7 @@ use joy_macro::DisplayFromDebug;
 use ratatui::crossterm::event::KeyCode;
 
 use crate::{
+    audio,
     model::{
         pattern::{HexDigit, NoteName, OctaveValue},
         Direction,
@@ -35,7 +36,7 @@ pub enum Action {
     Cancel,
     ClosePopup,
     OpenDeviceSelectionPopup,
-    SetPlayingDevice(IgnoreDerive<cpal::Device>),
+    SetPlayingDevice(IgnoreDerive<audio::device::Device>),
     ExitApp,
     Composite(Vec<Action>),
 }

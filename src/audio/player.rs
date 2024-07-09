@@ -9,8 +9,9 @@ use std::{
 };
 
 use cpal::{
+    default_host,
     traits::{DeviceTrait, HostTrait, StreamTrait},
-    SampleFormat, SampleRate, Stream,
+    Device, SampleFormat, SampleRate, Stream,
 };
 use eyre::{ensure, OptionExt};
 
@@ -43,7 +44,14 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new() -> eyre::Result<Self> {
+    pub fn with_default_device() -> eyre::Result<Self> {
+        let default_device = default_host()
+            .default_output_device()
+            .ok_or_eyre("Could not get default output device")?;
+        Self::with_device(default_device)
+    }
+
+    pub fn with_device(device: Device) -> eyre::Result<Self> {
         let (stream_creation_sender, stream_creation_receiver) = mpsc::channel();
         let (stream_command_sender, stream_command_receiver) = mpsc::channel();
 
@@ -55,29 +63,31 @@ impl Player {
 
         thread::Builder::new()
             .name("audio_commands_handler".into())
-            .spawn(move || match init_stream(audio_thread_stream_state) {
-                Ok((stream, sample_rate)) => {
-                    stream_creation_sender.send(Ok(sample_rate)).unwrap();
-                    while let Ok(command) = stream_command_receiver.recv() {
-                        match command {
-                            StreamCommand::Play => {
-                                if let Err(err) = stream.play() {
-                                    err.error("play");
-                                    break;
+            .spawn(
+                move || match init_stream(device, audio_thread_stream_state) {
+                    Ok((stream, sample_rate)) => {
+                        stream_creation_sender.send(Ok(sample_rate)).unwrap();
+                        while let Ok(command) = stream_command_receiver.recv() {
+                            match command {
+                                StreamCommand::Play => {
+                                    if let Err(err) = stream.play() {
+                                        err.error("play");
+                                        break;
+                                    }
                                 }
-                            }
-                            StreamCommand::Stop => break,
-                            StreamCommand::Pause => {
-                                if let Err(err) = stream.pause() {
-                                    err.error("pause");
-                                    break;
+                                StreamCommand::Stop => break,
+                                StreamCommand::Pause => {
+                                    if let Err(err) = stream.pause() {
+                                        err.error("pause");
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                Err(e) => stream_creation_sender.send(Err(e)).unwrap(),
-            })?;
+                    Err(e) => stream_creation_sender.send(Err(e)).unwrap(),
+                },
+            )?;
 
         let sample_rate = stream_creation_receiver.recv()??;
 
@@ -135,12 +145,10 @@ impl Player {
     }
 }
 
-fn init_stream(stream_state: Arc<Mutex<StreamState>>) -> eyre::Result<(Stream, SampleRate)> {
-    let host = cpal::default_host();
-    let device = host
-        .default_output_device()
-        .ok_or_eyre("Could not get default output device")?;
-
+fn init_stream(
+    device: Device,
+    stream_state: Arc<Mutex<StreamState>>,
+) -> eyre::Result<(Stream, SampleRate)> {
     let config = device.default_output_config()?;
 
     let sample_rate = config.sample_rate();
@@ -198,7 +206,7 @@ mod test {
     use super::*;
 
     fn get_player() -> Player {
-        Player::new().expect("Cannot build player for unit tests")
+        Player::with_default_device().expect("Cannot build player for unit tests")
     }
 
     fn assert_that_player_played_signal(player: Player, signal: StereoSignal) {

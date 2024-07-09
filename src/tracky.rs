@@ -1,6 +1,6 @@
-use cpal::Device;
 
 use crate::{
+    audio,
     keybindings::{InputContext, KeyBindings},
     model::pattern::Patterns,
     view::popup::Popup,
@@ -12,7 +12,7 @@ pub struct Tracky {
     pub patterns: Patterns,
     pub display_log_console: bool,
     pub keybindings: KeyBindings,
-    pub selected_output_device: Option<Device>,
+    pub selected_output_device: Option<audio::device::Device>,
     pub popup_state: Option<Popup>,
 }
 
