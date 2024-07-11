@@ -1,7 +1,7 @@
-
 use crate::{
-    audio,
+    audio::{self, device::Device, player::Player, signal::StereoSignal},
     keybindings::{InputContext, KeyBindings},
+    log::{DebugLogExt, DisplayLogExt},
     model::pattern::Patterns,
     view::popup::Popup,
     DEBUG,
@@ -14,6 +14,7 @@ pub struct Tracky {
     pub keybindings: KeyBindings,
     pub selected_output_device: Option<audio::device::Device>,
     pub popup_state: Option<Popup>,
+    pub player: Option<Player>,
 }
 
 impl Default for Tracky {
@@ -25,6 +26,7 @@ impl Default for Tracky {
             keybindings: Default::default(),
             selected_output_device: None,
             popup_state: None,
+            player: None,
         }
     }
 }
@@ -50,5 +52,17 @@ impl Tracky {
 
     pub fn close_popup(&mut self) {
         self.popup_state = None;
+    }
+
+    pub fn play(&mut self) {
+        if let Some(Device(ref name, ref device)) = self.selected_output_device {
+            let mut player = Player::with_device(device.clone()).unwrap();
+            let signal = StereoSignal::from_path("assets/piano.wav").unwrap();
+            player.queue_signal(&signal);
+            player.play().unwrap();
+            name.info("Play");
+        } else {
+            "No device selected".error("Play");
+        }
     }
 }

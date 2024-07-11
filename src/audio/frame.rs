@@ -10,3 +10,10 @@ impl FrameExt for StereoFrame {
     type Sample = f32;
     const FRAME_SIZE: usize = 2;
 }
+
+pub type MonoFrame = f32;
+
+impl FrameExt for MonoFrame {
+    type Sample = f32;
+    const FRAME_SIZE: usize = 1;
+}

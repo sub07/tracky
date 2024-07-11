@@ -40,7 +40,7 @@ fn handle_action(mut action: Action, app: &mut Tracky) -> eyre::Result<()> {
         Action::InsertPattern => todo!(),
         Action::NextPattern => todo!(),
         Action::PreviousPattern => todo!(),
-        Action::TogglePlay => todo!(),
+        Action::TogglePlay => app.play(),
         Action::NoteCut => app.patterns.set_note_cut(),
         Action::ModifyDefaultOctave(i) => app.patterns.modify_default_octave(i),
         Action::ExitApp => app.exit(),

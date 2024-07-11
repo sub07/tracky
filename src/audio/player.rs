@@ -15,10 +15,7 @@ use cpal::{
 };
 use eyre::{ensure, OptionExt};
 
-use crate::{
-    log::{info, DebugLogExt},
-    DEBUG,
-};
+use crate::log::{info, DebugLogExt};
 
 use super::{frame::StereoFrame, signal::StereoSignal, Pan, Volume};
 
@@ -27,8 +24,6 @@ struct StreamState {
     volume: Volume,
     pan: Pan,
     pending_frames: VecDeque<StereoFrame>,
-    // If the Option is Some, then the sink is filled with the same data that are sent to audio driver
-    debug_sample_sink: Option<Vec<f32>>,
 }
 
 enum StreamCommand {
@@ -55,10 +50,7 @@ impl Player {
         let (stream_creation_sender, stream_creation_receiver) = mpsc::channel();
         let (stream_command_sender, stream_command_receiver) = mpsc::channel();
 
-        let stream_state = Arc::new(Mutex::new(StreamState {
-            debug_sample_sink: if DEBUG { Some(Vec::new()) } else { None },
-            ..Default::default()
-        }));
+        let stream_state = Arc::new(Mutex::new(Default::default()));
         let audio_thread_stream_state = stream_state.clone();
 
         thread::Builder::new()
@@ -111,8 +103,9 @@ impl Player {
         Ok(())
     }
 
-    pub fn stop(&self) -> eyre::Result<()> {
+    pub fn stop(&mut self) -> eyre::Result<()> {
         self.stream_command_sender.send(StreamCommand::Stop)?;
+        self.stream_state_mut().pending_frames.clear();
         Ok(())
     }
 
@@ -142,6 +135,10 @@ impl Player {
 
     pub fn queue_signal(&mut self, signal: &StereoSignal) {
         self.stream_state_mut().pending_frames.extend(signal.iter());
+    }
+
+    pub fn is_playing(&self) -> bool {
+        !self.stream_state().pending_frames.is_empty()
     }
 }
 
@@ -189,46 +186,63 @@ fn audio_buffer_loop(out: &mut [f32], mut stream_state: impl DerefMut<Target = S
         let start_index = inserted_frame_count * 2;
         out[start_index..].fill(0.0);
     }
+}
 
-    if let Some(ref mut sink) = stream_state.debug_sample_sink {
-        for s in out {
-            sink.push(*s);
-        }
+impl Drop for Player {
+    fn drop(&mut self) {
+        // This panics if the player still has samples queued to play.
+        // Because the underlaying stream is dropped silently if the player goes out of scope, I added this assertion to help not forget to store the player somewhere after creation.
+        // Maybe there are some use case but if a player must be dropped while playing, self.stop() should be called before dropping.
+        // If this is problematic, let's just replace it with a simple log.
+        assert!(
+            !self.is_playing(),
+            "Player is still playing while being dropped"
+        );
     }
 }
 
 #[cfg(test)]
 mod test {
-    use std::time::Duration;
-
-    use thread::sleep;
-
     use super::*;
 
-    fn get_player() -> Player {
-        Player::with_default_device().expect("Cannot build player for unit tests")
-    }
+    const AVERAGE_SAMPLE_BUFFER_SIZE: usize = 256;
+    const FLOAT_EQ_EPSILON: f32 = 0.001;
 
-    fn assert_that_player_played_signal(player: Player, signal: StereoSignal) {
-        let _ = player.stop();
-        while Arc::strong_count(&player.stream_state) > 1 {
-            sleep(Duration::from_millis(100));
+    fn simulate_signal_playing(
+        volume: Volume,
+        pan: Pan,
+        signal: &StereoSignal,
+        sample_buffer_size: usize,
+    ) -> Vec<f32> {
+        assert!(
+            sample_buffer_size & 1 == 0,
+            "Unit test internal bug, sample_buffer_size must be even"
+        );
+        let mut output = Vec::with_capacity(signal.len());
+        let pending_frames = VecDeque::from_iter(signal.frames.iter().cloned());
+        let mut stream_state = StreamState {
+            volume,
+            pan,
+            pending_frames,
+        };
+        while !stream_state.pending_frames.is_empty() {
+            let sample_slice_start = output.len();
+            output.resize(sample_slice_start + sample_buffer_size, 0.0);
+            audio_buffer_loop(&mut output[sample_slice_start..], &mut stream_state);
         }
-        let played_samples = Arc::into_inner(player.stream_state)
-            .unwrap()
-            .into_inner()
-            .unwrap()
-            .debug_sample_sink
-            .expect("Use a debug player in unit tests");
 
-        assert!(played_samples
-            .into_iter()
-            .zip(signal.into_samples())
-            .all(|(a, b)| a == b && !a.is_nan() && !b.is_nan()));
+        while output.last().is_some_and(|s| *s == 0.0) {
+            output.pop();
+        }
+
+        output
     }
 
-    fn wait_player_done_playing(player: &Player) {
-        while !player.stream_state().pending_frames.is_empty() {}
+    fn assert_signal_eq(signal1: &[f32], signal2: &[f32]) {
+        assert!(signal1
+            .iter()
+            .zip(signal2.iter())
+            .all(|(a, b)| (a - b).abs() < FLOAT_EQ_EPSILON && !a.is_nan() && !b.is_nan()));
     }
 
     fn alter_signal<F>(mut signal: StereoSignal, f: F) -> StereoSignal
@@ -239,31 +253,28 @@ mod test {
         signal
     }
 
+    fn get_signal() -> StereoSignal {
+        StereoSignal::from_path("assets/piano.wav").expect("could not load asset")
+    }
+
     #[test]
     fn test_no_pan_max_volume() {
-        let mut player = get_player();
-
-        let signal = StereoSignal::from_path("assets/piano.wav").expect("could not load asset");
-        player.queue_signal(&signal);
-        let _ = player.play();
-
-        wait_player_done_playing(&player);
-        assert_that_player_played_signal(player, signal);
+        let signal = get_signal();
+        let simulated_samples = simulate_signal_playing(
+            Volume::DEFAULT,
+            Pan::DEFAULT,
+            &signal,
+            AVERAGE_SAMPLE_BUFFER_SIZE,
+        );
+        assert_signal_eq(&simulated_samples, &signal.into_samples());
     }
 
     #[test]
     fn test_volume() {
-        let mut player = get_player();
-
-        let signal = StereoSignal::from_path("assets/piano.wav").expect("could not load asset");
-        player.queue_signal(&signal);
-
+        let signal = get_signal();
         const VOLUME: Volume = Volume::new_unchecked(0.1);
-
-        player.set_volume(VOLUME);
-        let _ = player.play();
-
-        wait_player_done_playing(&player);
+        let simulated_samples =
+            simulate_signal_playing(VOLUME, Pan::DEFAULT, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
 
         let altered_signal = alter_signal(signal, |frames| {
             for (left, right) in frames.iter_mut() {
@@ -272,80 +283,58 @@ mod test {
             }
         });
 
-        assert_that_player_played_signal(player, altered_signal);
+        assert_signal_eq(&simulated_samples, &altered_signal.into_samples());
     }
 
     #[test]
     fn test_right_pan() {
-        let mut player = get_player();
-
-        let signal = StereoSignal::from_path("assets/piano.wav").expect("could not load asset");
-        player.queue_signal(&signal);
-
-        const PAN: Pan = Pan::new_unchecked(0.5);
-
-        player.set_pan(PAN);
-        let _ = player.play();
-
-        wait_player_done_playing(&player);
+        let signal = get_signal();
+        const PAN: Pan = Pan::new_unchecked(0.4);
+        let simulated_samples =
+            simulate_signal_playing(Volume::DEFAULT, PAN, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
 
         let altered_signal = alter_signal(signal, |frames| {
             for (left, right) in frames.iter_mut() {
-                *left *= 0.5;
+                *left *= 0.6;
                 *right *= 1.0;
             }
         });
 
-        assert_that_player_played_signal(player, altered_signal);
+        assert_signal_eq(&simulated_samples, &altered_signal.into_samples());
     }
 
     #[test]
     fn test_left_pan() {
-        let mut player = get_player();
-
-        let signal = StereoSignal::from_path("assets/piano.wav").expect("could not load asset");
-        player.queue_signal(&signal);
-
-        const PAN: Pan = Pan::new_unchecked(-0.5);
-
-        player.set_pan(PAN);
-        let _ = player.play();
-
-        wait_player_done_playing(&player);
+        let signal = get_signal();
+        const PAN: Pan = Pan::new_unchecked(-0.4);
+        let simulated_samples =
+            simulate_signal_playing(Volume::DEFAULT, PAN, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
 
         let altered_signal = alter_signal(signal, |frames| {
             for (left, right) in frames.iter_mut() {
                 *left *= 1.0;
-                *right *= 0.5;
+                *right *= 0.6;
             }
         });
 
-        assert_that_player_played_signal(player, altered_signal);
+        assert_signal_eq(&simulated_samples, &altered_signal.into_samples());
     }
 
     #[test]
-    fn test_volume_left_pan() {
-        let mut player = get_player();
-
-        let signal = StereoSignal::from_path("assets/piano.wav").expect("could not load asset");
-        player.queue_signal(&signal);
-
-        const PAN: Pan = Pan::new_unchecked(-0.5);
+    fn test_volume_pan() {
+        let signal = get_signal();
+        const PAN: Pan = Pan::new_unchecked(-0.4);
         const VOLUME: Volume = Volume::new_unchecked(0.1);
-
-        player.set_pan(PAN);
-        player.set_volume(VOLUME);
-        let _ = player.play();
-
-        wait_player_done_playing(&player);
+        let simulated_samples =
+            simulate_signal_playing(VOLUME, PAN, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
 
         let altered_signal = alter_signal(signal, |frames| {
             for (left, right) in frames.iter_mut() {
                 *left *= VOLUME.value();
-                *right *= 0.5 * VOLUME.value();
+                *right *= 0.6 * VOLUME.value();
             }
         });
 
-        assert_that_player_played_signal(player, altered_signal);
+        assert_signal_eq(&simulated_samples, &altered_signal.into_samples());
     }
 }

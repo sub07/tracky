@@ -202,4 +202,13 @@ mod test {
             assert_eq!((samples[2 * i], samples[2 * i + 1]), signal.frames[i]);
         }
     }
+
+    #[test]
+    fn test_into_samples_with_empty_signal() {
+        let signal = Signal::<f32>::new(Duration::ZERO, 0.0);
+        let samples = signal.into_samples();
+
+        assert!(samples.is_empty());
+        assert_eq!(0, samples.capacity());
+    }
 }
