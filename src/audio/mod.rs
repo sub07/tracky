@@ -1,3 +1,5 @@
+pub use device::Device;
+pub use device::Devices;
 use joy_value_object::{mk_vo, mk_vo_consts};
 
 pub mod device;

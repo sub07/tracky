@@ -4,6 +4,7 @@ use cpal::{
     traits::{DeviceTrait, HostTrait},
     HostId, SampleFormat, ALL_HOSTS,
 };
+use eyre::OptionExt;
 use itertools::Itertools;
 
 pub struct Devices {
@@ -13,7 +14,18 @@ pub struct Devices {
 #[derive(Clone)]
 pub struct Device(pub String, pub cpal::Device);
 
+fn map_device_name(device: &cpal::Device) -> String {
+    device.name().unwrap_or("Unknown device".into())
+}
+
 impl Devices {
+    pub fn default_output() -> eyre::Result<Device> {
+        let default_device = cpal::default_host()
+            .default_output_device()
+            .ok_or_eyre("Could not get default output device")?;
+        Ok(Device(map_device_name(&default_device), default_device))
+    }
+
     pub fn load() -> Devices {
         Devices {
             devices: ALL_HOSTS
@@ -31,14 +43,7 @@ impl Devices {
                                                     && config.sample_format() == SampleFormat::F32
                                             })
                                         })
-                                        .map(|device| {
-                                            Device(
-                                                device
-                                                    .name()
-                                                    .unwrap_or("Unknown device name".into()),
-                                                device,
-                                            )
-                                        })
+                                        .map(|device| Device(map_device_name(&device), device))
                                         .collect_vec(),
                                 )
                             })

@@ -55,12 +55,12 @@ impl Tracky {
     }
 
     pub fn play(&mut self) {
-        if let Some(Device(ref name, ref device)) = self.selected_output_device {
+        if let Some(ref device) = self.selected_output_device {
             let mut player = Player::with_device(device.clone()).unwrap();
             let signal = StereoSignal::from_path("assets/piano.wav").unwrap();
             player.queue_signal(&signal);
             player.play().unwrap();
-            name.info("Play");
+            self.player = Some(player);
         } else {
             "No device selected".error("Play");
         }

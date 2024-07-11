@@ -40,18 +40,17 @@ pub struct Player {
 
 impl Player {
     pub fn with_default_device() -> eyre::Result<Self> {
-        let default_device = default_host()
-            .default_output_device()
-            .ok_or_eyre("Could not get default output device")?;
-        Self::with_device(default_device)
+        Self::with_device(crate::audio::Devices::default_output()?)
     }
 
-    pub fn with_device(device: Device) -> eyre::Result<Self> {
+    pub fn with_device(device: crate::audio::Device) -> eyre::Result<Self> {
         let (stream_creation_sender, stream_creation_receiver) = mpsc::channel();
         let (stream_command_sender, stream_command_receiver) = mpsc::channel();
 
         let stream_state = Arc::new(Mutex::new(Default::default()));
         let audio_thread_stream_state = stream_state.clone();
+
+        let crate::audio::device::Device(device_name, device) = device;
 
         thread::Builder::new()
             .name("audio_commands_handler".into())
@@ -83,8 +82,10 @@ impl Player {
 
         let sample_rate = stream_creation_receiver.recv()??;
 
-        info("player", &"Created");
-        info("player", &format!("Sample rate: {}", sample_rate.0));
+        info(
+            "AudioPlayer",
+            &format!("Playing on {device_name} at {}Hz", sample_rate.0),
+        );
 
         Ok(Player {
             sample_rate: sample_rate.0 as f32,
