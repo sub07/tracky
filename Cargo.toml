@@ -10,7 +10,7 @@ crossterm = { version = "0.27", features = ["event-stream"] }
 futures = "0.3"
 ratatui = "0.27"
 tokio = { version = "1.35", features = ["full"] }
-joy-value-object = { git = "https://github.com/sub07/rust-utils", version = "0.3.3" }
+joy-value-object = { git = "https://github.com/sub07/rust-utils", version = "0.3.5" }
 joy-collection-utils = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
 joy-macro = { git = "https://github.com/sub07/rust-utils", version = "0.1.4" }
 joy-vector = { git = "https://github.com/sub07/rust-utils", version = "0.1.6" }

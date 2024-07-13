@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use derivative::Derivative;
 use eyre::eyre;
 
+use joy_macro::EnumIter;
 use joy_value_object::{mk_vo, mk_vo_consts};
 
 use crate::keybindings;
@@ -82,7 +83,7 @@ impl<T> Field<T> {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, EnumIter)]
 pub enum NoteName {
     C,
     CSharp,

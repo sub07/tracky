@@ -1,3 +1,4 @@
+pub mod midi;
 pub mod pattern;
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
