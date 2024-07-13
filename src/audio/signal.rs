@@ -4,39 +4,32 @@ use std::{
     time::Duration,
 };
 
-use eyre::ensure;
+use eyre::{bail, ensure};
 use itertools::Itertools;
 use joy_iter::zip_self::ZipSelf;
+use joy_vector::Vector;
 
 use crate::audio::dsp;
 
-use super::frame::{FrameExt, StereoFrame};
+use super::{frame::Frame, load_samples_from_file};
 
-pub type StereoSignal = Signal<StereoFrame>;
+pub type StereoSignal = Signal<2>;
 
 #[derive(Clone)]
-pub struct Signal<F> {
-    pub frames: Vec<F>,
+pub struct Signal<const FRAME_SIZE: usize> {
+    pub frames: Vec<Frame<FRAME_SIZE>>,
     pub sample_rate: f32,
 }
 
-impl<F> Signal<F>
-where
-    F: Default + Clone,
-{
+impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
     pub fn new(duration: Duration, sample_rate: f32) -> Self {
         Signal {
-            frames: vec![F::default(); (duration.as_secs_f32() * sample_rate) as usize],
+            frames: vec![Frame::default(); (duration.as_secs_f32() * sample_rate) as usize],
             sample_rate,
         }
     }
-}
 
-impl<F> Signal<F>
-where
-    F: Clone + Copy,
-{
-    pub fn from_frames(frames: Vec<F>, sample_rate: f32) -> Self {
+    pub fn from_frames(frames: Vec<Frame<FRAME_SIZE>>, sample_rate: f32) -> Self {
         Signal {
             frames,
             sample_rate,
@@ -70,63 +63,27 @@ where
             .copy_from_slice(&signal.frames[..(copy_end_index - copy_start_index)]);
         Ok(())
     }
-}
 
-impl<F> Signal<F>
-where
-    F: FrameExt,
-{
-    pub fn into_samples(self) -> Vec<F::Sample> {
+    pub unsafe fn into_samples(self) -> Vec<f32> {
         let (ptr, len, cap) = self.frames.into_raw_parts();
-        unsafe {
-            Vec::from_raw_parts(
-                ptr as *mut F::Sample,
-                len * F::FRAME_SIZE,
-                cap * F::FRAME_SIZE,
-            )
-        }
+        Vec::from_raw_parts(ptr as *mut f32, len * FRAME_SIZE, cap * FRAME_SIZE)
     }
-}
 
-impl<F> Signal<F>
-where
-    F: FrameExt + Clone + Copy,
-{
-    pub fn from_samples(samples: Vec<F::Sample>, sample_rate: f32) -> eyre::Result<Self> {
-        ensure!(samples.len() % F::FRAME_SIZE == 0);
+    pub unsafe fn from_samples(samples: Vec<f32>, sample_rate: f32) -> eyre::Result<Self> {
+        ensure!(samples.len() % FRAME_SIZE == 0);
         let (ptr, len, cap) = samples.into_raw_parts();
-        let frames =
-            unsafe { Vec::from_raw_parts(ptr as *mut F, len / F::FRAME_SIZE, cap / F::FRAME_SIZE) };
+        let frames = Vec::from_raw_parts(
+            ptr as *mut Frame<FRAME_SIZE>,
+            len / FRAME_SIZE,
+            cap / FRAME_SIZE,
+        );
         Ok(Signal::from_frames(frames, sample_rate))
     }
-}
 
-impl StereoSignal {
-    pub fn from_path<P: AsRef<Path>>(path: P) -> eyre::Result<Self> {
-        let mut audio_file = audrey::open(path)?;
-        let desc = audio_file.description();
-
-        ensure!(
-            desc.channel_count() <= 2,
-            "Audio file must be mono or stereo"
-        );
-
-        let mut samples = audio_file.samples().map_while(|f| f.ok());
-        let samples: &mut dyn Iterator<Item = f32> = if desc.channel_count() == 1 {
-            &mut samples.zip_self(2)
-        } else {
-            &mut samples
-        };
-
-        let samples = samples.into_iter().tuples().collect_vec();
-
-        Ok(Self {
-            frames: samples,
-            sample_rate: desc.sample_rate() as f32,
-        })
-    }
-
-    pub fn interpolate_frame_at_duration(&self, duration: Duration) -> eyre::Result<StereoFrame> {
+    pub fn interpolate_frame_at_duration(
+        &self,
+        duration: Duration,
+    ) -> eyre::Result<Frame<FRAME_SIZE>> {
         let (frame_index, rem) = self.frame_index_from_duration(duration);
 
         ensure!(
@@ -140,10 +97,25 @@ impl StereoSignal {
             }
         }
 
-        let f1 = self.frames[frame_index];
-        let f2 = self.frames[frame_index + 1];
+        Ok(dsp::interpolation::linear(
+            &self.frames[frame_index],
+            &self.frames[frame_index + 1],
+            rem,
+        ))
+    }
+}
 
-        dsp::interpolation::linear_f32(f1, f2, rem)
+impl StereoSignal {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> eyre::Result<Self> {
+        let audio_data = load_samples_from_file(path)?;
+
+        let samples: &mut dyn Iterator<Item = f32> = match audio_data.channel_count {
+            1 => &mut audio_data.samples.into_iter().zip_self(2),
+            2 => &mut audio_data.samples.into_iter(),
+            _ => bail!("Audio file must be mono or stereo"),
+        };
+
+        unsafe { Self::from_samples(samples.collect_vec(), audio_data.sample_rate) }
     }
 
     pub fn plot<P: AsRef<Path>>(&self, path: P) -> eyre::Result<()> {
@@ -158,7 +130,7 @@ impl StereoSignal {
             .frames
             .iter()
             .enumerate()
-            .map(|(i, (l, _))| (i as f32 / self.sample_rate, *l))
+            .map(|(i, Vector([left, _]))| (i as f32 / self.sample_rate, *left))
             .collect_vec();
 
         chart.draw_series(LineSeries::new(left_data, &RED))?;
@@ -175,15 +147,15 @@ impl StereoSignal {
     }
 }
 
-impl<F> Deref for Signal<F> {
-    type Target = [F];
+impl<const FRAME_SIZE: usize> Deref for Signal<FRAME_SIZE> {
+    type Target = [Frame<FRAME_SIZE>];
 
     fn deref(&self) -> &Self::Target {
         &self.frames
     }
 }
 
-impl<F> DerefMut for Signal<F> {
+impl<const FRAME_SIZE: usize> DerefMut for Signal<FRAME_SIZE> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.frames
     }
@@ -191,24 +163,50 @@ impl<F> DerefMut for Signal<F> {
 
 #[cfg(test)]
 mod test {
+    use crate::audio::frame::StereoFrame;
+
     use super::*;
 
     #[test]
-    fn test_that_unsafe_into_samples_returns_correct_vec() {
-        let signal = StereoSignal::from_path("assets/piano.wav").unwrap();
-        let samples = signal.clone().into_samples();
+    fn test_unsafe_into_samples_returns_correct_vec() {
+        let signal = StereoSignal::from_path("assets/stereo.wav").unwrap();
+        let samples = unsafe { signal.clone().into_samples() };
+
+        assert_eq!(signal.frames.len() * 2, samples.len());
 
         for i in 0..signal.len() {
-            assert_eq!((samples[2 * i], samples[2 * i + 1]), signal.frames[i]);
+            let into_samples_frame: StereoFrame = [samples[2 * i], samples[2 * i + 1]].into();
+            assert_eq!(signal.frames[i], into_samples_frame);
         }
     }
 
     #[test]
-    fn test_into_samples_with_empty_signal() {
-        let signal = Signal::<f32>::new(Duration::ZERO, 0.0);
-        let samples = signal.into_samples();
+    fn test_unsafe_into_samples_with_empty_signal() {
+        let signal = Signal::<1>::new(Duration::ZERO, 0.0);
+        let samples = unsafe { signal.into_samples() };
 
         assert!(samples.is_empty());
         assert_eq!(0, samples.capacity());
+    }
+
+    #[test]
+    fn test_unsafe_from_samples_stereo_yields_valid_signal() {
+        let audio_data = load_samples_from_file("assets/stereo.wav").unwrap();
+        let signal = unsafe {
+            Signal::<2>::from_samples(audio_data.samples.clone(), audio_data.sample_rate).unwrap()
+        };
+        assert_eq!(audio_data.samples.len() / 2, signal.frames.len());
+        for i in 0..audio_data.samples.len() / audio_data.channel_count as usize {
+            let expected_frame: StereoFrame =
+                [audio_data.samples[2 * i], audio_data.samples[2 * i + 1]].into();
+            assert_eq!(expected_frame, signal.frames[i]);
+        }
+    }
+
+    #[test]
+    fn test_unsafe_from_samples_empty_yields_valid_signal() {
+        let signal = unsafe { Signal::<2>::from_samples(Vec::new(), 0.0).unwrap() };
+        assert!(signal.frames.is_empty());
+        assert_eq!(0, signal.frames.capacity());
     }
 }

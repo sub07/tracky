@@ -950,17 +950,17 @@ dependencies = [
 [[package]]
 name = "joy-collection-utils"
 version = "0.1.0"
-source = "git+https://github.com/sub07/rust-utils#ed0e2e5393e0bd8ca9ad9cf8962357a6212768dc"
+source = "git+https://github.com/sub07/rust-utils#054fba41154daf158a00d81f61f033030301e33e"
 
 [[package]]
 name = "joy-iter"
 version = "0.1.0"
-source = "git+https://github.com/sub07/rust-utils#ed0e2e5393e0bd8ca9ad9cf8962357a6212768dc"
+source = "git+https://github.com/sub07/rust-utils#054fba41154daf158a00d81f61f033030301e33e"
 
 [[package]]
 name = "joy-macro"
 version = "0.1.4"
-source = "git+https://github.com/sub07/rust-utils#ed0e2e5393e0bd8ca9ad9cf8962357a6212768dc"
+source = "git+https://github.com/sub07/rust-utils#054fba41154daf158a00d81f61f033030301e33e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -970,7 +970,12 @@ dependencies = [
 [[package]]
 name = "joy-value-object"
 version = "0.3.3"
-source = "git+https://github.com/sub07/rust-utils#ed0e2e5393e0bd8ca9ad9cf8962357a6212768dc"
+source = "git+https://github.com/sub07/rust-utils#054fba41154daf158a00d81f61f033030301e33e"
+
+[[package]]
+name = "joy-vector"
+version = "0.1.3"
+source = "git+https://github.com/sub07/rust-utils#054fba41154daf158a00d81f61f033030301e33e"
 
 [[package]]
 name = "jpeg-decoder"
@@ -1858,6 +1863,7 @@ dependencies = [
  "joy-iter",
  "joy-macro",
  "joy-value-object",
+ "joy-vector",
  "plotters",
  "ratatui",
  "tokio",

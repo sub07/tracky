@@ -1,6 +1,7 @@
 #![feature(const_fn_floating_point_arithmetic)]
 #![feature(array_chunks)]
 #![feature(vec_into_raw_parts)]
+#![feature(iter_array_chunks)]
 
 use std::time::Duration;
 use std::{env, io};

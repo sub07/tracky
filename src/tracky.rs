@@ -1,7 +1,7 @@
 use crate::{
-    audio::{self, device::Device, player::Player, signal::StereoSignal},
+    audio::{self, player::Player, signal::StereoSignal},
     keybindings::{InputContext, KeyBindings},
-    log::{DebugLogExt, DisplayLogExt},
+    log::DebugLogExt,
     model::pattern::Patterns,
     view::popup::Popup,
     DEBUG,
@@ -57,7 +57,7 @@ impl Tracky {
     pub fn play(&mut self) {
         if let Some(ref device) = self.selected_output_device {
             let mut player = Player::with_device(device.clone()).unwrap();
-            let signal = StereoSignal::from_path("assets/piano.wav").unwrap();
+            let signal = StereoSignal::from_path("assets/stereo.wav").unwrap();
             player.queue_signal(&signal);
             player.play().unwrap();
             self.player = Some(player);

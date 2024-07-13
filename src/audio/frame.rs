@@ -1,19 +1,4 @@
-pub trait FrameExt: Clone + Copy {
-    type Sample: Clone + Copy;
+use joy_vector::Vector;
 
-    const FRAME_SIZE: usize;
-}
-
-pub type StereoFrame = (f32, f32);
-
-impl FrameExt for StereoFrame {
-    type Sample = f32;
-    const FRAME_SIZE: usize = 2;
-}
-
-pub type MonoFrame = f32;
-
-impl FrameExt for MonoFrame {
-    type Sample = f32;
-    const FRAME_SIZE: usize = 1;
-}
+pub type Frame<const SIZE: usize> = Vector<f32, SIZE>;
+pub type StereoFrame = Frame<2>;

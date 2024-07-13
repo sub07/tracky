@@ -9,11 +9,11 @@ use std::{
 };
 
 use cpal::{
-    default_host,
-    traits::{DeviceTrait, HostTrait, StreamTrait},
+    traits::{DeviceTrait, StreamTrait},
     Device, SampleFormat, SampleRate, Stream,
 };
-use eyre::{ensure, OptionExt};
+use eyre::ensure;
+use itertools::Itertools;
 
 use crate::log::{info, DebugLogExt};
 
@@ -177,7 +177,9 @@ fn audio_buffer_loop(out: &mut [f32], mut stream_state: impl DerefMut<Target = S
     let inserted_frame_count = available_frame_count.min(stream_state.pending_frames.len());
     let inserted_frames = stream_state.pending_frames.drain(..inserted_frame_count);
 
-    for ([left_out, right_out], (left_in, right_in)) in out.array_chunks_mut().zip(inserted_frames)
+    for ([left_out, right_out], [left_in, right_in]) in out
+        .array_chunks_mut()
+        .zip(inserted_frames.map_into::<[f32; 2]>())
     {
         *left_out = left_in * left_amp.value();
         *right_out = right_in * right_amp.value();
@@ -204,6 +206,8 @@ impl Drop for Player {
 
 #[cfg(test)]
 mod test {
+    use joy_vector::Vector;
+
     use super::*;
 
     const AVERAGE_SAMPLE_BUFFER_SIZE: usize = 256;
@@ -255,7 +259,7 @@ mod test {
     }
 
     fn get_signal() -> StereoSignal {
-        StereoSignal::from_path("assets/piano.wav").expect("could not load asset")
+        StereoSignal::from_path("assets/stereo.wav").expect("could not load asset")
     }
 
     #[test]
@@ -267,7 +271,7 @@ mod test {
             &signal,
             AVERAGE_SAMPLE_BUFFER_SIZE,
         );
-        assert_signal_eq(&simulated_samples, &signal.into_samples());
+        assert_signal_eq(&simulated_samples, unsafe { &signal.into_samples() });
     }
 
     #[test]
@@ -278,13 +282,15 @@ mod test {
             simulate_signal_playing(VOLUME, Pan::DEFAULT, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
 
         let altered_signal = alter_signal(signal, |frames| {
-            for (left, right) in frames.iter_mut() {
+            for Vector([left, right]) in frames.iter_mut() {
                 *left *= VOLUME.value();
                 *right *= VOLUME.value();
             }
         });
 
-        assert_signal_eq(&simulated_samples, &altered_signal.into_samples());
+        assert_signal_eq(&simulated_samples, unsafe {
+            &altered_signal.into_samples()
+        });
     }
 
     #[test]
@@ -295,13 +301,15 @@ mod test {
             simulate_signal_playing(Volume::DEFAULT, PAN, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
 
         let altered_signal = alter_signal(signal, |frames| {
-            for (left, right) in frames.iter_mut() {
+            for Vector([left, right]) in frames.iter_mut() {
                 *left *= 0.6;
                 *right *= 1.0;
             }
         });
 
-        assert_signal_eq(&simulated_samples, &altered_signal.into_samples());
+        assert_signal_eq(&simulated_samples, unsafe {
+            &altered_signal.into_samples()
+        });
     }
 
     #[test]
@@ -312,13 +320,15 @@ mod test {
             simulate_signal_playing(Volume::DEFAULT, PAN, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
 
         let altered_signal = alter_signal(signal, |frames| {
-            for (left, right) in frames.iter_mut() {
+            for Vector([left, right]) in frames.iter_mut() {
                 *left *= 1.0;
                 *right *= 0.6;
             }
         });
 
-        assert_signal_eq(&simulated_samples, &altered_signal.into_samples());
+        assert_signal_eq(&simulated_samples, unsafe {
+            &altered_signal.into_samples()
+        });
     }
 
     #[test]
@@ -330,12 +340,14 @@ mod test {
             simulate_signal_playing(VOLUME, PAN, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
 
         let altered_signal = alter_signal(signal, |frames| {
-            for (left, right) in frames.iter_mut() {
+            for Vector([left, right]) in frames.iter_mut() {
                 *left *= VOLUME.value();
                 *right *= 0.6 * VOLUME.value();
             }
         });
 
-        assert_signal_eq(&simulated_samples, &altered_signal.into_samples());
+        assert_signal_eq(&simulated_samples, unsafe {
+            &altered_signal.into_samples()
+        });
     }
 }
