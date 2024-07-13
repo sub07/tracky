@@ -12,6 +12,7 @@ pub mod dsp;
 pub mod frame;
 pub mod player;
 pub mod signal;
+pub mod synthesis;
 
 mk_vo! {
     pub Volume: f32,

@@ -64,6 +64,15 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         Ok(())
     }
 
+    pub fn append_signal(mut self, signal: &Signal<FRAME_SIZE>) -> eyre::Result<Self> {
+        ensure!(
+            self.sample_rate == signal.sample_rate,
+            "The two signal must have the same sample rate"
+        );
+        self.frames.extend(signal.frames.iter());
+        Ok(self)
+    }
+
     pub unsafe fn into_samples(self) -> Vec<f32> {
         let (ptr, len, cap) = self.frames.into_raw_parts();
         Vec::from_raw_parts(ptr as *mut f32, len * FRAME_SIZE, cap * FRAME_SIZE)
@@ -80,10 +89,7 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         Ok(Signal::from_frames(frames, sample_rate))
     }
 
-    pub fn lerp_frame_at_duration(
-        &self,
-        duration: Duration,
-    ) -> eyre::Result<Frame<FRAME_SIZE>> {
+    pub fn lerp_frame_at_duration(&self, duration: Duration) -> eyre::Result<Frame<FRAME_SIZE>> {
         let (frame_index, rem) = self.frame_index_from_duration(duration);
 
         ensure!(
