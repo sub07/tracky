@@ -80,7 +80,7 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         Ok(Signal::from_frames(frames, sample_rate))
     }
 
-    pub fn interpolate_frame_at_duration(
+    pub fn lerp_frame_at_duration(
         &self,
         duration: Duration,
     ) -> eyre::Result<Frame<FRAME_SIZE>> {
