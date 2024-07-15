@@ -1,13 +1,13 @@
 on: push
 
 jobs:
-    test:
+    validation:
         name: Run unit tests
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
             - uses: actions-rust-lang/setup-rust-toolchain@v1
-            - name: install linux deps
+            - name: Install linux deps
               run: sudo apt update && sudo apt install -y --no-install-recommends libasound2-dev pkg-config
             - run: cargo test
     
@@ -19,6 +19,8 @@ jobs:
             - uses: actions-rust-lang/setup-rust-toolchain@v1
               with:
                 components: rustfmt, clippy
+            - name: Install linux deps
+              run: sudo apt update && sudo apt install -y --no-install-recommends libasound2-dev pkg-config
             - name: Rustfmt Check
               uses: actions-rust-lang/rustfmt@v1
             - name: Clippy Check
