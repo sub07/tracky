@@ -43,6 +43,7 @@ impl From<MidiValue> for f32 {
     }
 }
 
+#[allow(dead_code)]
 pub fn note_to_freq(note: NoteName, octave: OctaveValue) -> f32 {
     midi_to_freq(note_to_midi_value(note, octave))
 }
