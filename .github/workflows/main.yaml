@@ -21,3 +21,5 @@ jobs:
                 components: rustfmt, clippy
             - name: Rustfmt Check
               uses: actions-rust-lang/rustfmt@v1
+            - name: Clippy Check
+              uses: actions-rust-lang/clippy@v1
