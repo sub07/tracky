@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::audio::signal::Signal;
 
-#[allow(dead_code)]
+// #[allow(dead_code)]
 pub fn linear<const FRAME_SIZE: usize>(
     src: &Signal<FRAME_SIZE>,
     target_sample_rate: f32,
