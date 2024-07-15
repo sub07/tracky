@@ -1,4 +1,10 @@
-use crate::{keybindings::Action, log::clear_entries, tracky::Tracky, view::popup::Popup};
+use crate::{
+    keybindings::Action,
+    log::{clear_entries, write_logs_to_file},
+    tracky::Tracky,
+    view::popup::Popup,
+};
+use log::error;
 use ratatui::crossterm::event::KeyEvent;
 
 pub fn handle_key_events(key_event: KeyEvent, app: &mut Tracky) -> eyre::Result<()> {
@@ -44,7 +50,11 @@ fn handle_action(mut action: Action, app: &mut Tracky) -> eyre::Result<()> {
         Action::NoteCut => app.patterns.set_note_cut(),
         Action::ModifyDefaultOctave(i) => app.patterns.modify_default_octave(i),
         Action::ExitApp => app.exit(),
-        Action::WriteLogsOnDisk => todo!(),
+        Action::WriteLogsOnDisk => {
+            if let Err(e) = write_logs_to_file("tracky.log") {
+                error!("Could not write log: {e}");
+            }
+        }
         Action::ClearLogsPanel => clear_entries(),
         Action::ToggleLogsPanel => app.display_log_console = !app.display_log_console,
         Action::SetPlayingDevice(device) => app.selected_output_device = Some(device.take()),

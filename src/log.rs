@@ -1,10 +1,12 @@
 use std::{
     fmt::Debug,
+    fs,
     ops::{Deref, DerefMut},
+    path::Path,
     sync::Mutex,
 };
 
-use eyre::eyre;
+use eyre::{eyre, Context};
 use itertools::Itertools;
 use joy_macro::EnumStr;
 use log::debug;
@@ -40,6 +42,19 @@ static TERMINAL_LOGGER: Mutex<TerminalLogger> = Mutex::new(TerminalLogger {
     entries: Vec::new(),
 });
 
+pub fn write_logs_to_file<P: AsRef<Path>>(path: P) -> eyre::Result<()> {
+    let logs = read_entries(|logger| {
+        logger
+            .entries
+            .iter()
+            .map(|entry| format!("{:?} - {}", entry.level, entry.content))
+            .join("\n")
+    });
+
+    fs::write(&path, logs).with_context(|| format!("{:?}", path.as_ref()))?;
+    Ok(())
+}
+
 fn alter_entries<F>(f: F)
 where
     F: FnOnce(&mut TerminalLogger),
@@ -56,8 +71,8 @@ where
 
 fn add_entry(content: String, level: LogLevel) {
     let line_count = content.lines().count();
-    alter_entries(|logs| {
-        logs.entries.push(LogEntry {
+    alter_entries(|logger| {
+        logger.entries.push(LogEntry {
             content,
             level,
             line_count,
@@ -78,7 +93,7 @@ impl<T: Debug> DebugLogExt for T {
 }
 
 pub fn clear_entries() {
-    alter_entries(|logs| logs.entries.clear());
+    alter_entries(|logger| logger.entries.clear());
 }
 
 // TODO check if intersperse is added to stdlib to replace itertools usage and remove unstable_name_collisions lint bypass
@@ -94,10 +109,11 @@ pub fn render_log_panel(frame: &mut Frame, area: Rect) {
         return;
     }
 
-    let (mut entries, line_count) = read_entries(|logs| {
+    let (mut entries, line_count) = read_entries(|logger| {
         let mut line_count = 0;
         (
-            logs.entries
+            logger
+                .entries
                 .iter()
                 .cloned()
                 .rev()

@@ -1,3 +1,4 @@
+use crate::log::write_logs_to_file;
 use crate::tracky::Tracky;
 use crate::view::render_root;
 use ratatui::backend::Backend;
@@ -28,6 +29,7 @@ fn install_hooks<B: Backend>() -> color_eyre::Result<()> {
     let panic_hook = panic_hook.into_panic_hook();
     panic::set_hook(Box::new(move |panic_info| {
         Tui::<B>::reset().unwrap();
+        let _ = write_logs_to_file("tracky.log");
         panic_hook(panic_info);
     }));
 
@@ -35,6 +37,7 @@ fn install_hooks<B: Backend>() -> color_eyre::Result<()> {
     let eyre_hook = eyre_hook.into_eyre_hook();
     eyre::set_hook(Box::new(move |error| {
         Tui::<B>::reset().unwrap();
+        let _ = write_logs_to_file("tracky.log");
         eyre_hook(error)
     }))?;
 
