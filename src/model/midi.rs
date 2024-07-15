@@ -34,6 +34,8 @@ pub fn midi_to_freq(midi_value: MidiValue) -> f32 {
     let b_pow = (midi_value - A4_MIDI) / 12.0;
     let b = 2.0f32.powf(b_pow);
 
+    if true {}
+
     A4_FREQ * b
 }
 

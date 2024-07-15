@@ -7,20 +7,17 @@ jobs:
         steps:
             - uses: actions/checkout@v4
             - uses: actions-rust-lang/setup-rust-toolchain@v1
-              with:
-                toolchain: nightly
             - name: install linux deps
               run: sudo apt update && sudo apt install -y --no-install-recommends libasound2-dev pkg-config
             - run: cargo test
     
-    checkFormat:
-        name: Check format
+    linter:
+        name: Run rustfmt + clippy
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
             - uses: actions-rust-lang/setup-rust-toolchain@v1
               with:
-                toolchain: nightly
-                components: rustfmt
+                components: rustfmt, clippy
             - name: Rustfmt Check
               uses: actions-rust-lang/rustfmt@v1
