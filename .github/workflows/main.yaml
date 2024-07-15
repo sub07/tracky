@@ -1,0 +1,24 @@
+on: push
+
+jobs:
+    test:
+        name: Run unit tests
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions-rust-lang/setup-rust-toolchain@v1
+              with:
+                toolchain: nightly
+            - run: cargo test
+    
+    checkFormat:
+        name: Check format
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions-rust-lang/setup-rust-toolchain@v1
+              with:
+                toolchain: nightly
+                components: rustfmt
+            - name: Rustfmt Check
+              uses: actions-rust-lang/rustfmt@v1
