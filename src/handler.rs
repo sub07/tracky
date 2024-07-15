@@ -1,7 +1,7 @@
 use crate::{keybindings::Action, log::clear_entries, tracky::Tracky, view::popup::Popup};
 use ratatui::crossterm::event::KeyEvent;
 
-pub async fn handle_key_events(key_event: KeyEvent, app: &mut Tracky) -> eyre::Result<()> {
+pub fn handle_key_events(key_event: KeyEvent, app: &mut Tracky) -> eyre::Result<()> {
     // match key_event.code {
     //     KeyCode::F(4) => {
     //         app.selected_output_device

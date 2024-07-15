@@ -136,14 +136,14 @@ macro_rules! declare_field {
 }
 
 impl PatternLineDescriptor {
-    pub const INDEX_BOUNDS: [(i32, i32); Self::SIZE] = Self::field_index_bounds_exclusive();
+    pub const INDEX_BOUNDS: [(i32, i32); Self::COUNT] = Self::field_index_bounds_exclusive();
 
-    pub const fn field_index_bounds_exclusive() -> [(i32, i32); Self::SIZE] {
+    pub const fn field_index_bounds_exclusive() -> [(i32, i32); Self::COUNT] {
         let mut sum = 0;
         let mut last_sum = 0;
         let mut i = 0;
-        let mut indexes = [(0, 0); Self::SIZE];
-        while i < Self::SIZE {
+        let mut indexes = [(0, 0); Self::COUNT];
+        while i < Self::COUNT {
             sum += Self::VARIANTS[i].field_len() as i32;
             indexes[i] = (last_sum, sum);
             last_sum = sum;
@@ -196,7 +196,7 @@ impl Pattern {
 #[derivative(Debug)]
 pub struct Patterns {
     #[derivative(Debug = "ignore")]
-    pub patterns: Vec<Pattern>,
+    patterns: Vec<Pattern>,
     pub channel_len: i32,
     pub channel_count: i32,
     pub pattern_count: i32,

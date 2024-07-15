@@ -3,18 +3,18 @@
 #![feature(vec_into_raw_parts)]
 #![feature(iter_array_chunks)]
 
-use std::time::Duration;
 use std::{env, io};
 
-use event::{Event, EventHandler};
-use log::DisplayLogExt;
+use ::log::info;
+use handler::handle_key_events;
 use ratatui::backend::CrosstermBackend;
+use ratatui::crossterm::event;
+use ratatui::crossterm::event::KeyEventKind;
 use ratatui::Terminal;
 use tracky::Tracky;
 use tui::Tui;
 
 mod audio;
-mod event;
 mod handler;
 mod keybindings;
 mod log;
@@ -31,37 +31,30 @@ const DEBUG: bool = true;
 #[cfg(not(debug_assertions))]
 const DEBUG: bool = false;
 
-#[tokio::main]
-async fn main() -> eyre::Result<()> {
+fn main() -> eyre::Result<()> {
     #[cfg(debug_assertions)]
-    env::set_var("RUST_BACKTRACE", "0");
+    env::set_var("RUST_BACKTRACE", "1");
 
-    // Create an application.
+    log::setup()?;
+
     let mut app = Tracky::new();
 
-    // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend)?;
-    let events = EventHandler::new(Duration::from_secs(100));
-    let mut tui = Tui::new(terminal, events);
+    let mut tui = Tui::new(terminal);
     tui.init()?;
 
-    // Start the main loop.
     while app.running {
-        // Render the user interface.
         tui.draw(&mut app)?;
-        // Handle events.
-        match tui.events.next().await? {
-            Event::Tick => app.tick(),
-            Event::Key(key_event) => handler::handle_key_events(key_event, &mut app).await?,
-            // Event::Mouse(_) => {}
-            Event::Resize(w, h) => {
-                format!("{w}x{h}").info("terminal size");
+        match event::read()? {
+            event::Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                handle_key_events(key_event, &mut app)?;
             }
+            event::Event::Resize(w, h) => info!("{w}x{h}"),
+            _ => {}
         }
     }
 
-    // Exit the user interface.
     tui.exit()?;
     Ok(())
 }

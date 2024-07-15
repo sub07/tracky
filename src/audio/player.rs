@@ -14,8 +14,7 @@ use cpal::{
 };
 use eyre::ensure;
 use itertools::Itertools;
-
-use crate::log::{info, DebugLogExt};
+use log::{error, info};
 
 use super::{frame::StereoFrame, signal::StereoSignal, Pan, Volume};
 
@@ -62,14 +61,14 @@ impl Player {
                             match command {
                                 StreamCommand::Play => {
                                     if let Err(err) = stream.play() {
-                                        err.error("play");
+                                        error!("{err:?} when start playback");
                                         break;
                                     }
                                 }
                                 StreamCommand::Stop => break,
                                 StreamCommand::Pause => {
                                     if let Err(err) = stream.pause() {
-                                        err.error("pause");
+                                        error!("{err:?} when pausing");
                                         break;
                                     }
                                 }
@@ -82,10 +81,7 @@ impl Player {
 
         let sample_rate = stream_creation_receiver.recv()??;
 
-        info(
-            "AudioPlayer",
-            &format!("Playing on {device_name} at {}Hz", sample_rate.0),
-        );
+        info!("Playing on {device_name} at {}Hz", sample_rate.0);
 
         Ok(Player {
             sample_rate: sample_rate.0 as f32,
@@ -160,9 +156,7 @@ fn init_stream(
             let lock = stream_state.lock().unwrap();
             audio_buffer_loop(out, lock);
         },
-        |e| {
-            e.debug("player stream error");
-        },
+        |e| error!("Cannot start audio stream: {e:?}"),
         None,
     )?;
 

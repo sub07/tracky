@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use log::error;
+
 use crate::{
     audio::{
         self,
@@ -8,7 +10,6 @@ use crate::{
         synthesis::{SawWave, SineWave, SquareWave},
     },
     keybindings::{InputContext, KeyBindings},
-    log::DebugLogExt,
     model::pattern::Patterns,
     view::popup::Popup,
     DEBUG,
@@ -95,7 +96,7 @@ impl Tracky {
             player.play().unwrap();
             self.player = Some(player);
         } else {
-            "No device selected".error("Play");
+            error!("No device selected");
         }
     }
 }

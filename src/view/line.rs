@@ -16,7 +16,7 @@ pub struct PatternLineView<'a> {
 
 impl PatternLineView<'_> {
     pub const LINE_WIDTH: u16 =
-        PatternLineDescriptor::LINE_LEN as u16 + PatternLineDescriptor::SIZE as u16 - 1;
+        PatternLineDescriptor::LINE_LEN as u16 + PatternLineDescriptor::COUNT as u16 - 1;
 }
 
 impl Widget for PatternLineView<'_> {

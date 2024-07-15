@@ -1,10 +1,9 @@
-use crate::event::EventHandler;
 use crate::tracky::Tracky;
 use crate::view::render_root;
 use ratatui::backend::Backend;
 use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use ratatui::crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
-use ratatui::Terminal;
+use ratatui::{crossterm, Terminal};
 use std::io;
 use std::panic;
 
@@ -16,8 +15,6 @@ use std::panic;
 pub struct Tui<B: Backend> {
     /// Interface to the Terminal.
     terminal: Terminal<B>,
-    /// Terminal event handler.
-    pub events: EventHandler,
 }
 
 /// This replaces the standard color_eyre panic and error hooks with hooks that
@@ -46,8 +43,8 @@ fn install_hooks<B: Backend>() -> color_eyre::Result<()> {
 
 impl<B: Backend> Tui<B> {
     /// Constructs a new instance of [`Tui`].
-    pub fn new(terminal: Terminal<B>, events: EventHandler) -> Self {
-        Self { terminal, events }
+    pub fn new(terminal: Terminal<B>) -> Self {
+        Self { terminal }
     }
 
     /// Initializes the terminal interface.

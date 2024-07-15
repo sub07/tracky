@@ -1,10 +1,13 @@
 use std::{
-    fmt::{Debug, Display},
+    fmt::Debug,
     ops::{Deref, DerefMut},
     sync::Mutex,
 };
 
+use eyre::eyre;
 use itertools::Itertools;
+use joy_macro::EnumStr;
+use log::debug;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Color, Stylize},
@@ -13,42 +16,48 @@ use ratatui::{
     Frame,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Copy, Debug, EnumStr)]
 enum LogLevel {
     Error,
+    Warn,
     Info,
     Debug,
 }
 
 #[derive(Clone)]
 struct LogEntry {
-    tag: &'static str,
     content: String,
     level: LogLevel,
     line_count: usize,
 }
 
-static LOG_ENTRIES: Mutex<Vec<LogEntry>> = Mutex::new(Vec::new());
+#[derive(Default)]
+struct TerminalLogger {
+    entries: Vec<LogEntry>,
+}
+
+static TERMINAL_LOGGER: Mutex<TerminalLogger> = Mutex::new(TerminalLogger {
+    entries: Vec::new(),
+});
 
 fn alter_entries<F>(f: F)
 where
-    F: FnOnce(&mut Vec<LogEntry>),
+    F: FnOnce(&mut TerminalLogger),
 {
-    f(LOG_ENTRIES.lock().unwrap().deref_mut());
+    f(TERMINAL_LOGGER.lock().unwrap().deref_mut());
 }
 
 fn read_entries<T, F>(f: F) -> T
 where
-    F: FnOnce(&[LogEntry]) -> T,
+    F: FnOnce(&TerminalLogger) -> T,
 {
-    f(LOG_ENTRIES.lock().unwrap().deref())
+    f(TERMINAL_LOGGER.lock().unwrap().deref())
 }
 
-fn add_entry(tag: &'static str, content: String, level: LogLevel) {
+fn add_entry(content: String, level: LogLevel) {
     let line_count = content.lines().count();
     alter_entries(|logs| {
-        logs.push(LogEntry {
-            tag,
+        logs.entries.push(LogEntry {
             content,
             level,
             line_count,
@@ -56,54 +65,25 @@ fn add_entry(tag: &'static str, content: String, level: LogLevel) {
     })
 }
 
-pub trait DisplayLogExt {
-    fn info(&self, tag: &'static str);
-}
-
-pub fn info<D: Display>(tag: &'static str, content: &D) {
-    add_entry(tag, content.to_string(), LogLevel::Info);
-}
-
-impl<T: Display> DisplayLogExt for T {
-    fn info(&self, tag: &'static str) {
-        info(tag, self);
-    }
-}
-
 pub trait DebugLogExt {
+    #[allow(dead_code)] // because it's dev utils
     fn debug(self, tag: &'static str) -> Self;
-    fn error(&self, tag: &'static str);
-}
-
-pub fn debug<D: Debug>(tag: &'static str, content: &D) {
-    add_entry(tag, format!("{content:#?}"), LogLevel::Debug);
-}
-
-pub fn error<D: Debug>(tag: &'static str, content: &D) {
-    add_entry(tag, format!("{content:#?}"), LogLevel::Error);
 }
 
 impl<T: Debug> DebugLogExt for T {
     fn debug(self, tag: &'static str) -> Self {
-        debug(tag, &self);
+        debug!("{tag}: {:?}", &self);
         self
-    }
-
-    fn error(&self, tag: &'static str) {
-        error(tag, self)
     }
 }
 
 pub fn clear_entries() {
-    alter_entries(|logs| logs.clear());
+    alter_entries(|logs| logs.entries.clear());
 }
 
 // TODO check if intersperse is added to stdlib to replace itertools usage and remove unstable_name_collisions lint bypass
 #[allow(unstable_name_collisions)]
 pub fn render_log_panel(frame: &mut Frame, area: Rect) {
-    // render_empty_log_panel(frame, area);
-    // return;
-
     let block = Block::bordered().border_type(BorderType::Rounded).title(
         Title::from(" <F9> Save on Disk - <F10> Clear - <F12> Toggle ")
             .alignment(Alignment::Center),
@@ -117,7 +97,8 @@ pub fn render_log_panel(frame: &mut Frame, area: Rect) {
     let (mut entries, line_count) = read_entries(|logs| {
         let mut line_count = 0;
         (
-            logs.iter()
+            logs.entries
+                .iter()
                 .cloned()
                 .rev()
                 .take_while(|entry| {
@@ -155,8 +136,13 @@ pub fn render_log_panel(frame: &mut Frame, area: Rect) {
                         LogLevel::Error => Color::Red,
                         LogLevel::Info => Color::LightBlue,
                         LogLevel::Debug => Color::DarkGray,
+                        LogLevel::Warn => Color::Yellow,
                     };
-                    Line::from_iter([entry.tag.fg(tag_color).italic(), " ".into(), line.into()])
+                    Line::from_iter([
+                        entry.level.as_str().fg(tag_color).italic(),
+                        " ".into(),
+                        line.into(),
+                    ])
                 } else {
                     Line::raw(line)
                 }
@@ -186,4 +172,38 @@ fn render_empty_log_panel(frame: &mut Frame, area: Rect) {
     frame.render_widget(Clear, area);
     frame.render_widget(block, area);
     frame.render_widget("No logs yet".dark_gray().into_centered_line(), text_area);
+}
+
+// Sorry future me
+struct DummyLogger;
+static DUMMY_LOGGER: DummyLogger = DummyLogger;
+
+impl log::Log for DummyLogger {
+    fn enabled(&self, _: &log::Metadata) -> bool {
+        true
+    }
+
+    fn log(&self, record: &log::Record) {
+        if !self.enabled(record.metadata()) {
+            return;
+        }
+
+        let level = match record.level() {
+            log::Level::Error => LogLevel::Error,
+            log::Level::Warn => LogLevel::Warn,
+            log::Level::Info => LogLevel::Info,
+            log::Level::Debug | log::Level::Trace => LogLevel::Debug,
+        };
+
+        add_entry(format!("{}", record.args()), level);
+    }
+
+    fn flush(&self) {}
+}
+
+pub fn setup() -> eyre::Result<()> {
+    log::set_logger(&DUMMY_LOGGER)
+        .map_err(|_| eyre!("Error while setting up logger: maybe setup called twice"))?;
+    log::set_max_level(log::LevelFilter::Trace);
+    Ok(())
 }
