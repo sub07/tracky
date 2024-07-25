@@ -10,10 +10,11 @@ ratatui = "0.27"
 joy-value-object = { git = "https://github.com/sub07/rust-utils", version = "0.3.5" }
 joy-collection-utils = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
 joy-macro = { git = "https://github.com/sub07/rust-utils", version = "0.2.4" }
-joy-vector = { git = "https://github.com/sub07/rust-utils", version = "0.1.6" }
+joy-vector = { git = "https://github.com/sub07/rust-utils", version = "0.1.8", features = [
+    "math",
+] }
 joy-iter = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
-color-eyre = "0.6"
-eyre = "0.6"
+anyhow = "1"
 itertools = "*"
 cpal = { version = "0.15", features = ["asio"] }
 derivative = "2.2.0"

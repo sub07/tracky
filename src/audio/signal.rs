@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use eyre::{bail, ensure};
+use anyhow::{bail, ensure};
 use itertools::Itertools;
 use joy_iter::zip_self::ZipSelf;
 use joy_vector::Vector;
@@ -18,30 +18,27 @@ pub type StereoSignal = Signal<2>;
 #[derive(Clone)]
 pub struct Signal<const FRAME_SIZE: usize> {
     pub frames: Vec<Frame<FRAME_SIZE>>,
-    pub sample_rate: f32,
+    pub frame_rate: f32,
 }
 
 impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
-    pub fn new(duration: Duration, sample_rate: f32) -> Self {
+    pub fn new(duration: Duration, frame_rate: f32) -> Self {
         Signal {
-            frames: vec![Frame::default(); (duration.as_secs_f32() * sample_rate) as usize],
-            sample_rate,
+            frames: vec![Frame::default(); (duration.as_secs_f32() * frame_rate) as usize],
+            frame_rate,
         }
     }
 
-    pub fn from_frames(frames: Vec<Frame<FRAME_SIZE>>, sample_rate: f32) -> Self {
-        Signal {
-            frames,
-            sample_rate,
-        }
+    pub fn from_frames(frames: Vec<Frame<FRAME_SIZE>>, frame_rate: f32) -> Self {
+        Signal { frames, frame_rate }
     }
 
     pub fn duration(&self) -> Duration {
-        Duration::from_secs_f32(self.frames.len() as f32 / self.sample_rate)
+        Duration::from_secs_f32(self.frames.len() as f32 / self.frame_rate)
     }
 
     fn frame_index_from_duration(&self, duration: Duration) -> (usize, f32) {
-        let index = duration.as_secs_f32() * self.sample_rate;
+        let index = duration.as_secs_f32() * self.frame_rate;
         (index as usize, index.fract())
     }
 
@@ -49,10 +46,10 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         &mut self,
         duration: Duration,
         signal: &Self,
-    ) -> eyre::Result<()> {
+    ) -> anyhow::Result<()> {
         ensure!(
-            self.sample_rate == signal.sample_rate,
-            "The two signal must have the same sample rate"
+            self.frame_rate == signal.frame_rate,
+            "The two signal must have the same frame rate"
         );
         let (copy_start_index, _) = self.frame_index_from_duration(duration);
         let copy_end_index = usize::min(
@@ -64,10 +61,10 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         Ok(())
     }
 
-    pub fn append_signal(mut self, signal: &Signal<FRAME_SIZE>) -> eyre::Result<Self> {
+    pub fn append_signal(mut self, signal: &Signal<FRAME_SIZE>) -> anyhow::Result<Self> {
         ensure!(
-            self.sample_rate == signal.sample_rate,
-            "The two signal must have the same sample rate"
+            self.frame_rate == signal.frame_rate,
+            "The two signal must have the same frame rate"
         );
         self.frames.extend(signal.frames.iter());
         Ok(self)
@@ -78,7 +75,7 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         Vec::from_raw_parts(ptr as *mut f32, len * FRAME_SIZE, cap * FRAME_SIZE)
     }
 
-    pub unsafe fn from_samples(samples: Vec<f32>, sample_rate: f32) -> eyre::Result<Self> {
+    pub unsafe fn from_samples(samples: Vec<f32>, frame_rate: f32) -> anyhow::Result<Self> {
         ensure!(samples.len() % FRAME_SIZE == 0);
         let (ptr, len, cap) = samples.into_raw_parts();
         let frames = Vec::from_raw_parts(
@@ -86,10 +83,10 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
             len / FRAME_SIZE,
             cap / FRAME_SIZE,
         );
-        Ok(Signal::from_frames(frames, sample_rate))
+        Ok(Signal::from_frames(frames, frame_rate))
     }
 
-    pub fn lerp_frame_at_duration(&self, duration: Duration) -> eyre::Result<Frame<FRAME_SIZE>> {
+    pub fn lerp_frame_at_duration(&self, duration: Duration) -> anyhow::Result<Frame<FRAME_SIZE>> {
         let (frame_index, rem) = self.frame_index_from_duration(duration);
 
         ensure!(
@@ -109,10 +106,34 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
             rem,
         ))
     }
+
+    pub fn sub_signal(&self, start: Duration, end: Duration) -> anyhow::Result<Signal<FRAME_SIZE>> {
+        ensure!(
+            start <= self.duration(),
+            "start can't exceed signal duration"
+        );
+        ensure!(end <= self.duration(), "end can't exceed signal duration");
+        ensure!(start <= end, "start must be less than end");
+        let (start_index, _) = self.frame_index_from_duration(start);
+        let (end_index, _) = self.frame_index_from_duration(end);
+        let sub_signal_frames = self.frames[start_index..end_index].to_owned();
+        Ok(Self {
+            frames: sub_signal_frames,
+            frame_rate: self.frame_rate,
+        })
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Frame<FRAME_SIZE>> {
+        self.frames.iter()
+    }
+
+    pub fn fill(&mut self, value: Frame<FRAME_SIZE>) {
+        self.frames.fill(value);
+    }
 }
 
 impl StereoSignal {
-    pub fn from_path<P: AsRef<Path>>(path: P) -> eyre::Result<Self> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let audio_data = load_samples_from_file(path)?;
 
         let samples: &mut dyn Iterator<Item = f32> = match audio_data.channel_count {
@@ -121,10 +142,10 @@ impl StereoSignal {
             _ => bail!("Audio file must be mono or stereo"),
         };
 
-        unsafe { Self::from_samples(samples.collect_vec(), audio_data.sample_rate) }
+        unsafe { Self::from_samples(samples.collect_vec(), audio_data.frame_rate) }
     }
 
-    pub fn plot<P: AsRef<Path>>(&self, path: P) -> eyre::Result<()> {
+    pub fn plot<P: AsRef<Path>>(&self, path: P) -> anyhow::Result<()> {
         use plotters::prelude::*;
 
         let root = SVGBackend::new(&path, (1000, 1000)).into_drawing_area();
@@ -136,7 +157,7 @@ impl StereoSignal {
             .frames
             .iter()
             .enumerate()
-            .map(|(i, Vector([left, _]))| (i as f32 / self.sample_rate, *left))
+            .map(|(i, Vector([left, _]))| (i as f32 / self.frame_rate, *left))
             .collect_vec();
 
         chart.draw_series(LineSeries::new(left_data, &RED))?;
@@ -168,14 +189,53 @@ impl<const FRAME_SIZE: usize> DerefMut for Signal<FRAME_SIZE> {
 }
 
 #[cfg(test)]
+pub mod test_utils {
+
+    use super::Signal;
+
+    pub fn assert_signal_eq<const FRAME_SIZE: usize>(
+        signal1: Signal<FRAME_SIZE>,
+        signal2: Signal<FRAME_SIZE>,
+    ) {
+        const FLOAT_EQ_EPSILON: f32 = 0.001;
+
+        approx::assert_relative_eq!(
+            signal1.frame_rate,
+            signal2.frame_rate,
+            epsilon = FLOAT_EQ_EPSILON
+        );
+
+        if let Some((index, (f1, f2))) = signal1
+            .frames
+            .iter()
+            .zip(signal2.frames.iter())
+            .enumerate()
+            .find(|(_, (f1, f2))| (**f1 - **f2).norm2() > FLOAT_EQ_EPSILON)
+        {
+            panic!(
+                "frame {index} differs: {:?} != {:?}",
+                f1.as_slice(),
+                f2.as_slice()
+            );
+        }
+    }
+}
+
+#[cfg(test)]
 mod test {
+    use test_utils::assert_signal_eq;
+
     use crate::audio::frame::StereoFrame;
 
     use super::*;
 
+    fn get_signal() -> StereoSignal {
+        StereoSignal::from_path("assets/stereo2.wav").unwrap()
+    }
+
     #[test]
     fn test_unsafe_into_samples_returns_correct_vec() {
-        let signal = StereoSignal::from_path("assets/stereo.wav").unwrap();
+        let signal = get_signal();
         let samples = unsafe { signal.clone().into_samples() };
 
         assert_eq!(signal.frames.len() * 2, samples.len());
@@ -199,7 +259,7 @@ mod test {
     fn test_unsafe_from_samples_stereo_yields_valid_signal() {
         let audio_data = load_samples_from_file("assets/stereo.wav").unwrap();
         let signal = unsafe {
-            Signal::<2>::from_samples(audio_data.samples.clone(), audio_data.sample_rate).unwrap()
+            Signal::<2>::from_samples(audio_data.samples.clone(), audio_data.frame_rate).unwrap()
         };
         assert_eq!(audio_data.samples.len() / 2, signal.frames.len());
         for i in 0..audio_data.samples.len() / audio_data.channel_count as usize {
@@ -214,5 +274,83 @@ mod test {
         let signal = unsafe { Signal::<2>::from_samples(Vec::new(), 0.0).unwrap() };
         assert!(signal.frames.is_empty());
         assert_eq!(0, signal.frames.capacity());
+    }
+
+    #[test]
+    #[should_panic(expected = "frame 0 differs: [32.0, 63.0] != [33.0, 64.0]")]
+    fn test_assert_signal_eq_differs() {
+        let s1 = unsafe { Signal::<2>::from_samples(vec![32.0, 63.0], 44100.0).unwrap() };
+        let s2 = unsafe { Signal::<2>::from_samples(vec![33.0, 64.0], 44100.0).unwrap() };
+
+        assert_signal_eq(s1, s2);
+    }
+
+    #[test]
+    fn test_assert_signal_eq_same() {
+        let s1 = unsafe { Signal::<2>::from_samples(vec![32.0, 63.0], 44100.0).unwrap() };
+        let s2 = unsafe { Signal::<2>::from_samples(vec![32.0, 63.0], 44100.0).unwrap() };
+
+        assert_signal_eq(s1, s2);
+    }
+
+    #[test]
+    fn test_iter_delegation() {
+        let signal = get_signal();
+        let frames_from_iter = signal.iter().cloned().collect_vec();
+        assert_eq!(signal.frames, frames_from_iter)
+    }
+
+    #[test]
+    fn test_sub_signal() {
+        let signal = get_signal();
+        let sub_signal = signal.sub_signal(Duration::from_secs(1), Duration::from_secs(2));
+        assert!(sub_signal.is_ok());
+        let sub_signal = sub_signal.unwrap();
+        assert_eq!(Duration::from_secs(1), sub_signal.duration());
+        let start_index = signal.frame_rate as usize;
+        let end_index = signal.frame_rate as usize * 2;
+
+        let sub_frames = &signal.frames[start_index..end_index];
+        assert_eq!(sub_frames.len(), sub_signal.frames.len());
+
+        for (real_frame, computed_frame) in sub_frames.iter().zip(sub_signal.iter()) {
+            assert_eq!(real_frame, computed_frame);
+        }
+    }
+
+    #[test]
+    fn test_sub_signal_start_gt_end() {
+        let signal = get_signal();
+        let sub_signal_err = signal
+            .sub_signal(Duration::from_secs(2), Duration::from_secs(1))
+            .err()
+            .unwrap()
+            .to_string();
+
+        assert_eq!("start must be less than end", sub_signal_err);
+    }
+
+    #[test]
+    fn test_sub_signal_start_exceeds_sig_duration() {
+        let signal = get_signal();
+        let sub_signal_err = signal
+            .sub_signal(Duration::from_secs(91), Duration::from_secs(92))
+            .err()
+            .unwrap()
+            .to_string();
+
+        assert_eq!("start can't exceed signal duration", sub_signal_err);
+    }
+
+    #[test]
+    fn test_sub_signal_end_exceeds_sig_duration() {
+        let signal = get_signal();
+        let sub_signal_err = signal
+            .sub_signal(Duration::from_secs(1), Duration::from_secs(90))
+            .err()
+            .unwrap()
+            .to_string();
+
+        assert_eq!("end can't exceed signal duration", sub_signal_err);
     }
 }

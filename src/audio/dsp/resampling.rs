@@ -9,7 +9,7 @@ pub fn linear<const FRAME_SIZE: usize>(
 ) -> Signal<FRAME_SIZE> {
     let target_sample_rate = target_sample_rate.round();
 
-    if src.sample_rate == target_sample_rate {
+    if src.frame_rate == target_sample_rate {
         return src.clone();
     }
 
@@ -30,6 +30,6 @@ pub fn linear<const FRAME_SIZE: usize>(
 
     Signal {
         frames,
-        sample_rate: target_sample_rate,
+        frame_rate: target_sample_rate,
     }
 }

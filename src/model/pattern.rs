@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
+use anyhow::anyhow;
 use derivative::Derivative;
-use eyre::eyre;
 
 use joy_macro::EnumIter;
 use joy_value_object::{mk_vo, mk_vo_consts};
@@ -56,7 +56,7 @@ mk_vo_consts! {
     OCTAVE_9 => 0x9,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Field<T>(Option<T>);
 
 impl<T> Default for Field<T> {
@@ -68,6 +68,10 @@ impl<T> Default for Field<T> {
 impl<T> Field<T> {
     pub fn new(value: T) -> Self {
         Self(Some(value))
+    }
+
+    pub fn empty() -> Self {
+        Self(None)
     }
 
     pub fn set(&mut self, value: T) {
@@ -99,15 +103,15 @@ pub enum NoteName {
     B,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum NoteFieldValue {
-    Note((NoteName, OctaveValue)),
+    Note(NoteName, OctaveValue),
     Cut,
 }
 
 macro_rules! declare_field {
     ($($snake_case:ident $pascal_case:ident $size:literal $ty:ty),* $(,)?) => {
-        #[derive(Default, Debug, Clone)]
+        #[derive(Default, Debug, Clone, PartialEq)]
         pub struct PatternLine {
             $(
                 pub $snake_case: Field<$ty>,
@@ -245,7 +249,7 @@ impl Patterns {
         let pattern_index = self.current_pattern;
         self.patterns
             .get(pattern_index)
-            .ok_or_else(|| eyre!("Invalid state: {pattern_index}"))
+            .ok_or_else(|| anyhow!("Invalid state: {pattern_index}"))
             .unwrap()
     }
 
@@ -253,7 +257,7 @@ impl Patterns {
         let pattern_index = self.current_pattern;
         self.patterns
             .get_mut(pattern_index)
-            .ok_or_else(|| eyre!("Invalid state: {pattern_index}"))
+            .ok_or_else(|| anyhow!("Invalid state: {pattern_index}"))
             .unwrap()
     }
 
@@ -284,7 +288,7 @@ impl Patterns {
         self.current_pattern_mut()
             .lines
             .get_mut(line_index as usize)
-            .ok_or_else(|| eyre!("Invalid state: {line_index}"))
+            .ok_or_else(|| anyhow!("Invalid state: {line_index}"))
             .unwrap()
     }
 }

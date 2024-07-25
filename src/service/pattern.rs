@@ -9,17 +9,17 @@ impl Field<NoteFieldValue> {
     pub fn set_note_name(&mut self, note: NoteName, octave: OctaveValue) {
         match self.value() {
             Some(note_value) => match note_value {
-                NoteFieldValue::Note(_) => self.set(NoteFieldValue::Note((note, octave))),
-                NoteFieldValue::Cut => self.set(NoteFieldValue::Note((note, octave))),
+                NoteFieldValue::Note(_, _) => self.set(NoteFieldValue::Note(note, octave)),
+                NoteFieldValue::Cut => self.set(NoteFieldValue::Note(note, octave)),
             },
-            None => self.set(NoteFieldValue::Note((note, octave))),
+            None => self.set(NoteFieldValue::Note(note, octave)),
         }
     }
 
     pub fn set_octave(&mut self, octave: OctaveValue) {
         if let Some(note_value) = self.value() {
             match note_value {
-                NoteFieldValue::Note((note, _)) => self.set(NoteFieldValue::Note((*note, octave))),
+                NoteFieldValue::Note(note, _) => self.set(NoteFieldValue::Note(*note, octave)),
                 NoteFieldValue::Cut => {}
             }
         }
@@ -50,6 +50,10 @@ impl Field<(HexDigit, HexDigit)> {
         let first_digit = HexDigit::new(value / 0x10).unwrap();
         let second_digit = HexDigit::new(value % 0x10).unwrap();
         self.set((first_digit, second_digit));
+    }
+
+    pub fn get_percentage(&self) -> Option<f32> {
+        self.get_u8().map(|hex| hex as f32 / u8::MAX as f32)
     }
 }
 

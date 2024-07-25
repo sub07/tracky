@@ -1,10 +1,10 @@
 use std::{collections::HashMap, ops};
 
+use anyhow::Context;
 use cpal::{
     traits::{DeviceTrait, HostTrait},
     HostId, SampleFormat, ALL_HOSTS,
 };
-use eyre::OptionExt;
 use itertools::Itertools;
 
 pub struct Devices {
@@ -19,10 +19,10 @@ fn map_device_name(device: &cpal::Device) -> String {
 }
 
 impl Devices {
-    pub fn default_output() -> eyre::Result<Device> {
+    pub fn default_output() -> anyhow::Result<Device> {
         let default_device = cpal::default_host()
             .default_output_device()
-            .ok_or_eyre("Could not get default output device")?;
+            .context("Could not get default output device")?;
         Ok(Device(map_device_name(&default_device), default_device))
     }
 

@@ -24,7 +24,7 @@ impl Widget for PatternLineView<'_> {
         let (note_char_1, note_char_2, octave_char) =
             if let Some(note_value) = self.line.note.value() {
                 match note_value {
-                    NoteFieldValue::Note((note, octave)) => {
+                    NoteFieldValue::Note(note, octave) => {
                         let (note_1, note_2) = match note {
                             NoteName::A => ('A', '-'),
                             NoteName::B => ('B', '-'),

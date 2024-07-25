@@ -8,11 +8,12 @@ use std::{
     thread,
 };
 
+use anyhow::ensure;
 use cpal::{
     traits::{DeviceTrait, StreamTrait},
     Device, SampleFormat, SampleRate, Stream,
 };
-use eyre::ensure;
+
 use itertools::Itertools;
 use log::{error, info};
 
@@ -32,17 +33,17 @@ enum StreamCommand {
 }
 
 pub struct Player {
-    pub sample_rate: f32,
+    pub frame_rate: f32,
     stream_command_sender: Sender<StreamCommand>,
     stream_state: Arc<Mutex<StreamState>>,
 }
 
 impl Player {
-    pub fn with_default_device() -> eyre::Result<Self> {
+    pub fn with_default_device() -> anyhow::Result<Self> {
         Self::with_device(crate::audio::Devices::default_output()?)
     }
 
-    pub fn with_device(device: crate::audio::Device) -> eyre::Result<Self> {
+    pub fn with_device(device: crate::audio::Device) -> anyhow::Result<Self> {
         let (stream_creation_sender, stream_creation_receiver) = mpsc::channel();
         let (stream_command_sender, stream_command_receiver) = mpsc::channel();
 
@@ -84,23 +85,23 @@ impl Player {
         info!("Playing on {device_name} at {}Hz", sample_rate.0);
 
         Ok(Player {
-            sample_rate: sample_rate.0 as f32,
+            frame_rate: sample_rate.0 as f32,
             stream_command_sender,
             stream_state,
         })
     }
 
-    pub fn play(&self) -> eyre::Result<()> {
+    pub fn play(&self) -> anyhow::Result<()> {
         self.stream_command_sender.send(StreamCommand::Play)?;
         Ok(())
     }
 
-    pub fn pause(&self) -> eyre::Result<()> {
+    pub fn pause(&self) -> anyhow::Result<()> {
         self.stream_command_sender.send(StreamCommand::Pause)?;
         Ok(())
     }
 
-    pub fn stop(&mut self) -> eyre::Result<()> {
+    pub fn stop(&mut self) -> anyhow::Result<()> {
         self.stream_command_sender.send(StreamCommand::Stop)?;
         self.stream_state_mut().pending_frames.clear();
         Ok(())
@@ -142,7 +143,7 @@ impl Player {
 fn init_stream(
     device: Device,
     stream_state: Arc<Mutex<StreamState>>,
-) -> eyre::Result<(Stream, SampleRate)> {
+) -> anyhow::Result<(Stream, SampleRate)> {
     let config = device.default_output_config()?;
 
     let sample_rate = config.sample_rate();
@@ -237,19 +238,11 @@ mod test {
         output
     }
 
-    fn assert_signal_eq(signal1: &[f32], signal2: &[f32]) {
+    fn assert_slices_eq(signal1: &[f32], signal2: &[f32]) {
         assert!(signal1
             .iter()
             .zip(signal2.iter())
             .all(|(a, b)| (a - b).abs() < FLOAT_EQ_EPSILON && !a.is_nan() && !b.is_nan()));
-    }
-
-    fn alter_signal<F>(mut signal: StereoSignal, f: F) -> StereoSignal
-    where
-        F: FnOnce(&mut Vec<StereoFrame>),
-    {
-        f(&mut signal.frames);
-        signal
     }
 
     fn get_signal() -> StereoSignal {
@@ -265,83 +258,67 @@ mod test {
             &signal,
             AVERAGE_SAMPLE_BUFFER_SIZE,
         );
-        assert_signal_eq(&simulated_samples, unsafe { &signal.into_samples() });
+        assert_slices_eq(&simulated_samples, unsafe { &signal.into_samples() });
     }
 
     #[test]
     fn test_volume() {
-        let signal = get_signal();
+        let mut signal = get_signal();
         const VOLUME: Volume = Volume::new_unchecked(0.1);
         let simulated_samples =
             simulate_signal_playing(VOLUME, Pan::DEFAULT, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
 
-        let altered_signal = alter_signal(signal, |frames| {
-            for Vector([left, right]) in frames.iter_mut() {
-                *left *= VOLUME.value();
-                *right *= VOLUME.value();
-            }
-        });
+        for Vector([left, right]) in signal.frames.iter_mut() {
+            *left *= VOLUME.value();
+            *right *= VOLUME.value();
+        }
 
-        assert_signal_eq(&simulated_samples, unsafe {
-            &altered_signal.into_samples()
-        });
+        assert_slices_eq(&simulated_samples, unsafe { &signal.into_samples() });
     }
 
     #[test]
     fn test_right_pan() {
-        let signal = get_signal();
+        let mut signal = get_signal();
         const PAN: Pan = Pan::new_unchecked(0.4);
         let simulated_samples =
             simulate_signal_playing(Volume::DEFAULT, PAN, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
 
-        let altered_signal = alter_signal(signal, |frames| {
-            for Vector([left, right]) in frames.iter_mut() {
-                *left *= 0.6;
-                *right *= 1.0;
-            }
-        });
+        for Vector([left, right]) in signal.frames.iter_mut() {
+            *left *= 0.6;
+            *right *= 1.0;
+        }
 
-        assert_signal_eq(&simulated_samples, unsafe {
-            &altered_signal.into_samples()
-        });
+        assert_slices_eq(&simulated_samples, unsafe { &signal.into_samples() });
     }
 
     #[test]
     fn test_left_pan() {
-        let signal = get_signal();
+        let mut signal = get_signal();
         const PAN: Pan = Pan::new_unchecked(-0.4);
         let simulated_samples =
             simulate_signal_playing(Volume::DEFAULT, PAN, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
 
-        let altered_signal = alter_signal(signal, |frames| {
-            for Vector([left, right]) in frames.iter_mut() {
-                *left *= 1.0;
-                *right *= 0.6;
-            }
-        });
+        for Vector([left, right]) in signal.frames.iter_mut() {
+            *left *= 1.0;
+            *right *= 0.6;
+        }
 
-        assert_signal_eq(&simulated_samples, unsafe {
-            &altered_signal.into_samples()
-        });
+        assert_slices_eq(&simulated_samples, unsafe { &signal.into_samples() });
     }
 
     #[test]
     fn test_volume_pan() {
-        let signal = get_signal();
+        let mut signal = get_signal();
         const PAN: Pan = Pan::new_unchecked(-0.4);
         const VOLUME: Volume = Volume::new_unchecked(0.1);
         let simulated_samples =
             simulate_signal_playing(VOLUME, PAN, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
 
-        let altered_signal = alter_signal(signal, |frames| {
-            for Vector([left, right]) in frames.iter_mut() {
-                *left *= VOLUME.value();
-                *right *= 0.6 * VOLUME.value();
-            }
-        });
+        for Vector([left, right]) in signal.frames.iter_mut() {
+            *left *= VOLUME.value();
+            *right *= 0.6 * VOLUME.value();
+        }
 
-        assert_signal_eq(&simulated_samples, unsafe {
-            &altered_signal.into_samples()
-        });
+        assert_slices_eq(&simulated_samples, unsafe { &signal.into_samples() });
     }
 }

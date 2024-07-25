@@ -1,19 +1,22 @@
 use std::time::Duration;
 
-use log::error;
+use anyhow::anyhow;
+use itertools::Itertools;
+use log::{error, info, warn};
 
 use crate::{
-    audio::{
-        self,
-        frame::CollectFrame,
-        player::Player,
-        synthesis::{SawWave, SineWave, SquareWave},
-    },
+    audio::{self, mixer::Mixer, player::Player, signal::StereoSignal},
     keybindings::{InputContext, KeyBindings},
-    model::pattern::Patterns,
+    model::{channel::Channel, pattern::Patterns},
     view::popup::Popup,
     DEBUG,
 };
+
+struct Playback {
+    player: Player,
+    // channels: Vec<Channel>,
+    // master: Mixer,
+}
 
 pub struct Tracky {
     pub running: bool,
@@ -22,7 +25,8 @@ pub struct Tracky {
     pub keybindings: KeyBindings,
     pub selected_output_device: Option<audio::device::Device>,
     pub popup_state: Option<Popup>,
-    pub player: Option<Player>,
+    pub line_per_second: f32,
+    playback_state: Option<Playback>,
 }
 
 impl Default for Tracky {
@@ -34,7 +38,8 @@ impl Default for Tracky {
             keybindings: Default::default(),
             selected_output_device: None,
             popup_state: None,
-            player: None,
+            playback_state: None,
+            line_per_second: 4.0,
         }
     }
 }
@@ -43,8 +48,6 @@ impl Tracky {
     pub fn new() -> Self {
         Self::default()
     }
-
-    pub fn tick(&self) {}
 
     pub fn exit(&mut self) {
         self.running = false;
@@ -62,41 +65,54 @@ impl Tracky {
         self.popup_state = None;
     }
 
+    fn make_player(&self) -> anyhow::Result<Player> {
+        self.selected_output_device
+            .clone()
+            .ok_or_else(|| anyhow!("No output device selected"))
+            .and_then(Player::with_device)
+    }
+
+    // TODO Move to service module
+    fn setup_playback(&mut self) -> anyhow::Result<()> {
+        let mut player = self.make_player()?;
+        let mut master = Mixer::new(player.frame_rate);
+        let mut line_audio_buffer = StereoSignal::new(
+            Duration::from_secs_f32(1.0 / self.line_per_second),
+            player.frame_rate,
+        );
+
+        let mut channels = self
+            .patterns
+            .current_pattern_channels()
+            .map(|pattern_channel| (pattern_channel, Channel::new()))
+            .collect_vec();
+
+        for current_line in 0..self.patterns.channel_len as usize {
+            for (lines, channel) in &mut channels {
+                let line = &lines[current_line];
+                channel.setup_line(line);
+                channel.collect_signal(&mut line_audio_buffer);
+                master.mix(&line_audio_buffer);
+            }
+            debug_assert_eq!(master.output.duration(), line_audio_buffer.duration());
+            player.queue_signal(&master.output);
+            master.reset();
+        }
+
+        player.play()?;
+
+        self.playback_state = Some(Playback { player });
+        Ok(())
+    }
+
     pub fn play(&mut self) {
-        if let Some(ref device) = self.selected_output_device {
-            let mut player = Player::with_device(device.clone()).unwrap();
-            let signal = SineWave
-                .collect_for_duration(
-                    Duration::from_secs(1),
-                    440.0,
-                    0.5.into(),
-                    1.0.into(),
-                    &mut 0.0,
-                    player.sample_rate,
-                )
-                .append_signal(&SawWave.collect_for_duration(
-                    Duration::from_secs(1),
-                    440.0,
-                    0.5.into(),
-                    1.0.into(),
-                    &mut 0.0,
-                    player.sample_rate,
-                ))
-                .unwrap()
-                .append_signal(&SquareWave.collect_for_duration(
-                    Duration::from_secs(3),
-                    440.0,
-                    0.5.into(),
-                    1.0.into(),
-                    &mut 0.0,
-                    player.sample_rate,
-                ))
-                .unwrap();
-            player.queue_signal(&signal);
-            player.play().unwrap();
-            self.player = Some(player);
-        } else {
-            error!("No device selected");
+        if let Some(mut current_playback) = self.playback_state.take() {
+            info!("Stopping playback");
+            if let Err(err) = current_playback.player.stop() {
+                warn!("Failed to stop previous playback: {err}");
+            }
+        } else if let Err(err) = self.setup_playback() {
+            error!("Could not start playback: {err}");
         }
     }
 }

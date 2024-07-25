@@ -7,7 +7,7 @@ use crate::{
 use log::error;
 use ratatui::crossterm::event::KeyEvent;
 
-pub fn handle_key_events(key_event: KeyEvent, app: &mut Tracky) -> eyre::Result<()> {
+pub fn handle_key_events(key_event: KeyEvent, app: &mut Tracky) -> anyhow::Result<()> {
     // match key_event.code {
     //     KeyCode::F(4) => {
     //         app.selected_output_device
@@ -25,7 +25,7 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut Tracky) -> eyre::Result<
     Ok(())
 }
 
-fn handle_action(mut action: Action, app: &mut Tracky) -> eyre::Result<()> {
+fn handle_action(mut action: Action, app: &mut Tracky) -> anyhow::Result<()> {
     if let Some(ref mut popup) = app.popup_state {
         let mut is_action_consumed = true;
         if let Some(popup_action) = popup.handle_action(action.clone(), &mut is_action_consumed) {

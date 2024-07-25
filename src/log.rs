@@ -6,7 +6,7 @@ use std::{
     sync::Mutex,
 };
 
-use eyre::{eyre, Context};
+use anyhow::{anyhow, Context};
 use itertools::Itertools;
 use joy_macro::EnumStr;
 use log::debug;
@@ -42,7 +42,7 @@ static TERMINAL_LOGGER: Mutex<TerminalLogger> = Mutex::new(TerminalLogger {
     entries: Vec::new(),
 });
 
-pub fn write_logs_to_file<P: AsRef<Path>>(path: P) -> eyre::Result<()> {
+pub fn write_logs_to_file<P: AsRef<Path>>(path: P) -> anyhow::Result<()> {
     let logs = read_entries(|logger| {
         logger
             .entries
@@ -217,9 +217,9 @@ impl log::Log for DummyLogger {
     fn flush(&self) {}
 }
 
-pub fn setup() -> eyre::Result<()> {
+pub fn setup() -> anyhow::Result<()> {
     log::set_logger(&DUMMY_LOGGER)
-        .map_err(|_| eyre!("Error while setting up logger: maybe setup called twice"))?;
+        .map_err(|_| anyhow!("Error while setting up logger: maybe setup called twice"))?;
     log::set_max_level(log::LevelFilter::Trace);
     Ok(())
 }

@@ -31,7 +31,7 @@ const DEBUG: bool = true;
 #[cfg(not(debug_assertions))]
 const DEBUG: bool = false;
 
-fn main() -> eyre::Result<()> {
+fn main() -> anyhow::Result<()> {
     #[cfg(debug_assertions)]
     env::set_var("RUST_BACKTRACE", "1");
 
