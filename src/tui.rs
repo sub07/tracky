@@ -2,7 +2,6 @@ use crate::log::write_logs_to_file;
 use crate::tracky::Tracky;
 use crate::view::render_root;
 use ratatui::backend::Backend;
-use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use ratatui::crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::{crossterm, Terminal};
 use std::io;
@@ -31,7 +30,7 @@ impl<B: Backend> Tui<B> {
 
     pub fn init(&mut self) -> anyhow::Result<()> {
         terminal::enable_raw_mode()?;
-        crossterm::execute!(io::stderr(), EnterAlternateScreen, EnableMouseCapture)?;
+        crossterm::execute!(io::stderr(), EnterAlternateScreen)?;
 
         install_hooks::<B>()?;
 
@@ -47,7 +46,7 @@ impl<B: Backend> Tui<B> {
 
     fn reset() -> anyhow::Result<()> {
         terminal::disable_raw_mode()?;
-        crossterm::execute!(io::stderr(), LeaveAlternateScreen, DisableMouseCapture)?;
+        crossterm::execute!(io::stderr(), LeaveAlternateScreen)?;
         Ok(())
     }
 

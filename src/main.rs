@@ -2,7 +2,9 @@
 #![feature(array_chunks)]
 #![feature(vec_into_raw_parts)]
 #![feature(iter_array_chunks)]
+#![feature(let_chains)]
 
+use std::time::Instant;
 use std::{env, io};
 
 use ::log::info;
@@ -44,8 +46,22 @@ fn main() -> anyhow::Result<()> {
     let mut tui = Tui::new(terminal);
     tui.init()?;
 
+    let mut last_tick_time = Instant::now();
+
+    let mut get_delta = || {
+        let delta = last_tick_time.elapsed();
+        last_tick_time = Instant::now();
+        delta
+    };
+
     while app.running {
         tui.draw(&mut app)?;
+        if let Some(timeout) = app.poll_event_timeout
+            && !event::poll(timeout)?
+        {
+            app.tick(get_delta());
+            continue;
+        }
         match event::read()? {
             event::Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 handle_key_events(key_event, &mut app)?;
@@ -53,6 +69,7 @@ fn main() -> anyhow::Result<()> {
             event::Event::Resize(w, h) => info!("{w}x{h}"),
             _ => {}
         }
+        app.tick(get_delta());
     }
 
     tui.exit()?;

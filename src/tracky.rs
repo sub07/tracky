@@ -27,6 +27,8 @@ pub struct Tracky {
     pub popup_state: Option<Popup>,
     pub line_per_second: f32,
     playback_state: Option<Playback>,
+    pub poll_event_timeout: Option<Duration>,
+    time_acc: Duration,
 }
 
 impl Default for Tracky {
@@ -40,6 +42,8 @@ impl Default for Tracky {
             popup_state: None,
             playback_state: None,
             line_per_second: 4.0,
+            poll_event_timeout: None,
+            time_acc: Duration::ZERO,
         }
     }
 }
@@ -51,6 +55,20 @@ impl Tracky {
 
     pub fn exit(&mut self) {
         self.running = false;
+    }
+
+    pub fn set_poll_mode(&mut self) {
+        const EVENT_POLL_TIMEOUT: u64 = 50;
+        self.poll_event_timeout = Some(Duration::from_millis(EVENT_POLL_TIMEOUT));
+    }
+
+    pub fn set_wait_mode(&mut self) {
+        self.poll_event_timeout = None;
+    }
+
+    pub fn tick(&mut self, delta: Duration) {
+        self.time_acc += delta;
+        info!("{:?}", self.time_acc);
     }
 
     pub fn input_context(&self) -> crate::keybindings::InputContext {
@@ -102,11 +120,13 @@ impl Tracky {
         player.play()?;
 
         self.playback_state = Some(Playback { player });
+        self.set_poll_mode();
         Ok(())
     }
 
     pub fn play(&mut self) {
         if let Some(mut current_playback) = self.playback_state.take() {
+            self.set_wait_mode();
             info!("Stopping playback");
             if let Err(err) = current_playback.player.stop() {
                 warn!("Failed to stop previous playback: {err}");
