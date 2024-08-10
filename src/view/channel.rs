@@ -61,7 +61,7 @@ impl Widget for ChannelView<'_> {
             .flex(Flex::Center)
             .areas(lines_area);
 
-        // TODO Replace when fixed : izip!() macro should be prefered over multizip here but rust-analyzer has an macro hygene issue that result in wrong type resolution : https://github.com/rust-lang/rust-analyzer/issues/11681
+        // TODO Replace multizip with izip!() when fixed : https://github.com/rust-lang/rust-analyzer/issues/11681
         for (line_index, line, area) in multizip((
             (self.row_offset as i32..self.channel_len),
             lines,

@@ -70,14 +70,18 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         Ok(())
     }
 
-    pub unsafe fn into_samples(self) -> Vec<f32> {
-        let (ptr, len, cap) = self.frames.into_raw_parts();
+    pub unsafe fn into_samples(mut self) -> Vec<f32> {
+        let (ptr, len, cap) = (
+            self.frames.as_mut_ptr(),
+            self.frames.len(),
+            self.frames.capacity(),
+        );
         Vec::from_raw_parts(ptr as *mut f32, len * FRAME_SIZE, cap * FRAME_SIZE)
     }
 
-    pub unsafe fn from_samples(samples: Vec<f32>, frame_rate: f32) -> anyhow::Result<Self> {
+    pub unsafe fn from_samples(mut samples: Vec<f32>, frame_rate: f32) -> anyhow::Result<Self> {
         ensure!(samples.len() % FRAME_SIZE == 0);
-        let (ptr, len, cap) = samples.into_raw_parts();
+        let (ptr, len, cap) = (samples.as_mut_ptr(), samples.len(), samples.capacity());
         let frames = Vec::from_raw_parts(
             ptr as *mut Frame<FRAME_SIZE>,
             len / FRAME_SIZE,

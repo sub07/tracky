@@ -29,7 +29,6 @@ struct StreamState {
 enum StreamCommand {
     Play,
     Stop,
-    Pause,
 }
 
 pub struct Player {
@@ -67,12 +66,6 @@ impl Player {
                                     }
                                 }
                                 StreamCommand::Stop => break,
-                                StreamCommand::Pause => {
-                                    if let Err(err) = stream.pause() {
-                                        error!("{err:?} when pausing");
-                                        break;
-                                    }
-                                }
                             }
                         }
                     }
@@ -93,11 +86,6 @@ impl Player {
 
     pub fn play(&self) -> anyhow::Result<()> {
         self.stream_command_sender.send(StreamCommand::Play)?;
-        Ok(())
-    }
-
-    pub fn pause(&self) -> anyhow::Result<()> {
-        self.stream_command_sender.send(StreamCommand::Pause)?;
         Ok(())
     }
 
@@ -172,12 +160,12 @@ fn audio_buffer_loop(out: &mut [f32], mut stream_state: impl DerefMut<Target = S
     let inserted_frame_count = available_frame_count.min(stream_state.pending_frames.len());
     let inserted_frames = stream_state.pending_frames.drain(..inserted_frame_count);
 
-    for ([left_out, right_out], [left_in, right_in]) in out
-        .array_chunks_mut()
+    for (out, [left_in, right_in]) in out
+        .chunks_exact_mut(2)
         .zip(inserted_frames.map_into::<[f32; 2]>())
     {
-        *left_out = left_in * left_amp.value();
-        *right_out = right_in * right_amp.value();
+        out[0] = left_in * left_amp.value();
+        out[1] = right_in * right_amp.value();
     }
 
     if inserted_frame_count < available_frame_count {

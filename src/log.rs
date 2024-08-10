@@ -8,6 +8,7 @@ use std::{
 
 use anyhow::{anyhow, Context};
 use itertools::Itertools;
+
 use joy_macro::EnumStr;
 use log::debug;
 use ratatui::{
@@ -96,7 +97,6 @@ pub fn clear_entries() {
     alter_entries(|logger| logger.entries.clear());
 }
 
-// TODO check if intersperse is added to stdlib to replace itertools usage and remove unstable_name_collisions lint bypass
 #[allow(unstable_name_collisions)]
 pub fn render_log_panel(frame: &mut Frame, area: Rect) {
     let block = Block::bordered().border_type(BorderType::Rounded).title(
