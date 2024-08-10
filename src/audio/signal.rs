@@ -61,13 +61,13 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         Ok(())
     }
 
-    pub fn append_signal(mut self, signal: &Signal<FRAME_SIZE>) -> anyhow::Result<Self> {
+    pub fn append_signal(&mut self, signal: &Signal<FRAME_SIZE>) -> anyhow::Result<()> {
         ensure!(
             self.frame_rate == signal.frame_rate,
             "The two signal must have the same frame rate"
         );
         self.frames.extend(signal.frames.iter());
-        Ok(self)
+        Ok(())
     }
 
     pub unsafe fn into_samples(self) -> Vec<f32> {
@@ -148,9 +148,10 @@ impl StereoSignal {
     pub fn plot<P: AsRef<Path>>(&self, path: P) -> anyhow::Result<()> {
         use plotters::prelude::*;
 
-        let root = SVGBackend::new(&path, (1000, 1000)).into_drawing_area();
+        let root = SVGBackend::new(&path, (100000, 100000)).into_drawing_area();
         root.fill(&WHITE)?;
-        let mut chart = ChartBuilder::on(&root).build_cartesian_2d(0.0f32..0.01, -1.0f32..1.0)?;
+        let mut chart = ChartBuilder::on(&root)
+            .build_cartesian_2d(0.0f32..self.duration().as_secs_f32(), -1.0f32..1.0)?;
         chart.configure_mesh().draw()?;
 
         let left_data = self

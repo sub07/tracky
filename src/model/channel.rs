@@ -17,6 +17,7 @@ struct Instrument {
     current_phase: f32,
 }
 
+#[derive(Clone)]
 pub struct Channel {
     current_note: Option<(NoteName, OctaveValue)>,
     current_volume: Option<Volume>,

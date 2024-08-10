@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use joy_collection_utils::hash_map_of;
+use joy_impl_ignore::{debug::DebugImplIgnore, eq::PartialEqImplIgnore};
 use joy_macro::DisplayFromDebug;
 use ratatui::crossterm::event::KeyCode;
 
@@ -10,7 +11,6 @@ use crate::{
         pattern::{HexDigit, NoteName, OctaveValue},
         Direction,
     },
-    utils::IgnoreDerive,
 };
 
 #[derive(PartialEq, Clone, Debug, DisplayFromDebug)]
@@ -36,7 +36,7 @@ pub enum Action {
     Cancel,
     ClosePopup,
     OpenDeviceSelectionPopup,
-    SetPlayingDevice(IgnoreDerive<audio::device::Device>),
+    SetPlayingDevice(DebugImplIgnore<PartialEqImplIgnore<audio::device::Device>>),
     ExitApp,
     Composite(Vec<Action>),
 }

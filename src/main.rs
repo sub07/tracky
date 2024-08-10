@@ -4,11 +4,12 @@
 #![feature(iter_array_chunks)]
 #![feature(let_chains)]
 
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use std::{env, io};
 
 use ::log::info;
 use handler::handle_key_events;
+use model::pattern::{Field, HexDigit, NoteFieldValue, NoteName, OctaveValue, PatternLine};
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event;
 use ratatui::crossterm::event::KeyEventKind;
@@ -24,7 +25,6 @@ mod model;
 mod service;
 mod tracky;
 mod tui;
-mod utils;
 mod view;
 
 #[cfg(debug_assertions)]
@@ -32,6 +32,8 @@ const DEBUG: bool = true;
 
 #[cfg(not(debug_assertions))]
 const DEBUG: bool = false;
+
+const EVENT_POLL_TIMEOUT: Duration = Duration::from_millis(22);
 
 fn main() -> anyhow::Result<()> {
     #[cfg(debug_assertions)]
@@ -41,24 +43,28 @@ fn main() -> anyhow::Result<()> {
 
     let mut app = Tracky::new();
 
+    *app.patterns.current_line_mut() = PatternLine {
+        note: Field::new(NoteFieldValue::Note(NoteName::C, OctaveValue::OCTAVE_5)),
+        velocity: Field::new((HexDigit::HEX_1, HexDigit::HEX_0)),
+        instrument: Field::new((HexDigit::HEX_0, HexDigit::HEX_0)),
+    };
+
     let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend)?;
     let mut tui = Tui::new(terminal);
     tui.init()?;
 
-    let mut last_tick_time = Instant::now();
+    let mut last_time = Instant::now();
 
     let mut get_delta = || {
-        let delta = last_tick_time.elapsed();
-        last_tick_time = Instant::now();
+        let delta = last_time.elapsed();
+        last_time = Instant::now();
         delta
     };
 
     while app.running {
         tui.draw(&mut app)?;
-        if let Some(timeout) = app.poll_event_timeout
-            && !event::poll(timeout)?
-        {
+        if !event::poll(EVENT_POLL_TIMEOUT)? {
             app.tick(get_delta());
             continue;
         }

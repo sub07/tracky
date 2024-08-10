@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use anyhow::anyhow;
+use anyhow::{anyhow, ensure};
 use derivative::Derivative;
 
 use joy_macro::EnumIter;
@@ -290,5 +290,15 @@ impl Patterns {
             .get_mut(line_index as usize)
             .ok_or_else(|| anyhow!("Invalid state: {line_index}"))
             .unwrap()
+    }
+
+    pub fn current_pattern_row(
+        &self,
+        index: usize,
+    ) -> anyhow::Result<impl Iterator<Item = &PatternLine>> {
+        ensure!(index < self.channel_len as usize);
+        Ok((0..self.channel_count as usize).map(move |channel_index| {
+            &self.current_pattern().lines[channel_index * self.channel_len as usize + index]
+        }))
     }
 }

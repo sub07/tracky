@@ -102,7 +102,9 @@ impl Widget for PatternLineView<'_> {
 
         if let Some(current_field) = self.current_field.filter(|_| self.is_line_selected) {
             let offset_x = PatternLineDescriptor::field_index_by_cursor(current_field);
-            let cursor_cell = buf.get_mut(area.x + current_field as u16 + offset_x as u16, area.y);
+            let cursor_cell = buf
+                .cell_mut((area.x + current_field as u16 + offset_x as u16, area.y))
+                .unwrap();
             cursor_cell.bg = Color::White;
             cursor_cell.fg = Color::Black;
         }

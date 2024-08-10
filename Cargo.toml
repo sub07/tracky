@@ -6,7 +6,7 @@ license = "MIT"
 edition = "2021"
 
 [dependencies]
-ratatui = "0.27"
+ratatui = "0.28"
 joy-value-object = { git = "https://github.com/sub07/rust-utils", version = "0.3.5" }
 joy-collection-utils = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
 joy-macro = { git = "https://github.com/sub07/rust-utils", version = "0.2.4" }
@@ -14,6 +14,7 @@ joy-vector = { git = "https://github.com/sub07/rust-utils", version = "0.1.8", f
     "math",
 ] }
 joy-iter = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
+joy-impl-ignore = { git = "https://github.com/sub07/rust-utils", version = "0.1.1" }
 anyhow = "1"
 itertools = "*"
 cpal = { version = "0.15", features = ["asio"] }

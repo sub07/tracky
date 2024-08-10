@@ -4,6 +4,7 @@ use crate::{
     tracky::Tracky,
     view::popup::Popup,
 };
+use joy_impl_ignore::{debug::DebugImplIgnore, eq::PartialEqImplIgnore};
 use log::error;
 use ratatui::crossterm::event::KeyEvent;
 
@@ -46,7 +47,7 @@ fn handle_action(mut action: Action, app: &mut Tracky) -> anyhow::Result<()> {
         Action::InsertPattern => todo!(),
         Action::NextPattern => todo!(),
         Action::PreviousPattern => todo!(),
-        Action::TogglePlay => app.play(),
+        Action::TogglePlay => app.handle_toggle_playback(),
         Action::NoteCut => app.patterns.set_note_cut(),
         Action::ModifyDefaultOctave(i) => app.patterns.modify_default_octave(i),
         Action::ExitApp => app.exit(),
@@ -57,7 +58,9 @@ fn handle_action(mut action: Action, app: &mut Tracky) -> anyhow::Result<()> {
         }
         Action::ClearLogsPanel => clear_entries(),
         Action::ToggleLogsPanel => app.display_log_console = !app.display_log_console,
-        Action::SetPlayingDevice(device) => app.selected_output_device = Some(device.take()),
+        Action::SetPlayingDevice(DebugImplIgnore(PartialEqImplIgnore(device))) => {
+            app.selected_output_device = Some(device)
+        }
         Action::Cancel | Action::Confirm => {}
         Action::ClosePopup => app.close_popup(),
         Action::Composite(actions) => {

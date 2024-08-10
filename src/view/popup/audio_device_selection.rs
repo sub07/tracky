@@ -1,5 +1,6 @@
 use cpal::HostId;
 use itertools::Itertools;
+use joy_impl_ignore::eq::PartialEqImplIgnore;
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Flex, Layout, Rect},
@@ -261,6 +262,7 @@ impl AudioDeviceSelectionPopup {
             },
             Action::Confirm => {
                 if let Some(selected_device) = self.selected_device() {
+                    let selected_device: PartialEqImplIgnore<Device> = selected_device.into();
                     return Some(Action::Composite(vec![
                         Action::SetPlayingDevice(selected_device.into()),
                         Action::ClosePopup,

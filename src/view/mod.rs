@@ -34,7 +34,7 @@ fn center_row(area: Rect) -> Rect {
 }
 
 pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
-    let area = frame.size();
+    let area = frame.area();
     let buf = frame.buffer_mut();
 
     let pattern_view = PatternView::new(
