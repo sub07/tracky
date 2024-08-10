@@ -46,12 +46,6 @@ impl Field<(HexDigit, HexDigit)> {
             .map(|(first_digit, second_digit)| first_digit.value() * 0x10 + second_digit.value())
     }
 
-    pub fn set_u8(&mut self, value: u8) {
-        let first_digit = HexDigit::new(value / 0x10).unwrap();
-        let second_digit = HexDigit::new(value % 0x10).unwrap();
-        self.set((first_digit, second_digit));
-    }
-
     pub fn get_percentage(&self) -> Option<f32> {
         self.get_u8().map(|hex| hex as f32 / u8::MAX as f32)
     }

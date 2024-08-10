@@ -70,6 +70,7 @@ impl<T> Field<T> {
         Self(Some(value))
     }
 
+    #[allow(dead_code)]
     pub fn empty() -> Self {
         Self(None)
     }

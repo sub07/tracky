@@ -29,6 +29,7 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn from_frames(frames: Vec<Frame<FRAME_SIZE>>, frame_rate: f32) -> Self {
         Signal { frames, frame_rate }
     }
@@ -42,6 +43,7 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         (index as usize, index.fract())
     }
 
+    #[allow(dead_code)]
     pub fn write_signal_at_duration(
         &mut self,
         duration: Duration,
@@ -70,6 +72,7 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub unsafe fn into_samples(mut self) -> Vec<f32> {
         let (ptr, len, cap) = (
             self.frames.as_mut_ptr(),
@@ -79,6 +82,7 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         Vec::from_raw_parts(ptr as *mut f32, len * FRAME_SIZE, cap * FRAME_SIZE)
     }
 
+    #[allow(dead_code)]
     pub unsafe fn from_samples(mut samples: Vec<f32>, frame_rate: f32) -> anyhow::Result<Self> {
         ensure!(samples.len() % FRAME_SIZE == 0);
         let (ptr, len, cap) = (samples.as_mut_ptr(), samples.len(), samples.capacity());
@@ -111,6 +115,7 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         ))
     }
 
+    #[allow(dead_code)]
     pub fn sub_signal(&self, start: Duration, end: Duration) -> anyhow::Result<Signal<FRAME_SIZE>> {
         ensure!(
             start <= self.duration(),
@@ -137,6 +142,7 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
 }
 
 impl StereoSignal {
+    #[allow(dead_code)]
     pub fn from_path<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let audio_data = load_samples_from_file(path)?;
 
@@ -149,6 +155,7 @@ impl StereoSignal {
         unsafe { Self::from_samples(samples.collect_vec(), audio_data.frame_rate) }
     }
 
+    #[allow(dead_code)]
     pub fn plot<P: AsRef<Path>>(&self, path: P) -> anyhow::Result<()> {
         use plotters::prelude::*;
 

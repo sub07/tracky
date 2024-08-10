@@ -95,17 +95,21 @@ impl Player {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn set_volume(&mut self, v: Volume) {
         self.stream_state_mut().volume = v;
     }
+    #[allow(dead_code)]
 
     pub fn set_pan(&mut self, p: Pan) {
         self.stream_state_mut().pan = p;
     }
+    #[allow(dead_code)]
 
     pub fn volume(&self) -> Volume {
         self.stream_state().volume
     }
+    #[allow(dead_code)]
 
     pub fn pan(&self) -> Pan {
         self.stream_state().pan

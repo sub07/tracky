@@ -46,12 +46,14 @@ impl Pan {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct AudioData {
     pub samples: Vec<f32>,
     pub channel_count: u32,
     pub frame_rate: f32,
 }
 
+#[allow(dead_code)]
 pub fn load_samples_from_file<P>(path: P) -> anyhow::Result<AudioData>
 where
     P: AsRef<Path>,
