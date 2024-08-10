@@ -1,0 +1,27 @@
+[package]
+name = "app"
+version = "0.1.0"
+authors = ["Marius Pardo <pardomarius@gmail.com>"]
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+ratatui = "0.28"
+joy-value-object = { git = "https://github.com/sub07/rust-utils", version = "0.3.5" }
+joy-collection-utils = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
+joy-macro = { git = "https://github.com/sub07/rust-utils", version = "0.2.4" }
+joy-vector = { git = "https://github.com/sub07/rust-utils", version = "0.1.8", features = [
+    "math",
+] }
+joy-iter = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
+joy-impl-ignore = { git = "https://github.com/sub07/rust-utils", version = "0.1.1" }
+anyhow = "1"
+itertools = "*"
+cpal = { version = "0.15", features = ["asio"] }
+derivative = "2.2.0"
+audrey = "0.3"
+plotters = "0.3"
+log = "0.4"
+
+[dev-dependencies]
+approx = "0.5"

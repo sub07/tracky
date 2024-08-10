@@ -1,0 +1,9 @@
+[package]
+name = "signal"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# joy-vector = { git = "https://github.com/sub07/rust-utils", version = "0.1.8", features = [
+#     "math",
+# ] }

@@ -1,7 +1,7 @@
 on: push
 
 jobs:
-    validation:
+    tests:
         name: Run unit tests
         runs-on: ubuntu-latest
         steps:
@@ -11,7 +11,7 @@ jobs:
               run: sudo apt update && sudo apt install -y --no-install-recommends libasound2-dev pkg-config
             - run: cargo test
     
-    linter:
+    checks:
         name: Run rustfmt + clippy
         runs-on: ubuntu-latest
         steps:
@@ -21,7 +21,12 @@ jobs:
                 components: rustfmt, clippy
             - name: Install linux deps
               run: sudo apt update && sudo apt install -y --no-install-recommends libasound2-dev pkg-config
+            - name: Install cargo machete
+              run: cargo install cargo-machete
             - name: Rustfmt Check
               uses: actions-rust-lang/rustfmt@v1
             - name: Clippy Check
               run: cargo clippy -- -D warnings
+            - name: Checking unused dependencies
+              run: cargo machete
+            
