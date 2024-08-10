@@ -21,8 +21,6 @@ jobs:
                 components: rustfmt, clippy
             - name: Install linux deps
               run: sudo apt update && sudo apt install -y --no-install-recommends libasound2-dev pkg-config
-            - name: Install cargo machete
-              run: cargo install cargo-machete
             - name: Rustfmt Check
               uses: actions-rust-lang/rustfmt@v1
             - name: Clippy Check
