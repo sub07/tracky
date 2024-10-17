@@ -1,0 +1,20 @@
+* with out as output buffer
+
+- fill out with 0s
+- needed_frames = out.len / 2
+- while needed_frame > 0
+    - remaining_line_frames = frames_per_line - collected_frame
+    - if remaining_line_frames > 0
+      - frame_count = needed_frame.min(remaining_line_frames)
+      - for each channels
+        - collect frame_count frames into buffer
+        - sum buffer and out into out
+      - needed_frame -= frame_count
+      - collected_frame += frame_count
+      - out = out[..frame_count * 2]
+    - else
+      - if line available
+        - advance one line
+        - reset collected frame
+        else
+        - break

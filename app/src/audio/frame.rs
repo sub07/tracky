@@ -5,7 +5,7 @@ use super::{signal::StereoSignal, Pan, Volume};
 pub type Frame<const SIZE: usize> = Vector<f32, SIZE>;
 pub type StereoFrame = Frame<2>;
 
-pub trait CollectFrame {
+pub trait YieldFrame {
     fn next(
         &mut self,
         freq: f32,

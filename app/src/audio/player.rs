@@ -17,13 +17,25 @@ use cpal::{
 use itertools::Itertools;
 use log::{error, info};
 
+use crate::model::pattern::Patterns;
+
 use super::{frame::StereoFrame, signal::StereoSignal, Pan, Volume};
 
-#[derive(Default)]
-struct StreamState {
+pub struct PatternsPlayback {
+    pub player: Player,
+    channels: Vec<Channel>,
+    line_audio_buffer: StereoSignal,
+    current_line: usize,
+    line_duration: Duration,
+    time_since_last_line: Duration,
+    sink: StereoSignal,
+}
+
+struct PlayerState {
     volume: Volume,
     pan: Pan,
-    pending_frames: VecDeque<StereoFrame>,
+    patterns: Arc<Mutex<Patterns>>,
+    playback: Arc<Mutex<PatternsPlayback>>
 }
 
 enum StreamCommand {
@@ -34,7 +46,7 @@ enum StreamCommand {
 pub struct Player {
     pub frame_rate: f32,
     stream_command_sender: Sender<StreamCommand>,
-    stream_state: Arc<Mutex<StreamState>>,
+    stream_state: Arc<Mutex<PlayerState>>,
 }
 
 impl Player {
@@ -77,11 +89,15 @@ impl Player {
 
         info!("Playing on {device_name} at {}Hz", sample_rate.0);
 
-        Ok(Player {
+        let player = Player {
             frame_rate: sample_rate.0 as f32,
             stream_command_sender,
             stream_state,
-        })
+        };
+
+        player.play()?;
+
+        Ok(player)
     }
 
     pub fn play(&self) -> anyhow::Result<()> {
@@ -91,7 +107,6 @@ impl Player {
 
     pub fn stop(&mut self) -> anyhow::Result<()> {
         self.stream_command_sender.send(StreamCommand::Stop)?;
-        self.stream_state_mut().pending_frames.clear();
         Ok(())
     }
 
@@ -115,26 +130,18 @@ impl Player {
         self.stream_state().pan
     }
 
-    fn stream_state_mut(&mut self) -> impl DerefMut<Target = StreamState> + '_ {
+    fn stream_state_mut(&mut self) -> impl DerefMut<Target = PlayerState> + '_ {
         self.stream_state.lock().unwrap()
     }
 
-    fn stream_state(&self) -> impl Deref<Target = StreamState> + '_ {
+    fn stream_state(&self) -> impl Deref<Target = PlayerState> + '_ {
         self.stream_state.lock().unwrap()
-    }
-
-    pub fn queue_signal(&mut self, signal: &StereoSignal) {
-        self.stream_state_mut().pending_frames.extend(signal.iter());
-    }
-
-    pub fn is_playing(&self) -> bool {
-        !self.stream_state().pending_frames.is_empty()
     }
 }
 
 fn init_stream(
     device: Device,
-    stream_state: Arc<Mutex<StreamState>>,
+    stream_state: Arc<Mutex<PlayerState>>,
 ) -> anyhow::Result<(Stream, SampleRate)> {
     let config = device.default_output_config()?;
 
@@ -156,7 +163,9 @@ fn init_stream(
     Ok((stream, sample_rate))
 }
 
-fn audio_buffer_loop(out: &mut [f32], mut stream_state: impl DerefMut<Target = StreamState>) {
+fn audio_buffer_loop(out: &mut [f32], mut stream_state: impl DerefMut<Target = PlayerState>) {
+    //todo zero output
+
     let left_amp = stream_state.pan.left_volume() * stream_state.volume;
     let right_amp = stream_state.pan.right_volume() * stream_state.volume;
 
@@ -188,129 +197,5 @@ impl Drop for Player {
             !self.is_playing(),
             "Player is still playing while being dropped"
         );
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use joy_vector::Vector;
-
-    use super::*;
-
-    const AVERAGE_SAMPLE_BUFFER_SIZE: usize = 256;
-    const FLOAT_EQ_EPSILON: f32 = 0.001;
-
-    fn simulate_signal_playing(
-        volume: Volume,
-        pan: Pan,
-        signal: &StereoSignal,
-        sample_buffer_size: usize,
-    ) -> Vec<f32> {
-        assert!(
-            sample_buffer_size & 1 == 0,
-            "Unit test internal bug, sample_buffer_size must be even"
-        );
-        let mut output = Vec::with_capacity(signal.len());
-        let pending_frames = VecDeque::from_iter(signal.frames.iter().cloned());
-        let mut stream_state = StreamState {
-            volume,
-            pan,
-            pending_frames,
-        };
-        while !stream_state.pending_frames.is_empty() {
-            let sample_slice_start = output.len();
-            output.resize(sample_slice_start + sample_buffer_size, 0.0);
-            audio_buffer_loop(&mut output[sample_slice_start..], &mut stream_state);
-        }
-
-        while output.last().is_some_and(|s| *s == 0.0) {
-            output.pop();
-        }
-
-        output
-    }
-
-    fn assert_slices_eq(signal1: &[f32], signal2: &[f32]) {
-        assert!(signal1
-            .iter()
-            .zip(signal2.iter())
-            .all(|(a, b)| (a - b).abs() < FLOAT_EQ_EPSILON && !a.is_nan() && !b.is_nan()));
-    }
-
-    fn get_signal() -> StereoSignal {
-        StereoSignal::from_path("assets/stereo.wav").expect("could not load asset")
-    }
-
-    #[test]
-    fn test_no_pan_max_volume() {
-        let signal = get_signal();
-        let simulated_samples = simulate_signal_playing(
-            Volume::DEFAULT,
-            Pan::DEFAULT,
-            &signal,
-            AVERAGE_SAMPLE_BUFFER_SIZE,
-        );
-        assert_slices_eq(&simulated_samples, unsafe { &signal.into_samples() });
-    }
-
-    #[test]
-    fn test_volume() {
-        let mut signal = get_signal();
-        const VOLUME: Volume = Volume::new_unchecked(0.1);
-        let simulated_samples =
-            simulate_signal_playing(VOLUME, Pan::DEFAULT, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
-
-        for Vector([left, right]) in signal.frames.iter_mut() {
-            *left *= VOLUME.value();
-            *right *= VOLUME.value();
-        }
-
-        assert_slices_eq(&simulated_samples, unsafe { &signal.into_samples() });
-    }
-
-    #[test]
-    fn test_right_pan() {
-        let mut signal = get_signal();
-        const PAN: Pan = Pan::new_unchecked(0.4);
-        let simulated_samples =
-            simulate_signal_playing(Volume::DEFAULT, PAN, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
-
-        for Vector([left, right]) in signal.frames.iter_mut() {
-            *left *= 0.6;
-            *right *= 1.0;
-        }
-
-        assert_slices_eq(&simulated_samples, unsafe { &signal.into_samples() });
-    }
-
-    #[test]
-    fn test_left_pan() {
-        let mut signal = get_signal();
-        const PAN: Pan = Pan::new_unchecked(-0.4);
-        let simulated_samples =
-            simulate_signal_playing(Volume::DEFAULT, PAN, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
-
-        for Vector([left, right]) in signal.frames.iter_mut() {
-            *left *= 1.0;
-            *right *= 0.6;
-        }
-
-        assert_slices_eq(&simulated_samples, unsafe { &signal.into_samples() });
-    }
-
-    #[test]
-    fn test_volume_pan() {
-        let mut signal = get_signal();
-        const PAN: Pan = Pan::new_unchecked(-0.4);
-        const VOLUME: Volume = Volume::new_unchecked(0.1);
-        let simulated_samples =
-            simulate_signal_playing(VOLUME, PAN, &signal, AVERAGE_SAMPLE_BUFFER_SIZE);
-
-        for Vector([left, right]) in signal.frames.iter_mut() {
-            *left *= VOLUME.value();
-            *right *= 0.6 * VOLUME.value();
-        }
-
-        assert_slices_eq(&simulated_samples, unsafe { &signal.into_samples() });
     }
 }
