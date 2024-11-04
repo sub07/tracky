@@ -1,4 +1,4 @@
-use itertools::multizip;
+use itertools::izip;
 use joy_macro::New;
 use ratatui::{
     layout::{Constraint, Flex, Layout},
@@ -61,12 +61,11 @@ impl Widget for ChannelView<'_> {
             .flex(Flex::Center)
             .areas(lines_area);
 
-        // TODO Replace multizip with izip!() when fixed : https://github.com/rust-lang/rust-analyzer/issues/11681
-        for (line_index, line, area) in multizip((
+        for (line_index, line, area) in izip!(
             (self.row_offset as i32..self.channel_len),
             lines,
             lines_area.rows(),
-        )) {
+        ) {
             PatternLineView {
                 line,
                 current_field: self.current_field,

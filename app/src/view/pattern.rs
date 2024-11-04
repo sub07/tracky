@@ -1,6 +1,6 @@
 use std::iter;
 
-use itertools::multizip;
+use itertools::izip;
 use joy_macro::New;
 use ratatui::{
     layout::{Constraint, Layout},
@@ -82,11 +82,11 @@ where
             .skip(channel_offset)
             .take(displayed_channel_count);
 
-        for (channel, channel_area, channel_index) in multizip((
+        for (channel, channel_area, channel_index) in izip!(
             channels,
             channel_areas.iter(),
             channel_offset..self.channel_count as usize,
-        )) {
+        ) {
             let channel_view = ChannelView::new(
                 channel,
                 row_offset,
