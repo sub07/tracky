@@ -1,7 +1,3 @@
-// Only add unstable feature if planned to be stabilized in near future
-// The goal is to switch back to stable as soon as possible
-#![feature(const_fn_floating_point_arithmetic)]
-
 use std::time::{Duration, Instant};
 use std::{env, io};
 
