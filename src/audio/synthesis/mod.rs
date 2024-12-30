@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use joy_vector::vector;
 
 use super::{
-    frame::{YieldFrame, StereoFrame},
+    frame::{StereoFrame, YieldFrame},
     Pan, Volume,
 };
 

@@ -1,3 +1,31 @@
+[package]
+name = "tracky"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
 [workspace]
-resolver = "2"
-members = ["app", "signal"]
+members = [".", "signal"]
+
+[dependencies]
+ratatui = "0.29"
+joy-value-object = { git = "https://github.com/sub07/rust-utils", version = "0.4.5" }
+joy-collection-utils = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
+joy-macro = { git = "https://github.com/sub07/rust-utils", version = "0.2.4" }
+joy-vector = { git = "https://github.com/sub07/rust-utils", version = "0.1.8", features = [
+    "math",
+] }
+joy-iter = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
+joy-impl-ignore = { git = "https://github.com/sub07/rust-utils", version = "0.1.1" }
+joy-error = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
+anyhow = "1"
+itertools = "*"
+cpal = { version = "0.15", features = ["asio"] }
+derivative = "2.2.0"
+audrey = "0.3"
+plotters = "0.3"
+log = "0.4"
+builder-pattern = "0"
+
+[dev-dependencies]
+approx = "0.5"

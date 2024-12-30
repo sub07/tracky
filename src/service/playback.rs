@@ -3,13 +3,13 @@ use std::time::Duration;
 use log::{error, info};
 
 use crate::{
-    audio::{mixer::Mixer, player::Player, signal::StereoSignal},
+    audio::{mixer::Mixer, player::AudioPlayer, signal::StereoSignal},
     model::channel::Channel,
     tracky::Tracky,
 };
 
 pub struct Playback {
-    pub player: Player,
+    pub player: AudioPlayer,
     channels: Vec<Channel>,
     master: Mixer,
     line_audio_buffer: StereoSignal,
@@ -20,12 +20,12 @@ pub struct Playback {
 }
 
 impl Tracky {
-    fn make_player(&self) -> anyhow::Result<Player> {
+    fn make_player(&self) -> anyhow::Result<AudioPlayer> {
         // self.selected_output_device
         //     .clone()
         //     .ok_or_else(|| anyhow!("No output device selected"))
         //     .and_then(Player::with_device)
-        Player::with_default_device()
+        AudioPlayer::with_default_device()
     }
 
     fn setup_realtime_playback(&mut self) -> anyhow::Result<()> {
