@@ -4,12 +4,13 @@ use std::{
     ops::{Deref, DerefMut},
     path::Path,
     sync::Mutex,
+    usize,
 };
 
 use anyhow::{anyhow, Context};
 use itertools::Itertools;
 
-use joy_macro::EnumStr;
+use joy_macro::{EnumIter, EnumStr};
 use log::debug;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
@@ -19,7 +20,7 @@ use ratatui::{
     Frame,
 };
 
-#[derive(Clone, Copy, Debug, EnumStr)]
+#[derive(Clone, Copy, Debug, EnumStr, EnumIter)]
 enum LogLevel {
     Error,
     Warn,
@@ -82,13 +83,13 @@ fn add_entry(content: String, level: LogLevel) {
 }
 
 pub trait DebugLogExt {
-    #[allow(dead_code)] // because it's dev utils
+    #[allow(dead_code, reason = "dev utils")]
     fn debug(self, tag: &'static str) -> Self;
 }
 
 impl<T: Debug> DebugLogExt for T {
     fn debug(self, tag: &'static str) -> Self {
-        debug!("{tag}: {:?}", &self);
+        debug!("{tag}: {:#?}", &self);
         self
     }
 }
@@ -142,6 +143,20 @@ pub fn render_log_panel(frame: &mut Frame, area: Rect) {
             .collect::<String>()
     }
 
+    const MAX_LOG_LEVEL_TEXT_LEN: usize = const {
+        let mut max = usize::MIN;
+        let mut i = 0;
+
+        while i < LogLevel::COUNT {
+            let log_label_len = LogLevel::VARIANTS[i].as_str().len();
+            if max < log_label_len {
+                max = log_label_len;
+            }
+            i += 1;
+        }
+        max
+    };
+
     let text = entries
         .iter()
         .rev()
@@ -155,7 +170,13 @@ pub fn render_log_panel(frame: &mut Frame, area: Rect) {
                         LogLevel::Warn => Color::Yellow,
                     };
                     Line::from_iter([
-                        entry.level.as_str().fg(tag_color).italic(),
+                        format!(
+                            "{:>width$}",
+                            entry.level.as_str(),
+                            width = MAX_LOG_LEVEL_TEXT_LEN
+                        )
+                        .fg(tag_color)
+                        .italic(),
                         " ".into(),
                         line.into(),
                     ])

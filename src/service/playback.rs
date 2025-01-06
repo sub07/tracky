@@ -21,10 +21,10 @@ pub struct Playback {
 
 impl Tracky {
     fn make_player(&self) -> anyhow::Result<AudioPlayer> {
-        // self.selected_output_device
-        //     .clone()
-        //     .ok_or_else(|| anyhow!("No output device selected"))
-        //     .and_then(Player::with_device)
+        self.selected_output_device
+            .clone()
+            .ok_or_else(|| anyhow!("No output device selected"))
+            .and_then(Player::with_device);
         AudioPlayer::with_default_device()
     }
 
@@ -35,7 +35,7 @@ impl Tracky {
         let master = Mixer::new(player.frame_rate);
         let channels = vec![Channel::new(); self.patterns.channel_count as usize];
         let sink = StereoSignal::new(Duration::ZERO, player.frame_rate);
-        player.play()?;
+        // player.play()?;
         self.playback_state = Some(Playback {
             player,
             channels,
@@ -73,7 +73,7 @@ impl Tracky {
     pub fn stop_playback(&mut self) -> anyhow::Result<()> {
         if let Some(mut playback) = self.playback_state.take() {
             info!("Stopping playback");
-            playback.player.stop()?;
+            // playback.player.stop()?;
         }
 
         Ok(())
@@ -89,7 +89,7 @@ impl Tracky {
             while playback.time_since_last_line >= playback.line_duration {
                 playback.time_since_last_line -= playback.line_duration;
                 playback.master.reset();
-
+// 
                 for (line, channel) in self
                     .patterns
                     .current_pattern_row(playback.current_line)?
@@ -99,16 +99,16 @@ impl Tracky {
                     channel.collect_signal(&mut playback.line_audio_buffer);
                     playback.master.mix(&playback.line_audio_buffer);
                 }
-
+// 
                 debug_assert_eq!(
                     playback.line_audio_buffer.duration(),
                     playback.master.output.duration(),
                 );
-
+// 
                 playback.sink.append_signal(&playback.master.output)?;
-
+// 
                 playback.player.queue_signal(&playback.master.output);
-
+// 
                 playback.current_line += 1;
                 if playback.current_line as i32 == self.patterns.channel_len {
                     break;

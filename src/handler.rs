@@ -1,4 +1,7 @@
+use std::sync::mpsc::Sender;
+
 use crate::{
+    event::Event,
     keybindings::Action,
     log::{clear_entries, write_logs_to_file},
     tracky::Tracky,
@@ -6,27 +9,12 @@ use crate::{
 };
 use joy_impl_ignore::{debug::DebugImplIgnore, eq::PartialEqImplIgnore};
 use log::error;
-use ratatui::crossterm::event::KeyEvent;
 
-pub fn handle_key_events(key_event: KeyEvent, app: &mut Tracky) -> anyhow::Result<()> {
-    // match key_event.code {
-    //     KeyCode::F(4) => {
-    //         app.selected_output_device
-    //             .as_ref()
-    //             .and_then(|d| d.name().ok())
-    //             .debug("audio player");
-    //     }
-    //     _ => {}
-    // }
-
-    if let Some(action) = app.keybindings.action(key_event.code, app.input_context()) {
-        handle_action(action, app)?;
-    }
-
-    Ok(())
-}
-
-fn handle_action(mut action: Action, app: &mut Tracky) -> anyhow::Result<()> {
+pub fn handle_action(
+    mut action: Action,
+    app: &mut Tracky,
+    event_tx: Sender<Event>,
+) -> anyhow::Result<()> {
     if let Some(ref mut popup) = app.popup_state {
         let mut is_action_consumed = true;
         if let Some(popup_action) = popup.handle_action(action.clone(), &mut is_action_consumed) {
@@ -47,7 +35,7 @@ fn handle_action(mut action: Action, app: &mut Tracky) -> anyhow::Result<()> {
         Action::InsertPattern => todo!(),
         Action::NextPattern => todo!(),
         Action::PreviousPattern => todo!(),
-        Action::TogglePlay => app.handle_toggle_playback(),
+        Action::TogglePlay => {}
         Action::NoteCut => app.patterns.set_note_cut(),
         Action::ModifyDefaultOctave(i) => app.patterns.modify_default_octave(i),
         Action::ExitApp => app.exit(),
@@ -65,7 +53,7 @@ fn handle_action(mut action: Action, app: &mut Tracky) -> anyhow::Result<()> {
         Action::ClosePopup => app.close_popup(),
         Action::Composite(actions) => {
             for action in actions.into_iter() {
-                handle_action(action, app)?;
+                handle_action(action, app, event_tx.clone())?;
             }
         }
         Action::OpenDeviceSelectionPopup => {
