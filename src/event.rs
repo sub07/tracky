@@ -1,12 +1,20 @@
+use crate::audio::{Device, Hosts};
+
+#[derive(Debug)]
 pub enum Event {
     Key(ratatui::crossterm::event::KeyEvent),
-    App(crate::keybindings::Action),
+    Action(crate::keybindings::Action),
     Panic(anyhow::Error),
-    Async(AsyncEvent),
+    AsyncAction(AsyncAction),
     Resize { width: u16, height: u16 },
     Composite(Vec<Event>),
+    StartLoading,
+    LoadingDone(AsyncAction),
+    ClosePopup,
+    SetPlayingDevice(Device),
 }
 
-pub enum AsyncEvent {
-    LoadingDone,
+#[derive(Debug)]
+pub enum AsyncAction {
+    OpenDeviceSelectionPopup(Hosts),
 }

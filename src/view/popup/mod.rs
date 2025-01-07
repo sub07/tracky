@@ -1,4 +1,6 @@
-use crate::{event::Event, keybindings::Action};
+use std::sync::mpsc::Sender;
+
+use crate::event::Event;
 
 pub mod audio_device_selection;
 
@@ -7,11 +9,12 @@ pub enum Popup {
 }
 
 impl Popup {
-    pub fn handle_event(&mut self, event: Event) -> Option<Event> {
+    pub fn handle_event(&mut self, event: Event, event_tx: Sender<Event>) -> Option<Event> {
         match self {
             Popup::AudioDeviceSelection(popup) => {
-                if let Some(event) = popup.map_event(&event) {
-                    popup.handle_event(event)
+                if let Some(popup_event) = popup.map_event(&event) {
+                    popup.handle_event(popup_event, event_tx);
+                    None
                 } else {
                     Some(event)
                 }

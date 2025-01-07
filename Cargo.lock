@@ -993,11 +993,6 @@ version = "0.1.0"
 source = "git+https://github.com/sub07/rust-utils#665656413331d6d57144c0ea0a9b935a9043ce6b"
 
 [[package]]
-name = "joy-impl-ignore"
-version = "0.1.1"
-source = "git+https://github.com/sub07/rust-utils#665656413331d6d57144c0ea0a9b935a9043ce6b"
-
-[[package]]
 name = "joy-iter"
 version = "0.1.0"
 source = "git+https://github.com/sub07/rust-utils#665656413331d6d57144c0ea0a9b935a9043ce6b"
@@ -1797,7 +1792,6 @@ dependencies = [
  "itertools 0.13.0",
  "joy-collection-utils",
  "joy-error",
- "joy-impl-ignore",
  "joy-iter",
  "joy-macro",
  "joy-value-object",

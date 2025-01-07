@@ -1,14 +1,9 @@
-use std::{
-    marker::PhantomData,
-    sync::mpsc::{self, Receiver, Sender},
-    thread,
-};
+use std::sync::mpsc::{Receiver, Sender};
 
-use anyhow::{anyhow, ensure};
 use builder_pattern::Builder;
 use cpal::{
     traits::{DeviceTrait, StreamTrait},
-    Device, SampleFormat, SampleRate, Stream,
+    Device, SampleFormat, Stream,
 };
 
 use joy_error::OptionToResultExt;

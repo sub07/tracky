@@ -9,6 +9,7 @@ use ratatui::crossterm::event::KeyEventKind;
 use ratatui::Terminal;
 use tracky::Tracky;
 use tui::Tui;
+use view::popup::Popup;
 
 mod audio;
 mod event;
@@ -73,9 +74,10 @@ fn main() -> anyhow::Result<()> {
     while app.running {
         tui.draw(&mut app)?;
         let mut event = event_rx.recv()?;
+        // debug!("{event:?}");
         if let Some(popup) = &mut app.popup_state {
-            if let Some(returned_event) = popup.handle_event(event) {
-                event = returned_event;
+            if let Some(unprocessed_event) = popup.handle_event(event, event_tx.clone()) {
+                event = unprocessed_event;
             } else {
                 continue;
             }
@@ -83,10 +85,10 @@ fn main() -> anyhow::Result<()> {
         match event {
             Event::Key(key_event) => {
                 if let Some(action) = app.keybindings.action(key_event.code, app.input_context()) {
-                    event_tx.send(Event::App(action)).unwrap();
+                    event_tx.send(Event::Action(action)).unwrap();
                 }
             }
-            Event::App(action) => {
+            Event::Action(action) => {
                 if let Err(err) = handler::handle_action(action, &mut app, event_tx.clone()) {
                     error!("{err}");
                 }
@@ -94,9 +96,24 @@ fn main() -> anyhow::Result<()> {
             Event::Panic(error) => {
                 panic!("{error:?}");
             }
-            Event::Composite(vec) => todo!(),
+            Event::Composite(events) => {
+                for event in events {
+                    event_tx.send(event).unwrap();
+                }
+            }
             Event::Resize { width, height } => info!("{width}x{height}"),
-            Event::Async(async_event) => todo!(),
+            Event::AsyncAction(async_action) => match async_action {
+                event::AsyncAction::OpenDeviceSelectionPopup(hosts) => {
+                    app.popup_state = Some(Popup::AudioDeviceSelection(hosts.into()));
+                }
+            },
+            Event::StartLoading => app.loader_count += 1,
+            Event::LoadingDone(async_action) => {
+                app.loader_count = app.loader_count.saturating_sub(1);
+                event_tx.send(Event::AsyncAction(async_action)).unwrap();
+            }
+            Event::ClosePopup => app.close_popup(),
+            Event::SetPlayingDevice(device) => app.selected_output_device = Some(device),
         }
     }
 

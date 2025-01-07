@@ -1,19 +1,12 @@
-use std::{
-    sync::mpsc::{channel, Sender},
-    thread,
-    time::Duration,
-};
+use std::{sync::mpsc::Sender, thread};
 
 use crate::{
     audio::Hosts,
-    event::{AsyncEvent, Event},
+    event::{AsyncAction, Event},
     keybindings::Action,
     log::{clear_entries, write_logs_to_file},
     tracky::Tracky,
-    view::popup::{self, Popup},
 };
-use cpal::Devices;
-use joy_impl_ignore::{debug::DebugImplIgnore, eq::PartialEqImplIgnore};
 use log::error;
 
 pub fn handle_action(
@@ -44,20 +37,14 @@ pub fn handle_action(
         }
         Action::ClearLogsPanel => clear_entries(),
         Action::ToggleLogsPanel => app.display_log_console = !app.display_log_console,
-        Action::SetPlayingDevice(DebugImplIgnore(PartialEqImplIgnore(device))) => {
-            app.selected_output_device = Some(device)
-        }
         Action::Cancel | Action::Confirm => {}
-        Action::ClosePopup => app.close_popup(),
-        Action::OpenDeviceSelectionPopup => {
-            let (devices_tx, devices_rx) = channel();
-            app.popup_state = Some(Popup::AudioDeviceSelection(
-                popup::audio_device_selection::Popup::Loading(devices_rx),
-            ));
+        Action::RequestOpenDeviceSelectionPopup => {
+            event_tx.send(Event::StartLoading).unwrap();
             thread::spawn(move || {
-                devices_tx.send(Hosts::load()).unwrap();
                 event_tx
-                    .send(Event::Async(AsyncEvent::LoadingDone))
+                    .send(Event::LoadingDone(AsyncAction::OpenDeviceSelectionPopup(
+                        Hosts::load(),
+                    )))
                     .unwrap();
             });
         }

@@ -1,16 +1,12 @@
 use std::collections::HashMap;
 
 use joy_collection_utils::hash_map_of;
-use joy_impl_ignore::{debug::DebugImplIgnore, eq::PartialEqImplIgnore};
 use joy_macro::DisplayFromDebug;
 use ratatui::crossterm::event::KeyCode;
 
-use crate::{
-    audio,
-    model::{
-        pattern::{HexDigit, NoteName, OctaveValue},
-        Direction,
-    },
+use crate::model::{
+    pattern::{HexDigit, NoteName, OctaveValue},
+    Direction,
 };
 
 #[derive(PartialEq, Clone, Debug, DisplayFromDebug)]
@@ -34,9 +30,7 @@ pub enum Action {
     ToggleLogsPanel,
     Confirm,
     Cancel,
-    ClosePopup,
-    OpenDeviceSelectionPopup,
-    SetPlayingDevice(DebugImplIgnore<PartialEqImplIgnore<audio::device::Device>>),
+    RequestOpenDeviceSelectionPopup,
     ExitApp,
 }
 
@@ -62,30 +56,6 @@ pub enum InputContext {
 pub struct KeyBindings {
     context_bindings: HashMap<InputContext, HashMap<KeyCode, Action>>,
 }
-
-// impl KeyBindings {
-//     pub fn action(
-//         &self,
-//         modifiers: KeyModifiers,
-//         key: KeyCode,
-//         input_context: InputContext,
-//     ) -> Option<Action> {
-//         let keyboard_event = (modifiers, key);
-
-//         if let Some(key_map) = self.context_bindings.get(&input_context) {
-//             if let Some(action) = key_map.get(&keyboard_event) {
-//                 return Some(*action);
-//             } else if let Some(global_keybinds) =
-//                 self.context_bindings.get(&InputContext::Global)
-//             {
-//                 if let Some(action) = global_keybinds.get(&keyboard_event) {
-//                     return Some(*action);
-//                 }
-//             }
-//         }
-//         None
-//     }
-// }
 
 impl KeyBindings {
     pub fn action(&self, key_code: KeyCode, input_context: InputContext) -> Option<Action> {
@@ -197,7 +167,7 @@ impl Default for KeyBindings {
                 KeyCode::F(9) => Action::WriteLogsOnDisk,
                 KeyCode::F(10) => Action::ClearLogsPanel,
                 KeyCode::F(12) => Action::ToggleLogsPanel,
-                KeyCode::F(1) => Action::OpenDeviceSelectionPopup,
+                KeyCode::F(1) => Action::RequestOpenDeviceSelectionPopup,
             ),
         );
 

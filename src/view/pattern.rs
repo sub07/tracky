@@ -34,7 +34,7 @@ where
         Self: Sized,
     {
         let [line_numbers_area, pattern_area] =
-            Layout::horizontal([Constraint::Length(3), Constraint::Percentage(100)])
+            Layout::horizontal([Constraint::Length(3), Constraint::Fill(1)])
                 .spacing(1)
                 .areas(area);
 
@@ -46,8 +46,8 @@ where
         let row_offset = (below_scroll_height as f32 * scroll_ratio) as usize;
 
         let [_, line_numbers_area] = Layout::vertical([
-            Constraint::Length(channel_title_area.bottom()),
-            Constraint::Percentage(100),
+            Constraint::Length(channel_title_area.height),
+            Constraint::Fill(1),
         ])
         .areas(line_numbers_area);
 

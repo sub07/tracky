@@ -1,9 +1,7 @@
-use std::{collections::HashMap, ops};
-
 use anyhow::Context;
 use cpal::{
     traits::{DeviceTrait, HostTrait},
-    HostId, SampleFormat, ALL_HOSTS,
+    SampleFormat, ALL_HOSTS,
 };
 use itertools::Itertools;
 

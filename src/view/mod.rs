@@ -1,6 +1,7 @@
 use pattern::PatternView;
 use ratatui::{
     layout::{Constraint, Layout, Rect},
+    style::Stylize,
     widgets::Widget,
     Frame,
 };
@@ -22,15 +23,25 @@ fn centered_rect(area: Rect, width: Constraint, height: Constraint) -> Rect {
     center
 }
 
-fn center_row(area: Rect) -> Rect {
-    let [_, center, _] = Layout::vertical([
-        Constraint::Fill(1),
-        Constraint::Length(1),
-        Constraint::Fill(1),
-    ])
-    .areas(area);
+fn responsive_centered_rect(
+    area: Rect,
+    prefered_width: Constraint,
+    min_width: Constraint,
+    max_width: Constraint,
+    height: Constraint,
+) -> Rect {
+    let area = clamp_layout_width(area, prefered_width, min_width, max_width);
+    centered_rows(area, height)
+}
 
-    center
+fn centered_line(area: Rect) -> Rect {
+    centered_rows(area, Constraint::Length(1))
+}
+
+fn centered_rows(area: Rect, height: Constraint) -> Rect {
+    let [_, height, _] =
+        Layout::vertical([Constraint::Fill(1), height, Constraint::Fill(1)]).areas(area);
+    height
 }
 
 fn clamp_layout_width(area: Rect, value: Constraint, min: Constraint, max: Constraint) -> Rect {
@@ -63,7 +74,23 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
         app.patterns.channel_count,
     );
 
-    pattern_view.render(area, buf);
+    let [header_area, pattern_area] =
+        Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
+
+    if let Some(device) = &app.selected_output_device {
+        format!("Listening on: {}", device.name).render(header_area, buf);
+    } else {
+        "No device selected".render(header_area, buf);
+    }
+
+    if app.loader_count > 0 {
+        "Loading..."
+            .underlined()
+            .into_right_aligned_line()
+            .render(header_area, buf);
+    }
+
+    pattern_view.render(pattern_area, buf);
 
     if let Some(popup) = &mut app.popup_state {
         match popup {

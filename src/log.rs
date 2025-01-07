@@ -4,7 +4,6 @@ use std::{
     ops::{Deref, DerefMut},
     path::Path,
     sync::Mutex,
-    usize,
 };
 
 use anyhow::{anyhow, Context};
