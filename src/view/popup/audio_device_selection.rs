@@ -1,215 +1,187 @@
-use cpal::HostId;
+use std::sync::mpsc::Sender;
+
 use itertools::Itertools;
-use joy_impl_ignore::eq::PartialEqImplIgnore;
 use ratatui::{
     buffer::Buffer,
-    layout::{Alignment, Constraint, Flex, Layout, Rect},
-    prelude::Style,
-    style::{Color, Stylize},
+    layout::{Constraint, Layout, Rect},
+    style::{Color, Style, Stylize},
+    text::{Line, ToLine},
     widgets::{
-        block::{Position, Title},
         Block, BorderType, Clear, HighlightSpacing, List, ListState, StatefulWidget, Widget,
     },
 };
 
 use crate::{
-    audio::device::{Device, Devices},
+    audio::device::{Device, Hosts},
+    event::Event,
     keybindings::Action,
     model::Direction,
-    view::{center_row, centered_rect},
+    view::{centered_line, responsive_centered_rect},
 };
 
-enum ListId {
+pub enum Popup {
+    NoHost,
+    SelectedHost(SelectedHostState),
+}
+
+impl From<Hosts> for Popup {
+    fn from(value: Hosts) -> Self {
+        if value.0.is_empty() {
+            Popup::NoHost
+        } else {
+            Popup::SelectedHost(SelectedHostState::new(value))
+        }
+    }
+}
+
+pub enum PopupEvent {
+    ClosePopup,
+    Move(Direction),
+    Select,
+}
+
+enum Panel {
     Host,
     Device,
 }
 
-pub struct AudioDeviceSelectionPopup {
-    host_list_state: ListState,
+pub struct SelectedHostState {
+    hosts_name: Vec<String>,
+    selected_host_index: usize,
+    devices: Vec<Device>,
+    cache: Hosts,
     device_list_state: ListState,
-    devices: Devices,
-    selected_list: ListId,
+    host_panel_width: u16,
+    device_panel_width: u16,
+    popup_width: u16,
+    selected_panel: Panel,
 }
 
-impl Default for AudioDeviceSelectionPopup {
-    fn default() -> Self {
-        Self {
-            host_list_state: ListState::default().with_selected(Some(0)),
-            device_list_state: ListState::default().with_selected(Some(0)),
-            devices: Devices::load(),
-            selected_list: ListId::Device,
-        }
-    }
-}
-
-impl AudioDeviceSelectionPopup {
-    const LIST_GAP: u16 = 1;
-    const LIST_SPACING: u16 = 1;
-    const NO_HOST_LABEL: &str = "No available host";
-    const NO_HOST_LABEL_LEN: u16 = Self::NO_HOST_LABEL.len() as u16;
-    const NO_DEVICE_LABEL: &str = "No available device from this host";
-    const NO_DEVICE_LABEL_LEN: u16 = Self::NO_DEVICE_LABEL.len() as u16;
+impl SelectedHostState {
     const LIST_SELECTION_SYMBOL: &str = "\u{2B9E} "; // ⮞
     const LIST_SELECTION_SYMBOL_LEN: u16 = Self::LIST_SELECTION_SYMBOL.len() as u16;
-    const UNSELECTED_HIGHLIGHT_STYLE: Style = Style::new().fg(Color::White).bg(Color::Black);
-    const SELECTED_HIGHLIGHT_STYLE: Style = Style::new().fg(Color::Black).bg(Color::White);
+
     const HOST_LIST_TITLE: &str = "Hosts";
     const DEVICE_LIST_TITLE: &str = "Devices";
     const LIST_TITLE_HEIGHT: u16 = 2;
+
+    const LIST_SPACING: u16 = 1;
+    const INTER_LIST_GAP: u16 = 1;
+
     const KEYBINDINGS_LABEL: &str = " <Tab> Shift - <Esc> Cancel - <Enter> Confirm ";
-    const KEYBINDINGS_LABEL_LEN: u16 = Self::KEYBINDINGS_LABEL.len() as u16;
 
-    fn get_current_host_devices(&self) -> Option<&[Device]> {
-        self.host_list_state
-            .selected()
-            .and_then(|list_index| {
-                self.devices
-                    .hosts()
-                    .nth(list_index.clamp(0, self.devices.host_count() - 1))
-            })
-            .and_then(|host_id| self.devices.devices(&host_id))
-    }
+    const UNSELECTED_HIGHLIGHT_STYLE: Style = Style::new().fg(Color::White).bg(Color::Black);
+    const SELECTED_HIGHLIGHT_STYLE: Style = Style::new().fg(Color::Black).bg(Color::White);
 
-    fn selected_device(&self) -> Option<Device> {
-        self.device_list_state.selected().and_then(|list_index| {
-            self.get_current_host_devices()
-                .and_then(|devices| devices.get(list_index.clamp(0, devices.len() - 1)).cloned())
-        })
-    }
+    pub fn new(cache: Hosts) -> Self {
+        let hosts_name = cache.0.iter().map(|host| host.name.clone()).collect_vec();
 
-    fn hosts_names(&self) -> Vec<&'static str> {
-        self.devices.hosts().map(|id| id.name()).collect_vec()
-    }
-
-    fn devices_names(&self) -> Vec<String> {
-        self.get_current_host_devices()
-            .map(|devices| {
-                devices
-                    .iter()
-                    .map(|Device(name, _)| name.clone())
-                    .collect_vec()
-            })
-            .unwrap_or_default()
-    }
-
-    fn popup_widths(&self) -> (u16, u16, u16) {
-        let host_list_width = self
-            .devices
-            .hosts()
-            .map(|id: HostId| id.name().len() as u16)
+        let host_panel_width = hosts_name
+            .iter()
+            .map(String::len)
             .max()
-            .map(|max| max + Self::LIST_SELECTION_SYMBOL_LEN)
-            .unwrap_or(Self::NO_HOST_LABEL_LEN);
+            .map(|width| width as u16 + SelectedHostState::LIST_SELECTION_SYMBOL_LEN)
+            .unwrap()
+            .max(const { Self::HOST_LIST_TITLE.len() as u16 });
 
-        let device_list_width = self
-            .get_current_host_devices()
-            .and_then(|devices| {
-                devices
-                    .iter()
-                    .map(|Device(name, _)| name.len() as u16)
-                    .max()
-                    .map(|max| max + Self::LIST_SELECTION_SYMBOL_LEN)
-            })
-            .unwrap_or(Self::NO_DEVICE_LABEL_LEN);
+        let selected_panel = if hosts_name.len() == 1 {
+            Panel::Device
+        } else {
+            Panel::Host
+        };
 
-        let inner_width = u16::max(
+        let device_list_state = ListState::default().with_selected(Some(0));
+
+        let mut state = Self {
+            hosts_name,
+            selected_host_index: 0,
+            devices: Vec::new(),
+            cache,
+            device_list_state,
+            host_panel_width,
+            device_panel_width: 0,
+            popup_width: 0,
+            selected_panel,
+        };
+        state.load_device_from_selected_host();
+
+        state
+    }
+
+    fn move_cursor(&mut self, direction: Direction) {
+        match (direction.vector(), &self.selected_panel) {
+            ((0, d), Panel::Host) => {
+                let mut selected_host_index = self.selected_host_index as i32;
+                selected_host_index += d;
+                selected_host_index = selected_host_index.rem_euclid(self.hosts_name.len() as i32);
+                self.selected_host_index = selected_host_index as usize;
+                self.load_device_from_selected_host();
+            }
+            ((0, d), Panel::Device) => {
+                let mut selected_device_index = self.device_list_state.selected().unwrap() as i32;
+                selected_device_index += d;
+                selected_device_index = selected_device_index.rem_euclid(self.devices.len() as i32);
+                self.device_list_state
+                    .select(Some(selected_device_index as usize));
+            }
+            ((_, 0), _) => {
+                self.selected_panel = if matches!(self.selected_panel, Panel::Device) {
+                    Panel::Host
+                } else {
+                    Panel::Device
+                };
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    fn load_device_from_selected_host(&mut self) {
+        self.devices = self.cache.0[self.selected_host_index].devices.clone();
+
+        self.device_panel_width = self
+            .devices
+            .iter()
+            .map(|device| device.name.len())
+            .max()
+            .map(|width| width as u16 + Self::LIST_SELECTION_SYMBOL_LEN)
+            .unwrap()
+            .max(const { Self::DEVICE_LIST_TITLE.len() as u16 });
+
+        const BORDER_SIDES: u16 = 2;
+        self.popup_width = u16::max(
             Self::LIST_SPACING
-                + host_list_width
+                + self.host_panel_width
                 + Self::LIST_SPACING
-                + Self::LIST_GAP
+                + Self::INTER_LIST_GAP
                 + Self::LIST_SPACING
-                + device_list_width
+                + self.device_panel_width
                 + Self::LIST_SPACING,
-            Self::KEYBINDINGS_LABEL_LEN,
-        );
-
-        (
-            // | *----   *---- |
-            1 + inner_width + 1,
-            host_list_width,
-            device_list_width,
-        )
+            const { Self::KEYBINDINGS_LABEL.len() as u16 } + 2,
+        ) + BORDER_SIDES;
     }
 
-    pub fn render_host_list(&mut self, highlight_style: Style, area: Rect, buf: &mut Buffer) {
-        let [title_area, area] = Layout::vertical([
-            Constraint::Length(Self::LIST_TITLE_HEIGHT),
-            Constraint::Fill(1),
-        ])
-        .areas(area);
-
-        Self::HOST_LIST_TITLE
-            .underlined()
-            .into_centered_line()
-            .render(title_area, buf);
-
-        let hosts_names = self.hosts_names();
-
-        if hosts_names.is_empty() {
-            Self::NO_HOST_LABEL
-                .dark_gray()
-                .into_centered_line()
-                .render(center_row(area), buf);
-        } else {
-            StatefulWidget::render(
-                List::new(hosts_names)
-                    .highlight_spacing(HighlightSpacing::Always)
-                    .highlight_symbol(Self::LIST_SELECTION_SYMBOL)
-                    .highlight_style(highlight_style),
-                area,
-                buf,
-                &mut self.host_list_state,
-            );
-        }
+    fn selected_device(&self) -> Device {
+        self.devices[self.device_list_state.selected().unwrap()].clone()
     }
+}
 
-    pub fn render_device_list(&mut self, highlight_style: Style, area: Rect, buf: &mut Buffer) {
-        let [title_area, area] = Layout::vertical([
-            Constraint::Length(Self::LIST_TITLE_HEIGHT),
-            Constraint::Fill(1),
-        ])
-        .areas(area);
+impl Popup {
+    const NO_HOST_LABEL: &str = "There is no availble host on this device";
+    const POPUP_TITLE: &str = " Device selection";
 
-        Self::DEVICE_LIST_TITLE
-            .underlined()
-            .into_centered_line()
-            .render(title_area, buf);
+    fn render_simple_message(&self, area: Rect, buf: &mut Buffer, message: &str) {
+        let message_len = message.len() as u16;
 
-        let devices_names = self.devices_names();
-
-        if devices_names.is_empty() {
-            Self::NO_DEVICE_LABEL
-                .dark_gray()
-                .into_centered_line()
-                .render(center_row(area), buf);
-        } else {
-            StatefulWidget::render(
-                List::new(devices_names)
-                    .highlight_spacing(HighlightSpacing::Always)
-                    .highlight_symbol(Self::LIST_SELECTION_SYMBOL)
-                    .highlight_style(highlight_style),
-                area,
-                buf,
-                &mut self.device_list_state,
-            );
-        }
-    }
-
-    pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let (popup_width, host_list_width, device_list_width) = self.popup_widths();
-        let area = centered_rect(
+        let area = responsive_centered_rect(
             area,
-            Constraint::Min(popup_width),
-            Constraint::Percentage(50),
+            Constraint::Percentage(60),
+            Constraint::Min(message_len + 4),
+            Constraint::Percentage(60),
+            Constraint::Percentage(60),
         );
         let block = Block::bordered()
             .border_type(BorderType::Rounded)
-            .title(Title::from(" Device selection ").alignment(Alignment::Left))
-            .title(
-                Title::from(Self::KEYBINDINGS_LABEL)
-                    .position(Position::Bottom)
-                    .alignment(Alignment::Right),
-            );
+            .title_top(Self::POPUP_TITLE);
 
         let area = {
             let inner = block.inner(area);
@@ -218,60 +190,144 @@ impl AudioDeviceSelectionPopup {
             inner
         };
 
-        let [host_list_area, _, device_list_area] = Layout::horizontal([
-            Constraint::Min(host_list_width),
-            Constraint::Length(Self::LIST_GAP),
-            Constraint::Min(device_list_width),
-        ])
-        .spacing(Self::LIST_SPACING)
-        .flex(Flex::SpaceAround)
-        .areas(area);
+        let message_area = centered_line(area);
 
-        let (host_list_highlight_style, device_list_highlight_style) = match self.selected_list {
-            ListId::Host => (
-                Self::SELECTED_HIGHLIGHT_STYLE,
-                Self::UNSELECTED_HIGHLIGHT_STYLE,
-            ),
-            ListId::Device => (
-                Self::UNSELECTED_HIGHLIGHT_STYLE,
-                Self::SELECTED_HIGHLIGHT_STYLE,
-            ),
-        };
-
-        self.render_host_list(host_list_highlight_style, host_list_area, buf);
-        self.render_device_list(device_list_highlight_style, device_list_area, buf);
+        message.to_line().centered().render(message_area, buf);
     }
 
-    pub fn handle_action(&mut self, action: Action, consumed: &mut bool) -> Option<Action> {
-        match action {
-            Action::Move(direction, _) => match direction {
-                Direction::Up => match self.selected_list {
-                    ListId::Host => self.host_list_state.select_previous(),
-                    ListId::Device => self.device_list_state.select_previous(),
-                },
-                Direction::Down => match self.selected_list {
-                    ListId::Host => self.host_list_state.select_next(),
-                    ListId::Device => self.device_list_state.select_next(),
-                },
-                _ => {
-                    self.selected_list = match self.selected_list {
-                        ListId::Host => ListId::Device,
-                        ListId::Device => ListId::Host,
-                    }
-                }
+    pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        match self {
+            Popup::NoHost => self.render_simple_message(area, buf, Self::NO_HOST_LABEL),
+            Popup::SelectedHost(SelectedHostState {
+                hosts_name,
+                selected_host_index,
+                devices,
+                device_list_state,
+                cache: _,
+                host_panel_width,
+                device_panel_width,
+                popup_width,
+                selected_panel,
+            }) => {
+                let area = responsive_centered_rect(
+                    area,
+                    Constraint::Percentage(50),
+                    Constraint::Min(*popup_width),
+                    Constraint::Max(*popup_width * 2),
+                    Constraint::Percentage(60),
+                );
+
+                let block = Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .title_top(Self::POPUP_TITLE)
+                    .title_bottom(Line::from(SelectedHostState::KEYBINDINGS_LABEL).right_aligned());
+
+                let area = {
+                    let inner = block.inner(area);
+                    Clear.render(area, buf);
+                    block.render(area, buf);
+                    inner
+                };
+
+                let [host_panel_area, _, device_panel_area] = Layout::horizontal([
+                    Constraint::Min(*host_panel_width),
+                    Constraint::Length(SelectedHostState::INTER_LIST_GAP),
+                    Constraint::Min(*device_panel_width),
+                ])
+                .spacing(SelectedHostState::LIST_SPACING)
+                .areas(area);
+
+                let (host_list_highlight_style, device_list_highlight_style) = match selected_panel
+                {
+                    Panel::Host => (
+                        SelectedHostState::SELECTED_HIGHLIGHT_STYLE,
+                        SelectedHostState::UNSELECTED_HIGHLIGHT_STYLE,
+                    ),
+                    Panel::Device => (
+                        SelectedHostState::UNSELECTED_HIGHLIGHT_STYLE,
+                        SelectedHostState::SELECTED_HIGHLIGHT_STYLE,
+                    ),
+                };
+
+                let [host_title_area, host_item_list_area] = Layout::vertical([
+                    Constraint::Length(SelectedHostState::LIST_TITLE_HEIGHT),
+                    Constraint::Fill(1),
+                ])
+                .areas(host_panel_area);
+
+                SelectedHostState::HOST_LIST_TITLE
+                    .underlined()
+                    .into_centered_line()
+                    .render(host_title_area, buf);
+
+                StatefulWidget::render(
+                    List::new(hosts_name.clone())
+                        .highlight_spacing(HighlightSpacing::Always)
+                        .highlight_symbol(SelectedHostState::LIST_SELECTION_SYMBOL)
+                        .highlight_style(host_list_highlight_style),
+                    host_item_list_area,
+                    buf,
+                    &mut ListState::default().with_selected(Some(*selected_host_index)),
+                );
+
+                let [device_title_area, device_item_list_area] = Layout::vertical([
+                    Constraint::Length(SelectedHostState::LIST_TITLE_HEIGHT),
+                    Constraint::Fill(1),
+                ])
+                .areas(device_panel_area);
+
+                SelectedHostState::DEVICE_LIST_TITLE
+                    .underlined()
+                    .into_centered_line()
+                    .render(device_title_area, buf);
+
+                let devices_name = devices.iter().map(|device| device.name.clone());
+
+                StatefulWidget::render(
+                    List::new(devices_name)
+                        .highlight_spacing(HighlightSpacing::Always)
+                        .highlight_symbol(SelectedHostState::LIST_SELECTION_SYMBOL)
+                        .highlight_style(device_list_highlight_style),
+                    device_item_list_area,
+                    buf,
+                    device_list_state,
+                );
+            }
+        }
+    }
+
+    pub fn map_event(&self, event: &Event) -> Option<PopupEvent> {
+        match event {
+            crate::event::Event::Action(action) => match action {
+                Action::Cancel => Some(PopupEvent::ClosePopup),
+                Action::Move(direction, _) => Some(PopupEvent::Move(*direction)),
+                Action::Confirm => Some(PopupEvent::Select),
+                _ => None,
             },
-            Action::Confirm => {
-                if let Some(selected_device) = self.selected_device() {
-                    let selected_device: PartialEqImplIgnore<Device> = selected_device.into();
-                    return Some(Action::Composite(vec![
-                        Action::SetPlayingDevice(selected_device.into()),
-                        Action::ClosePopup,
-                    ]));
+            _ => None,
+        }
+    }
+
+    pub fn handle_event(&mut self, event: PopupEvent, event_tx: Sender<Event>) {
+        match event {
+            PopupEvent::ClosePopup => event_tx.send(Event::ClosePopup).unwrap(),
+            PopupEvent::Move(direction) => {
+                if let Popup::SelectedHost(selected_host_state) = self {
+                    selected_host_state.move_cursor(direction);
                 }
             }
-            Action::Cancel => return Some(Action::ClosePopup),
-            _ => *consumed = false,
+            PopupEvent::Select => {
+                if let Popup::SelectedHost(state) = self {
+                    if matches!(state.selected_panel, Panel::Device) {
+                        event_tx
+                            .send(Event::Composite(vec![
+                                Event::ClosePopup,
+                                Event::SetPlayingDevice(state.selected_device()),
+                            ]))
+                            .unwrap();
+                    }
+                }
+            }
         }
-        None
     }
 }

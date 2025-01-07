@@ -16,7 +16,6 @@ joy-vector = { git = "https://github.com/sub07/rust-utils", version = "0.1.8", f
     "math",
 ] }
 joy-iter = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
-joy-impl-ignore = { git = "https://github.com/sub07/rust-utils", version = "0.1.1" }
 joy-error = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
 anyhow = "1"
 itertools = "*"
