@@ -1,17 +1,21 @@
-use audio_device_selection::AudioDeviceSelectionPopup;
-
-use crate::keybindings::Action;
+use crate::{event::Event, keybindings::Action};
 
 pub mod audio_device_selection;
 
 pub enum Popup {
-    AudioDeviceSelection(AudioDeviceSelectionPopup),
+    AudioDeviceSelection(audio_device_selection::Popup),
 }
 
 impl Popup {
-    pub fn handle_action(&mut self, action: Action, consumed: &mut bool) -> Option<Action> {
+    pub fn handle_event(&mut self, event: Event) -> Option<Event> {
         match self {
-            Popup::AudioDeviceSelection(popup) => popup.handle_action(action, consumed),
+            Popup::AudioDeviceSelection(popup) => {
+                if let Some(event) = popup.map_event(&event) {
+                    popup.handle_event(event)
+                } else {
+                    Some(event)
+                }
+            }
         }
     }
 }

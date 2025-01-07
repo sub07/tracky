@@ -48,25 +48,30 @@ impl Hosts {
             ALL_HOSTS
                 .iter()
                 .filter_map(|host_id| {
-                    cpal::host_from_id(*host_id).ok().and_then(|host| {
-                        host.output_devices()
-                            .map(|devices| Host {
-                                name: host.id().name().to_owned(),
-                                devices: devices
-                                    .filter(|device| {
-                                        device.default_output_config().is_ok_and(|config| {
-                                            config.channels() == 2
-                                                && config.sample_format() == SampleFormat::F32
+                    cpal::host_from_id(*host_id)
+                        .ok()
+                        .and_then(|host| {
+                            host.output_devices()
+                                .map(|devices| Host {
+                                    name: host.id().name().to_owned(),
+                                    devices: devices
+                                        .filter(|device| {
+                                            // We take default config for now, only stereo devices that uses f32
+                                            device.default_output_config().is_ok_and(|config| {
+                                                config.channels() == 2
+                                                    && config.sample_format() == SampleFormat::F32
+                                            })
                                         })
-                                    })
-                                    .map(|device| Device {
-                                        name: map_device_name(&device),
-                                        inner: device,
-                                    })
-                                    .collect_vec(),
-                            })
-                            .ok()
-                    })
+                                        .map(|device| Device {
+                                            name: map_device_name(&device),
+                                            inner: device,
+                                        })
+                                        .collect_vec(),
+                                })
+                                .ok()
+                        })
+                        // We filter out hosts with no device
+                        .filter(|host| !host.devices.is_empty())
                 })
                 .collect(),
         )

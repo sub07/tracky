@@ -1,28 +1,26 @@
-use std::sync::mpsc::Sender;
+use std::{
+    sync::mpsc::{channel, Sender},
+    thread,
+    time::Duration,
+};
 
 use crate::{
-    event::Event,
+    audio::Hosts,
+    event::{AsyncEvent, Event},
     keybindings::Action,
     log::{clear_entries, write_logs_to_file},
     tracky::Tracky,
-    view::popup::Popup,
+    view::popup::{self, Popup},
 };
+use cpal::Devices;
 use joy_impl_ignore::{debug::DebugImplIgnore, eq::PartialEqImplIgnore};
 use log::error;
 
 pub fn handle_action(
-    mut action: Action,
+    action: Action,
     app: &mut Tracky,
     event_tx: Sender<Event>,
 ) -> anyhow::Result<()> {
-    if let Some(ref mut popup) = app.popup_state {
-        let mut is_action_consumed = true;
-        if let Some(popup_action) = popup.handle_action(action.clone(), &mut is_action_consumed) {
-            action = popup_action;
-        } else if is_action_consumed {
-            return Ok(());
-        }
-    }
     match action {
         Action::Note {
             note_name,
@@ -51,13 +49,17 @@ pub fn handle_action(
         }
         Action::Cancel | Action::Confirm => {}
         Action::ClosePopup => app.close_popup(),
-        Action::Composite(actions) => {
-            for action in actions.into_iter() {
-                handle_action(action, app, event_tx.clone())?;
-            }
-        }
         Action::OpenDeviceSelectionPopup => {
-            app.popup_state = Some(Popup::AudioDeviceSelection(Default::default()))
+            let (devices_tx, devices_rx) = channel();
+            app.popup_state = Some(Popup::AudioDeviceSelection(
+                popup::audio_device_selection::Popup::Loading(devices_rx),
+            ));
+            thread::spawn(move || {
+                devices_tx.send(Hosts::load()).unwrap();
+                event_tx
+                    .send(Event::Async(AsyncEvent::LoadingDone))
+                    .unwrap();
+            });
         }
     }
 

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::mpsc::Receiver};
 
 use cpal::HostId;
 use itertools::Itertools;
@@ -6,57 +6,34 @@ use joy_impl_ignore::eq::PartialEqImplIgnore;
 use log::{debug, info};
 use ratatui::{
     buffer::Buffer,
-    layout::{Alignment, Constraint, Flex, Layout, Rect},
-    prelude::Style,
-    style::{Color, Stylize},
-    text::Line,
-    widgets::{
-        block::{Position, Title},
-        Block, BorderType, Clear, HighlightSpacing, List, ListState, StatefulWidget, Widget,
-    },
+    layout::{Constraint, Layout, Rect},
+    style::{Color, Style, Stylize},
+    text::{Line, ToLine},
+    widgets::{Block, BorderType, Clear, ListState, Widget},
 };
 
 use crate::{
     audio::device::{self, Device, Host, Hosts},
+    event::AsyncEvent,
     keybindings::Action,
+    log::DebugLogExt,
     model::Direction,
-    view::{center_row, centered_rect},
+    view::{center_row, centered_rect, clamp_layout_width},
 };
 
-pub struct AudioDeviceSelectionPopup {
-    view_state: ViewState,
-}
-
-impl Default for AudioDeviceSelectionPopup {
-    fn default() -> Self {
-        let Hosts(mut hosts) = Hosts::load();
-        let view_state = if hosts.is_empty() {
-            ViewState::NoHost
-        } else if hosts.iter().all(|host| host.devices.is_empty()) {
-            ViewState::NoDeviceInHosts {
-                host_names: hosts.into_iter().map(|host| host.name).collect(),
-            }
-        } else {
-            hosts.sort_by(|h1, h2| h2.devices.len().cmp(&h1.devices.len()));
-            ViewState::DevicesPresent(DevicePresentState::new(
-                ListState::default().with_selected(Some(0)),
-                ListState::default().with_selected(Some(0)),
-                hosts
-                    .into_iter()
-                    .filter(|host| !host.devices.is_empty())
-                    .map(|host| (host.name, host.devices))
-                    .collect(),
-                Panel::Host,
-            ))
-        };
-        Self { view_state }
-    }
-}
-
-enum ViewState {
+pub enum Popup {
+    Loading(Receiver<Hosts>),
     NoHost,
-    NoDeviceInHosts { host_names: Vec<String> },
-    DevicesPresent(DevicePresentState),
+    SelectedHost {
+        hosts_name: Vec<String>,
+        selected_host_index: usize,
+        devices_name: Vec<String>,
+    },
+}
+
+pub enum Event {
+    DataLoaded(Hosts),
+    ClosePopup,
 }
 
 struct DevicePresentState {
@@ -145,153 +122,191 @@ enum Panel {
     Device,
 }
 
-impl AudioDeviceSelectionPopup {
-    const NO_HOST_LABEL: &str = "No available host";
+impl Popup {
+    const NO_HOST_LABEL: &str = "There is no availble host on this device";
+    const LOADING_LABEL: &str = "Loading...";
 
-    // pub fn render_host_list(&mut self, highlight_style: Style, area: Rect, buf: &mut Buffer) {
-    //
-    // }
+    fn render_simple_message(&self, area: Rect, buf: &mut Buffer, message: &str) {
+        let area = {
+            let message_len = message.len() as u16;
+            let area = clamp_layout_width(
+                area,
+                Constraint::Percentage(60),
+                Constraint::Min(message_len + 4),
+                Constraint::Max(message_len * 3),
+            );
 
-    // pub fn render_device_list(&mut self, highlight_style: Style, area: Rect, buf: &mut Buffer) {
-    //
-    // }
+            let [_, area, _] = Layout::vertical([
+                Constraint::Fill(1),
+                Constraint::Percentage(60),
+                Constraint::Fill(1),
+            ])
+            .areas(area);
+            area
+        };
+        let block = Block::bordered()
+            .border_type(BorderType::Rounded)
+            .title_top(" Device selection");
+
+        let area = {
+            let inner = block.inner(area);
+            Clear.render(area, buf);
+            block.render(area, buf);
+            inner
+        };
+
+        let message_area = center_row(area);
+
+        message
+            .underlined()
+            .into_centered_line()
+            .render(message_area, buf);
+    }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        match self.view_state {
-            ViewState::NoHost => todo!(),
-            ViewState::NoDeviceInHosts { ref host_names } => todo!(),
-            ViewState::DevicesPresent(ref mut state) => {
-                let mut device_panel_width = 0;
-                let popup_width = state.popup_width(&mut device_panel_width);
+        match self {
+            Popup::Loading(_) => self.render_simple_message(area, buf, Self::LOADING_LABEL),
+            Popup::NoHost => self.render_simple_message(area, buf, Self::NO_HOST_LABEL),
+            Popup::SelectedHost {
+                hosts_name,
+                selected_host_index,
+                devices_name,
+            } => todo!(),
+        }
+        // match self.view_state {
+        //     ViewState::NoHost => todo!(),
+        //     ViewState::NoDeviceInHosts { ref host_names } => todo!(),
+        //     ViewState::DevicesPresent(ref mut state) => {
+        //         let mut device_panel_width = 0;
+        //         let popup_width = state.popup_width(&mut device_panel_width);
 
-                let area = centered_rect(
-                    area,
-                    Constraint::Min(popup_width),
-                    Constraint::Percentage(50),
-                );
+        //         let area = centered_rect(
+        //             area,
+        //             Constraint::Min(popup_width),
+        //             Constraint::Percentage(50),
+        //         );
 
-                let block = Block::bordered()
-                    .border_type(BorderType::Rounded)
-                    .title_top("Device selection")
-                    .title_bottom(
-                        Line::from(DevicePresentState::KEYBINDINGS_LABEL).right_aligned(),
-                    );
+        //         let block = Block::bordered()
+        //             .border_type(BorderType::Rounded)
+        //             .title_top("Device selection")
+        //             .title_bottom(
+        //                 Line::from(DevicePresentState::KEYBINDINGS_LABEL).right_aligned(),
+        //             );
 
-                let inner_area = {
-                    let inner = block.inner(area);
-                    Clear.render(area, buf);
-                    block.render(area, buf);
-                    inner
-                };
+        //         let inner_area = {
+        //             let inner = block.inner(area);
+        //             Clear.render(area, buf);
+        //             block.render(area, buf);
+        //             inner
+        //         };
 
-                let [host_panel_area, _, device_panel_area, _] = Layout::horizontal([
-                    Constraint::Length(state.host_panel_width),
-                    Constraint::Length(1),
-                    Constraint::Length(device_panel_width),
-                    Constraint::Fill(1),
-                ])
-                .spacing(DevicePresentState::INTER_LIST_GAP)
-                .flex(Flex::SpaceAround)
-                .areas(inner_area);
+        //         let [host_panel_area, _, device_panel_area, _] = Layout::horizontal([
+        //             Constraint::Length(state.host_panel_width),
+        //             Constraint::Length(1),
+        //             Constraint::Length(device_panel_width),
+        //             Constraint::Fill(1),
+        //         ])
+        //         .spacing(DevicePresentState::INTER_LIST_GAP)
+        //         .flex(Flex::SpaceAround)
+        //         .areas(inner_area);
 
-                let (host_list_highlight_style, device_list_highlight_style) =
-                    match state.selected_panel {
-                        Panel::Host => (
-                            DevicePresentState::SELECTED_HIGHLIGHT_STYLE,
-                            DevicePresentState::UNSELECTED_HIGHLIGHT_STYLE,
-                        ),
-                        Panel::Device => (
-                            DevicePresentState::UNSELECTED_HIGHLIGHT_STYLE,
-                            DevicePresentState::SELECTED_HIGHLIGHT_STYLE,
-                        ),
-                    };
+        //         let (host_list_highlight_style, device_list_highlight_style) =
+        //             match state.selected_panel {
+        //                 Panel::Host => (
+        //                     DevicePresentState::SELECTED_HIGHLIGHT_STYLE,
+        //                     DevicePresentState::UNSELECTED_HIGHLIGHT_STYLE,
+        //                 ),
+        //                 Panel::Device => (
+        //                     DevicePresentState::UNSELECTED_HIGHLIGHT_STYLE,
+        //                     DevicePresentState::SELECTED_HIGHLIGHT_STYLE,
+        //                 ),
+        //             };
 
-                let [host_title_area, host_item_list_area] = Layout::vertical([
-                    Constraint::Length(DevicePresentState::LIST_TITLE_HEIGHT),
-                    Constraint::Fill(1),
-                ])
-                .areas(host_panel_area);
+        //         let [host_title_area, host_item_list_area] = Layout::vertical([
+        //             Constraint::Length(DevicePresentState::LIST_TITLE_HEIGHT),
+        //             Constraint::Fill(1),
+        //         ])
+        //         .areas(host_panel_area);
 
-                DevicePresentState::HOST_LIST_TITLE
-                    .underlined()
-                    .into_centered_line()
-                    .render(host_title_area, buf);
+        //         DevicePresentState::HOST_LIST_TITLE
+        //             .underlined()
+        //             .into_centered_line()
+        //             .render(host_title_area, buf);
 
-                let hosts_names = state.hosts_devices.keys().cloned();
+        //         let hosts_names = state.hosts_devices.keys().cloned();
 
-                StatefulWidget::render(
-                    List::new(hosts_names)
-                        .highlight_spacing(HighlightSpacing::Always)
-                        .highlight_symbol(DevicePresentState::LIST_SELECTION_SYMBOL)
-                        .highlight_style(host_list_highlight_style),
-                    host_item_list_area,
-                    buf,
-                    &mut state.host_list_state,
-                );
+        //         StatefulWidget::render(
+        //             List::new(hosts_names)
+        //                 .highlight_spacing(HighlightSpacing::Always)
+        //                 .highlight_symbol(DevicePresentState::LIST_SELECTION_SYMBOL)
+        //                 .highlight_style(host_list_highlight_style),
+        //             host_item_list_area,
+        //             buf,
+        //             &mut state.host_list_state,
+        //         );
 
-                let [device_title_area, device_item_list_area] = Layout::vertical([
-                    Constraint::Length(DevicePresentState::LIST_TITLE_HEIGHT),
-                    Constraint::Fill(1),
-                ])
-                .areas(area);
+        //         let [device_title_area, device_item_list_area] = Layout::vertical([
+        //             Constraint::Length(DevicePresentState::LIST_TITLE_HEIGHT),
+        //             Constraint::Fill(1),
+        //         ])
+        //         .areas(area);
 
-                DevicePresentState::DEVICE_LIST_TITLE
-                    .underlined()
-                    .into_centered_line()
-                    .render(device_title_area, buf);
-                
-                
+        //         DevicePresentState::DEVICE_LIST_TITLE
+        //             .underlined()
+        //             .into_centered_line()
+        //             .render(device_title_area, buf);
 
-                //     if devices_names.is_empty() {
-                //         Self::NO_DEVICE_LABEL
-                //             .dark_gray()
-                //             .into_centered_line()
-                //             .render(center_row(area), buf);
-                //     } else {
-                //         StatefulWidget::render(
-                //             List::new(devices_names)
-                //                 .highlight_spacing(HighlightSpacing::Always)
-                //                 .highlight_symbol(Self::LIST_SELECTION_SYMBOL)
-                //                 .highlight_style(highlight_style),
-                //             area,
-                //             buf,
-                //             &mut self.device_list_state,
-                //         );
-                //     }
-            }
+        //         //     if devices_names.is_empty() {
+        //         //         Self::NO_DEVICE_LABEL
+        //         //             .dark_gray()
+        //         //             .into_centered_line()
+        //         //             .render(center_row(area), buf);
+        //         //     } else {
+        //         //         StatefulWidget::render(
+        //         //             List::new(devices_names)
+        //         //                 .highlight_spacing(HighlightSpacing::Always)
+        //         //                 .highlight_symbol(Self::LIST_SELECTION_SYMBOL)
+        //         //                 .highlight_style(highlight_style),
+        //         //             area,
+        //         //             buf,
+        //         //             &mut self.device_list_state,
+        //         //         );
+        //         //     }
+        //     }
+        // }
+    }
+
+    pub fn map_event(&self, event: &crate::event::Event) -> Option<Event> {
+        match event {
+            crate::event::Event::App(action) => match action {
+                Action::Cancel => Some(Event::ClosePopup),
+                _ => None,
+            },
+            crate::event::Event::Async(async_event) => match async_event {
+                AsyncEvent::LoadingDone => match self {
+                    Popup::Loading(receiver) => {
+                        let hosts = receiver.recv().unwrap();
+                        Some(Event::DataLoaded(hosts))
+                    }
+                    _ => None,
+                },
+            },
+            _ => None,
         }
     }
 
-    pub fn handle_action(&mut self, action: Action, consumed: &mut bool) -> Option<Action> {
-        match action {
-            //     Action::Move(direction, _) => match direction {
-            //         Direction::Up => match self.selected_list {
-            //             Panel::Host => self.host_list_state.select_previous(),
-            //             Panel::Device => self.device_list_state.select_previous(),
-            //         },
-            //         Direction::Down => match self.selected_list {
-            //             Panel::Host => self.host_list_state.select_next(),
-            //             Panel::Device => self.device_list_state.select_next(),
-            //         },
-            //         _ => {
-            //             self.selected_list = match self.selected_list {
-            //                 Panel::Host => Panel::Device,
-            //                 Panel::Device => Panel::Host,
-            //             }
-            //         }
-            //     },
-            //     Action::Confirm => {
-            //         if let Some(selected_device) = self.selected_device() {
-            //             let selected_device: PartialEqImplIgnore<Device> = selected_device.into();
-            //             return Some(Action::Composite(vec![
-            //                 Action::SetPlayingDevice(selected_device.into()),
-            //                 Action::ClosePopup,
-            //             ]));
-            //         }
-            //     }
-            Action::Cancel => return Some(Action::ClosePopup),
-            _ => *consumed = false,
+    pub fn handle_event(&mut self, event: Event) -> Option<crate::event::Event> {
+        match event {
+            Event::DataLoaded(Hosts(hosts)) => {
+                info!("{hosts:?}");
+                if hosts.is_empty() {
+                    *self = Popup::NoHost;
+                } else {
+                    *self = Popup::SelectedHost { hosts_name: (), selected_host_index: (), devices_name: () }
+                }
+                None
+            }
+            Event::ClosePopup => Some(crate::event::Event::App(Action::ClosePopup)),
         }
-        None
     }
 }

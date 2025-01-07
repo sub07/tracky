@@ -33,6 +33,23 @@ fn center_row(area: Rect) -> Rect {
     center
 }
 
+fn clamp_layout_width(area: Rect, value: Constraint, min: Constraint, max: Constraint) -> Rect {
+    let [_, wanted_area, _] =
+        Layout::horizontal([Constraint::Fill(1), value, Constraint::Fill(1)]).areas(area);
+    let [_, min_area, _] =
+        Layout::horizontal([Constraint::Fill(1), min, Constraint::Fill(1)]).areas(area);
+    let [_, max_area, _] =
+        Layout::horizontal([Constraint::Fill(1), max, Constraint::Fill(1)]).areas(area);
+
+    if wanted_area.width > max_area.width {
+        max_area
+    } else if wanted_area.width < min_area.width {
+        min_area
+    } else {
+        wanted_area
+    }
+}
+
 pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
     let area = frame.area();
     let buf = frame.buffer_mut();

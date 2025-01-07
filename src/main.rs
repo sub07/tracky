@@ -55,7 +55,14 @@ fn main() -> anyhow::Result<()> {
             {
                 input_thread_event_tx.send(Event::Key(key_event)).unwrap();
             }
-            Ok(ratatui::crossterm::event::Event::Resize(w, h)) => info!("{w}x{h}"),
+            Ok(ratatui::crossterm::event::Event::Resize(w, h)) => {
+                input_thread_event_tx
+                    .send(Event::Resize {
+                        width: w,
+                        height: h,
+                    })
+                    .unwrap();
+            }
             Err(err) => input_thread_event_tx
                 .send(Event::Panic(err.into()))
                 .unwrap(),
@@ -65,7 +72,14 @@ fn main() -> anyhow::Result<()> {
 
     while app.running {
         tui.draw(&mut app)?;
-        let event = event_rx.recv()?;
+        let mut event = event_rx.recv()?;
+        if let Some(popup) = &mut app.popup_state {
+            if let Some(returned_event) = popup.handle_event(event) {
+                event = returned_event;
+            } else {
+                continue;
+            }
+        }
         match event {
             Event::Key(key_event) => {
                 if let Some(action) = app.keybindings.action(key_event.code, app.input_context()) {
@@ -80,6 +94,9 @@ fn main() -> anyhow::Result<()> {
             Event::Panic(error) => {
                 panic!("{error:?}");
             }
+            Event::Composite(vec) => todo!(),
+            Event::Resize { width, height } => info!("{width}x{height}"),
+            Event::Async(async_event) => todo!(),
         }
     }
 

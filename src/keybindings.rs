@@ -38,7 +38,6 @@ pub enum Action {
     OpenDeviceSelectionPopup,
     SetPlayingDevice(DebugImplIgnore<PartialEqImplIgnore<audio::device::Device>>),
     ExitApp,
-    Composite(Vec<Action>),
 }
 
 impl Action {
