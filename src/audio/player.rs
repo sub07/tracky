@@ -1,40 +1,27 @@
-use std::sync::mpsc::{Receiver, Sender};
+use std::{
+    f32::consts::PI,
+    sync::mpsc::{Receiver, Sender},
+    time::Duration,
+};
 
+use anyhow::bail;
 use builder_pattern::Builder;
 use cpal::{
     traits::{DeviceTrait, StreamTrait},
-    Device, SampleFormat, Stream,
+    Device, FromSample, Sample, SampleFormat, SizedSample, Stream, StreamConfig,
 };
 
 use joy_error::OptionToResultExt;
 use log::{error, info};
 
-pub trait Process<State, StateEvent, PlaybackEvent> {
-    fn frame_callback(
-        &self,
-        out: &mut [f32],
-        frame_rate: f32,
-        state: &mut State,
-        events: &[StateEvent],
-        playback_event: Sender<PlaybackEvent>,
-    );
-}
+use crate::{event::Event, keybindings::Action};
 
-impl<F, State, StateEvent, PlaybackEvent> Process<State, StateEvent, PlaybackEvent> for F
-where
-    F: Fn(&mut [f32], f32, &mut State, &[StateEvent], Sender<PlaybackEvent>),
-{
-    fn frame_callback(
-        &self,
-        out: &mut [f32],
-        frame_rate: f32,
-        state: &mut State,
-        state_events: &[StateEvent],
-        playback_event: Sender<PlaybackEvent>,
-    ) {
-        self(out, frame_rate, state, state_events, playback_event);
-    }
+pub struct SineState {
+    pub freq: f32,
+    pub phase: f32,
+    pub time_played: Duration,
 }
+pub type StateEvent = String;
 
 pub struct AudioPlayer {
     pub name: String,
@@ -44,42 +31,98 @@ pub struct AudioPlayer {
 
 #[rustfmt::skip]
 #[derive(Builder)]
-pub struct AudioPlayerBuilder<
-    State,
-    StateEvent,
-    PlaybackEvent,
-    P: Process<State, StateEvent, PlaybackEvent>
-> {
+pub struct AudioPlayerBuilder {
     #[into]
     #[default("Unnamed audio player".into())]
     pub name: String,
     #[default(None)]
     pub device: Option<crate::audio::Device>,
-    pub processor: P,
-    pub initial_state: State,
+    pub initial_state: SineState,
     pub state_event_rx: Receiver<StateEvent>,
-    pub playback_event_tx: Sender<PlaybackEvent>,
+    pub event_tx: Sender<Event>,
 }
 
-impl<State, StateEvent, PlaybackEvent, P> AudioPlayerBuilder<State, StateEvent, PlaybackEvent, P>
-where
-    State: Send + 'static,
-    StateEvent: Send + 'static,
-    PlaybackEvent: Send + 'static,
-    P: Process<State, StateEvent, PlaybackEvent> + Send + 'static,
-{
+impl AudioPlayerBuilder {
     pub fn into_player(self) -> anyhow::Result<AudioPlayer> {
         let device = self
             .device
             .unwrap_or_fallible(crate::audio::device::default_output)?;
 
-        let (stream, sample_rate) = create_stream(
-            device.inner,
-            self.processor,
-            self.initial_state,
-            self.state_event_rx,
-            self.playback_event_tx,
-        )?;
+        let config = device.inner.default_output_config()?;
+
+        let (stream, sample_rate) = match config.sample_format() {
+            SampleFormat::I8 => create_stream::<i8>(
+                device.inner,
+                config.into(),
+                self.initial_state,
+                self.state_event_rx,
+                self.event_tx,
+            )?,
+            SampleFormat::I16 => create_stream::<i16>(
+                device.inner,
+                config.into(),
+                self.initial_state,
+                self.state_event_rx,
+                self.event_tx,
+            )?,
+            SampleFormat::I32 => create_stream::<i32>(
+                device.inner,
+                config.into(),
+                self.initial_state,
+                self.state_event_rx,
+                self.event_tx,
+            )?,
+            SampleFormat::I64 => create_stream::<i64>(
+                device.inner,
+                config.into(),
+                self.initial_state,
+                self.state_event_rx,
+                self.event_tx,
+            )?,
+            SampleFormat::U8 => create_stream::<u8>(
+                device.inner,
+                config.into(),
+                self.initial_state,
+                self.state_event_rx,
+                self.event_tx,
+            )?,
+            SampleFormat::U16 => create_stream::<u16>(
+                device.inner,
+                config.into(),
+                self.initial_state,
+                self.state_event_rx,
+                self.event_tx,
+            )?,
+            SampleFormat::U32 => create_stream::<u32>(
+                device.inner,
+                config.into(),
+                self.initial_state,
+                self.state_event_rx,
+                self.event_tx,
+            )?,
+            SampleFormat::U64 => create_stream::<u64>(
+                device.inner,
+                config.into(),
+                self.initial_state,
+                self.state_event_rx,
+                self.event_tx,
+            )?,
+            SampleFormat::F32 => create_stream::<f32>(
+                device.inner,
+                config.into(),
+                self.initial_state,
+                self.state_event_rx,
+                self.event_tx,
+            )?,
+            SampleFormat::F64 => create_stream::<f64>(
+                device.inner,
+                config.into(),
+                self.initial_state,
+                self.state_event_rx,
+                self.event_tx,
+            )?,
+            sample_format => bail!("Unsupported sample format '{sample_format}'"),
+        };
 
         info!(
             "Audio player '{}' playing on {} at {}Hz",
@@ -96,39 +139,29 @@ where
     }
 }
 
-fn create_stream<State, StateEvent, PlaybackEvent, P>(
+fn create_stream<SampleType>(
     device: Device,
-    processor: P,
-    mut state: State,
+    config: StreamConfig,
+    mut state: SineState,
     state_event_rx: Receiver<StateEvent>,
-    playback_event_tx: Sender<PlaybackEvent>,
+    event_tx: Sender<Event>,
 ) -> anyhow::Result<(Stream, f32)>
 where
-    State: Send + 'static,
-    StateEvent: Send + 'static,
-    PlaybackEvent: Send + 'static,
-    P: Process<State, StateEvent, PlaybackEvent> + Send + 'static,
+    SampleType: SizedSample + FromSample<f32>,
 {
-    let config = device.default_output_config()?;
+    let sample_rate = config.sample_rate.0 as f32;
 
-    let sample_rate = config.sample_rate().0 as f32;
-
-    assert!(config.channels() == 2);
-    assert!(config.sample_format() == SampleFormat::F32);
-
-    let mut events = Vec::with_capacity(100);
+    assert!(config.channels == 2);
 
     let stream = device.build_output_stream(
-        &config.into(),
-        move |out: &mut [f32], _| {
-            events.clear();
-            events.extend(state_event_rx.try_iter());
-            processor.frame_callback(
+        &config,
+        move |out: &mut [SampleType], _| {
+            audio_callback(
                 out,
                 sample_rate,
                 &mut state,
-                events.as_slice(),
-                playback_event_tx.clone(),
+                &state_event_rx,
+                event_tx.clone(),
             );
         },
         |e| error!("Cannot start audio stream: {e:?}"),
@@ -138,4 +171,87 @@ where
     stream.play()?;
 
     Ok((stream, sample_rate))
+}
+
+fn audio_callback<SampleType>(
+    out: &mut [SampleType],
+    frame_rate: f32,
+    state: &mut SineState,
+    state_event_rx: &Receiver<StateEvent>,
+    event_tx: Sender<Event>,
+) where
+    SampleType: Sample + FromSample<f32>,
+{
+    while let Ok(state_event) = state_event_rx.try_recv() {
+        match state_event.as_str() {
+            "up" => state.freq += 20.0,
+            "down" => state.freq -= 20.0,
+            "done" => event_tx.send(Event::Action(Action::TogglePlay)).unwrap(),
+            _ => {}
+        }
+    }
+
+    let buffer_duration = Duration::from_secs_f32(out.len() as f32 / 2.0 / frame_rate);
+    state.time_played += buffer_duration;
+
+    if state.time_played > Duration::from_secs(3) {
+        event_tx.send(Event::Action(Action::TogglePlay)).unwrap();
+    }
+
+    for out in out.chunks_exact_mut(2) {
+        state.phase += 2.0 * PI * state.freq * (1.0 / frame_rate);
+        let s = state.phase.sin() * 0.1;
+        out[0] = SampleType::from_sample(s);
+        out[1] = out[0];
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::{thread, time::Duration};
+
+    use super::*;
+
+    #[test]
+    fn test_player() {
+        let (state_event_tx, state_event_rx) = std::sync::mpsc::channel();
+        let (playback_event_tx, event_rx) = std::sync::mpsc::channel();
+
+        let player = AudioPlayerBuilder::new()
+            .name("Test player")
+            .initial_state(SineState {
+                freq: 440.0,
+                phase: 0.0,
+                time_played: Duration::ZERO,
+            })
+            .state_event_rx(state_event_rx)
+            .event_tx(playback_event_tx)
+            .build()
+            .into_player()
+            .unwrap();
+
+        std::thread::spawn(move || {
+            thread::sleep(Duration::from_secs(1));
+            state_event_tx.send("up".to_string()).unwrap();
+            thread::sleep(Duration::from_secs_f32(0.5));
+            state_event_tx.send("up".to_string()).unwrap();
+            thread::sleep(Duration::from_secs_f32(0.5));
+            state_event_tx.send("up".to_string()).unwrap();
+            thread::sleep(Duration::from_secs(1));
+            state_event_tx.send("down".to_string()).unwrap();
+            thread::sleep(Duration::from_secs_f32(0.5));
+            state_event_tx.send("down".to_string()).unwrap();
+            thread::sleep(Duration::from_secs_f32(0.5));
+            state_event_tx.send("down".to_string()).unwrap();
+            thread::sleep(Duration::from_secs(1));
+            state_event_tx.send("done".to_string()).unwrap();
+        });
+
+        loop {
+            let event = event_rx.recv().unwrap();
+            if let Event::Action(Action::ExitApp) = event {
+                break;
+            }
+        }
+    }
 }

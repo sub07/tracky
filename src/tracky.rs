@@ -1,11 +1,21 @@
+use std::sync::mpsc::Sender;
+
 use crate::{
-    audio::Device,
+    audio::{
+        player::{AudioPlayer, StateEvent},
+        Device,
+    },
     keybindings::{InputContext, KeyBindings},
     model::pattern::Patterns,
     // service::playback::Playback,
     view::popup::Popup,
     DEBUG,
 };
+
+pub struct Playback {
+    pub player: AudioPlayer,
+    pub state_event_tx: Sender<StateEvent>,
+}
 
 pub struct Tracky {
     pub running: bool,
@@ -16,7 +26,7 @@ pub struct Tracky {
     pub popup_state: Option<Popup>,
     pub line_per_second: f32,
     pub loader_count: usize,
-    // pub playback_state: Option<Playback>,
+    pub playback_state: Option<Playback>,
 }
 
 impl Default for Tracky {
@@ -28,7 +38,7 @@ impl Default for Tracky {
             keybindings: Default::default(),
             selected_output_device: None,
             popup_state: None,
-            // playback_state: None,
+            playback_state: None,
             line_per_second: 16.0,
             loader_count: 0,
         }

@@ -2,6 +2,7 @@ use pattern::PatternView;
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::Stylize,
+    text::ToLine,
     widgets::Widget,
     Frame,
 };
@@ -78,10 +79,19 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
         Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
 
     if let Some(device) = &app.selected_output_device {
-        format!("Listening on: {}", device.name).render(header_area, buf);
+        format!("Device: {}", device).render(header_area, buf);
     } else {
-        "No device selected".render(header_area, buf);
+        "No device selected (will use default)".render(header_area, buf);
     }
+
+    if app.playback_state.is_some() {
+        "Playing..."
+    } else {
+        "Not playing"
+    }
+    .to_line()
+    .centered()
+    .render(header_area, buf);
 
     if app.loader_count > 0 {
         "Loading..."
