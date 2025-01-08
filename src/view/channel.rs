@@ -62,7 +62,7 @@ impl Widget for ChannelView<'_> {
             .areas(lines_area);
 
         for (line_index, line, area) in izip!(
-            (self.row_offset as i32..self.channel_len),
+            self.row_offset as i32..self.channel_len,
             lines,
             lines_area.rows(),
         ) {

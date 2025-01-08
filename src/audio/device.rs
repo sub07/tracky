@@ -3,12 +3,10 @@ use std::fmt::Display;
 use anyhow::Context;
 use cpal::{
     traits::{DeviceTrait, HostTrait},
-    BufferSize, FrameCount, SampleFormat, SampleRate, SupportedStreamConfig,
-    SupportedStreamConfigRange, ALL_HOSTS,
+    SampleRate, SupportedStreamConfig, SupportedStreamConfigRange, ALL_HOSTS,
 };
 use itertools::Itertools;
 use joy_error::ResultLogExt;
-use log::debug;
 
 #[derive(Debug)]
 pub struct Hosts(pub Vec<Host>);
@@ -50,10 +48,10 @@ fn map_device(device: cpal::Device) -> Option<Device> {
 }
 
 pub fn default_output() -> anyhow::Result<Device> {
-    Ok(cpal::default_host()
+    cpal::default_host()
         .default_output_device()
         .and_then(map_device)
-        .context("Could not get default output device")?)
+        .context("Could not get default output device")
 }
 
 pub fn find_first_valid_config(device: &cpal::Device) -> Option<SupportedStreamConfig> {
@@ -64,7 +62,7 @@ pub fn find_first_valid_config(device: &cpal::Device) -> Option<SupportedStreamC
     device
         .supported_output_configs()
         .log_ok()
-        .map(|mut configs| {
+        .and_then(|configs| {
             configs
                 .filter(|config| config.channels() == 2)
                 .map(|config| {
@@ -79,7 +77,6 @@ pub fn find_first_valid_config(device: &cpal::Device) -> Option<SupportedStreamC
                 })
                 .max_by_key(|(_, score)| *score)
         })
-        .flatten()
         .map(|(config, score)| {
             if score == 44100 {
                 config.with_sample_rate(SampleRate(44100))
