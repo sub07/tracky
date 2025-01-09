@@ -1,8 +1,9 @@
+use header::Header;
 use pattern::PatternView;
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::Stylize,
-    text::ToLine,
+    text::{Line, ToLine},
     widgets::Widget,
     Frame,
 };
@@ -10,6 +11,7 @@ use ratatui::{
 use crate::{log::render_log_panel, tracky::Tracky};
 
 pub mod channel;
+pub mod header;
 pub mod line;
 pub mod pattern;
 pub mod popup;
@@ -78,27 +80,26 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
     let [header_area, pattern_area] =
         Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
 
-    if let Some(device) = &app.selected_output_device {
-        format!("Device: {}", device).render(header_area, buf);
+    let device_text = Line::from(if let Some(device) = &app.selected_output_device {
+        format!("Device: {}", device)
     } else {
-        "No device selected (will use default)".render(header_area, buf);
-    }
+        "No device selected (will use default)".to_string()
+    });
 
-    if app.playback_state.is_some() {
+    let playing_state_text = Line::from(if app.playback_state.is_some() {
         "Playing..."
     } else {
         "Not playing"
-    }
-    .to_line()
-    .centered()
-    .render(header_area, buf);
+    });
 
-    if app.loader_count > 0 {
+    let loading_text = Line::from(if app.loader_count > 0 {
         "Loading..."
-            .underlined()
-            .into_right_aligned_line()
-            .render(header_area, buf);
-    }
+    } else {
+        ""
+    })
+    .underlined();
+
+    Header::new([device_text, playing_state_text, loading_text]).render(header_area, buf);
 
     pattern_view.render(pattern_area, buf);
 

@@ -215,7 +215,7 @@ pub struct Patterns {
 impl Default for Patterns {
     fn default() -> Self {
         let channel_count = 8;
-        let channel_len = 32;
+        let channel_len = 64;
         let pattern_count = 1;
         Patterns::new(channel_count, channel_len, pattern_count)
     }
