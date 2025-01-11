@@ -8,7 +8,7 @@ use ratatui::{
     widgets::Widget,
 };
 
-use crate::model::pattern::PatternLine;
+use crate::{log::DebugLogExt, model::pattern::PatternLine};
 
 use super::channel::ChannelView;
 
@@ -23,6 +23,24 @@ where
     current_field: i32,
     channel_len: i32,
     channel_count: i32,
+}
+
+fn compute_three_states_scrolling(
+    view_size: u16,
+    total_size: usize,
+    cursor_position: usize,
+) -> usize {
+    let half_height = (view_size as f32 / 2.0).round() as usize;
+    let scroll_lower_bound = half_height;
+    let scroll_upper_bound = total_size - half_height;
+
+    if cursor_position < scroll_lower_bound {
+        0
+    } else if cursor_position > scroll_upper_bound {
+        total_size - view_size as usize
+    } else {
+        scroll_lower_bound.abs_diff(cursor_position)
+    }
 }
 
 impl<'a, I> Widget for PatternView<'a, I>
@@ -40,18 +58,19 @@ where
 
         let [channel_title_area, channel_pattern_lines_area] = ChannelView::layout(area);
 
-        // TODO better vertical scroll
-        let scroll_ratio = self.current_row as f32 / (self.channel_len - 1) as f32;
-        let below_scroll_height = self.channel_len - channel_pattern_lines_area.height as i32;
-        let row_offset = (below_scroll_height as f32 * scroll_ratio) as usize;
-
         let [_, line_numbers_area] = Layout::vertical([
             Constraint::Length(channel_title_area.height),
             Constraint::Fill(1),
         ])
         .areas(line_numbers_area);
 
-        (row_offset..self.channel_len as usize)
+        let vertical_offset = compute_three_states_scrolling(
+            channel_pattern_lines_area.height,
+            self.channel_len as usize,
+            self.current_row as usize,
+        );
+
+        (vertical_offset..self.channel_len as usize)
             .map(|line_number| Line::raw(format!("{}", line_number)).right_aligned())
             .zip(line_numbers_area.rows())
             .for_each(|(line_widget, line_number_area)| line_widget.render(line_number_area, buf));
@@ -89,7 +108,7 @@ where
         ) {
             let channel_view = ChannelView::new(
                 channel,
-                row_offset,
+                vertical_offset,
                 channel_index,
                 self.current_row,
                 (self.current_channel == channel_index as i32).then_some(self.current_field),
