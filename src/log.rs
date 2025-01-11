@@ -1,6 +1,6 @@
 use std::{
-    fmt::Debug,
-    fs,
+    fmt::{Debug, Display},
+    fs, iter,
     ops::{Deref, DerefMut},
     path::Path,
     sync::Mutex,
@@ -12,14 +12,14 @@ use itertools::Itertools;
 use joy_macro::{EnumIter, EnumStr};
 use log::debug;
 use ratatui::{
-    layout::{Alignment, Constraint, Layout, Rect},
+    layout::{Constraint, Layout, Rect},
     style::{Color, Stylize},
-    text::{Line, Text},
-    widgets::{block::Title, Block, BorderType, Clear, Paragraph},
+    text::{Line, Text, ToLine},
+    widgets::{Block, BorderType, Clear, Paragraph},
     Frame,
 };
 
-#[derive(Clone, Copy, Debug, EnumStr, EnumIter)]
+#[derive(Clone, Copy, Debug, PartialEq, EnumStr, EnumIter)]
 enum LogLevel {
     Error,
     Warn,
@@ -27,14 +27,43 @@ enum LogLevel {
     Debug,
 }
 
-#[derive(Clone)]
-struct LogEntry {
+#[derive(Clone, PartialEq)]
+struct SingleLogEntry {
     content: String,
     level: LogLevel,
     line_count: usize,
 }
 
-#[derive(Default)]
+#[derive(Clone)]
+enum LogEntry {
+    Single(SingleLogEntry),
+    Multiple(usize, SingleLogEntry),
+}
+
+impl LogEntry {
+    fn inner(&self) -> &SingleLogEntry {
+        match self {
+            LogEntry::Single(single_log_entry) => single_log_entry,
+            LogEntry::Multiple(_, single_log_entry) => single_log_entry,
+        }
+    }
+
+    fn inner_mut(&mut self) -> &mut SingleLogEntry {
+        match self {
+            LogEntry::Single(single_log_entry) => single_log_entry,
+            LogEntry::Multiple(_, single_log_entry) => single_log_entry,
+        }
+    }
+
+    fn count(&self) -> Option<usize> {
+        match self {
+            LogEntry::Single(_) => None,
+            LogEntry::Multiple(count, _) => Some(*count),
+        }
+    }
+}
+
+#[derive(Default, Clone)]
 struct TerminalLogger {
     entries: Vec<LogEntry>,
 }
@@ -44,13 +73,21 @@ static TERMINAL_LOGGER: Mutex<TerminalLogger> = Mutex::new(TerminalLogger {
 });
 
 pub fn write_logs_to_file<P: AsRef<Path>>(path: P) -> anyhow::Result<()> {
-    let logs = read_entries(|logger| {
-        logger
-            .entries
-            .iter()
-            .map(|entry| format!("{:?} - {}", entry.level, entry.content))
-            .join("\n")
-    });
+    let logger = read_entries(|logger| logger.clone());
+    let logs = logger
+        .entries
+        .into_iter()
+        .map(|entry| match entry {
+            LogEntry::Single(single_log_entry) => {
+                Box::new(iter::once(single_log_entry)) as Box<dyn Iterator<Item = SingleLogEntry>>
+            }
+            LogEntry::Multiple(count, single_log_entry) => {
+                Box::new(iter::repeat_n(single_log_entry, count))
+            }
+        })
+        .flatten()
+        .map(|entry| format!("{:?} - {}", entry.level, entry.content))
+        .join("\n");
 
     fs::write(&path, logs).with_context(|| format!("{:?}", path.as_ref()))?;
     Ok(())
@@ -73,11 +110,25 @@ where
 fn add_entry(content: String, level: LogLevel) {
     let line_count = content.lines().count();
     alter_entries(|logger| {
-        logger.entries.push(LogEntry {
+        let single_entry = SingleLogEntry {
             content,
             level,
             line_count,
-        })
+        };
+        let entry_count = logger.entries.len();
+        match logger.entries.last() {
+            Some(LogEntry::Single(last_single_entry)) if last_single_entry == &single_entry => {
+                logger.entries[entry_count - 1] = LogEntry::Multiple(2, single_entry);
+            }
+            Some(LogEntry::Multiple(count, last_single_entry))
+                if last_single_entry == &single_entry =>
+            {
+                logger.entries[entry_count - 1] = LogEntry::Multiple(count + 1, single_entry);
+            }
+            _ => {
+                logger.entries.push(LogEntry::Single(single_entry));
+            }
+        }
     })
 }
 
@@ -97,12 +148,19 @@ pub fn clear_entries() {
     alter_entries(|logger| logger.entries.clear());
 }
 
+fn build_block_widget() -> Block<'static> {
+    Block::bordered()
+        .border_type(BorderType::Rounded)
+        .title_bottom(
+            " <F9> Save on Disk - <F10> Clear - <F12> Toggle "
+                .to_line()
+                .right_aligned(),
+        )
+}
+
 #[allow(unstable_name_collisions)]
 pub fn render_log_panel(frame: &mut Frame, area: Rect) {
-    let block = Block::bordered().border_type(BorderType::Rounded).title(
-        Title::from(" <F9> Save on Disk - <F10> Clear - <F12> Toggle ")
-            .alignment(Alignment::Center),
-    );
+    let block = build_block_widget();
 
     let available_line_count = block.inner(area).height as usize;
     if available_line_count == 0 {
@@ -119,7 +177,7 @@ pub fn render_log_panel(frame: &mut Frame, area: Rect) {
                 .rev()
                 .take_while(|entry| {
                     let take = line_count <= available_line_count;
-                    line_count += entry.line_count;
+                    line_count += entry.inner().line_count;
                     take
                 })
                 .collect_vec(),
@@ -134,7 +192,8 @@ pub fn render_log_panel(frame: &mut Frame, area: Rect) {
 
     if line_count > available_line_count {
         let oldest_entry = entries.last_mut().unwrap();
-        oldest_entry.content = oldest_entry
+        oldest_entry.inner_mut().content = oldest_entry
+            .inner()
             .content
             .lines()
             .skip(line_count - available_line_count)
@@ -160,29 +219,39 @@ pub fn render_log_panel(frame: &mut Frame, area: Rect) {
         .iter()
         .rev()
         .flat_map(|entry| {
-            entry.content.lines().enumerate().map(|(line_index, line)| {
-                if line_index == 0 {
-                    let tag_color = match entry.level {
-                        LogLevel::Error => Color::Red,
-                        LogLevel::Info => Color::LightBlue,
-                        LogLevel::Debug => Color::DarkGray,
-                        LogLevel::Warn => Color::Yellow,
-                    };
-                    Line::from_iter([
-                        format!(
-                            "{:>width$}",
-                            entry.level.as_str(),
-                            width = MAX_LOG_LEVEL_TEXT_LEN
-                        )
-                        .fg(tag_color)
-                        .italic(),
-                        " ".into(),
-                        line.into(),
-                    ])
-                } else {
-                    Line::raw(line)
-                }
-            })
+            entry
+                .inner()
+                .content
+                .lines()
+                .enumerate()
+                .map(|(line_index, line)| {
+                    if line_index == 0 {
+                        let tag_color = match entry.inner().level {
+                            LogLevel::Error => Color::Red,
+                            LogLevel::Info => Color::LightBlue,
+                            LogLevel::Debug => Color::DarkGray,
+                            LogLevel::Warn => Color::Yellow,
+                        };
+                        Line::from_iter([
+                            if let Some(count) = entry.count() {
+                                count.to_string()
+                            } else {
+                                String::new()
+                            }
+                            .fg(Color::DarkGray),
+                            format!(
+                                "{:>width$} ",
+                                entry.inner().level.as_str(),
+                                width = MAX_LOG_LEVEL_TEXT_LEN
+                            )
+                            .fg(tag_color)
+                            .italic(),
+                            line.into(),
+                        ])
+                    } else {
+                        Line::raw(line)
+                    }
+                })
         })
         .collect::<Text>();
 
@@ -191,10 +260,7 @@ pub fn render_log_panel(frame: &mut Frame, area: Rect) {
 }
 
 fn render_empty_log_panel(frame: &mut Frame, area: Rect) {
-    let block = Block::bordered().border_type(BorderType::Rounded).title(
-        Title::from(" <F9> Save on Disk - <F10> Clear - <F12> Toggle ")
-            .alignment(Alignment::Center),
-    );
+    let block = build_block_widget();
 
     let inner_area = block.inner(area);
 
