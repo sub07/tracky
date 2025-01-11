@@ -27,13 +27,13 @@ impl ChannelView<'_> {
     pub const WIDTH: u16 = PatternLineView::LINE_WIDTH;
 
     fn title_widget(&self) -> Line {
-        Line::raw(format!("{}", self.channel_index + 1)).centered()
+        Line::raw(format!("Track {}", self.channel_index + 1)).centered()
     }
 
     pub fn layout(area: Rect) -> [Rect; 2] {
         Layout::vertical([
             Constraint::Length(Self::TITLE_BOX_HEIGHT),
-            Constraint::Percentage(100),
+            Constraint::Fill(1),
         ])
         .areas(area)
     }

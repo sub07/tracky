@@ -29,5 +29,5 @@ log = "0.4"
 [dev-dependencies]
 approx = "0.5"
 
-# [profile.dev.package."*"]
-# opt-level = 3
+[profile.dev.package."*"]
+opt-level = 3

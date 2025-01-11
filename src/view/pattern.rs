@@ -2,6 +2,7 @@ use std::iter;
 
 use itertools::izip;
 use joy_macro::New;
+use log::debug;
 use ratatui::{
     layout::{Constraint, Layout},
     text::Line,
@@ -26,7 +27,7 @@ where
 }
 
 fn compute_three_states_scrolling(
-    view_size: u16,
+    view_size: usize,
     total_size: usize,
     cursor_position: usize,
 ) -> usize {
@@ -37,9 +38,9 @@ fn compute_three_states_scrolling(
     if cursor_position < scroll_lower_bound {
         0
     } else if cursor_position > scroll_upper_bound {
-        total_size - view_size as usize
+        total_size - view_size
     } else {
-        scroll_lower_bound.abs_diff(cursor_position)
+        scroll_lower_bound.abs_diff(cursor_position) + 1
     }
 }
 
@@ -65,7 +66,7 @@ where
         .areas(line_numbers_area);
 
         let vertical_offset = compute_three_states_scrolling(
-            channel_pattern_lines_area.height,
+            channel_pattern_lines_area.height as usize,
             self.channel_len as usize,
             self.current_row as usize,
         );
@@ -80,13 +81,13 @@ where
 
         let displayed_channel_count =
             (pattern_area.width as i32 + CHANNEL_PADDING) / CHANNEL_TOTAL_WIDTH;
-
-        // TODO better horizontal scroll
-        let scroll_ratio = self.current_channel as f32 / (self.channel_count - 1) as f32;
-        let after_scroll_channel_count = self.channel_count - displayed_channel_count;
-        let channel_offset = (after_scroll_channel_count as f32 * scroll_ratio) as usize;
-
         let displayed_channel_count = displayed_channel_count as usize;
+
+        let channel_offset = compute_three_states_scrolling(
+            displayed_channel_count,
+            self.channel_count as usize,
+            self.current_channel as usize,
+        );
 
         let channel_areas = Layout::horizontal(
             iter::repeat(ChannelView::WIDTH)
