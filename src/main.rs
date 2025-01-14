@@ -49,27 +49,34 @@ fn main() -> anyhow::Result<()> {
 
     let (event_tx, event_rx) = channel();
     let input_thread_event_tx = event_tx.clone();
-    thread::spawn(move || loop {
-        match ratatui::crossterm::event::read() {
-            Ok(ratatui::crossterm::event::Event::Key(key_event))
-                if key_event.kind == KeyEventKind::Press =>
-            {
-                input_thread_event_tx.send(Event::Key(key_event)).unwrap();
+    thread::Builder::new()
+        .name("input thread".into())
+        .spawn(move || 'input_loop: loop {
+            macro_rules! send {
+                ($e:expr) => {
+                    if let Err(e) = input_thread_event_tx.send($e) {
+                        ::log::warn!("Event channel is closed, input thread is done: {e}");
+                        break 'input_loop;
+                    }
+                };
             }
-            Ok(ratatui::crossterm::event::Event::Resize(w, h)) => {
-                input_thread_event_tx
-                    .send(Event::Resize {
+            match ratatui::crossterm::event::read() {
+                Ok(ratatui::crossterm::event::Event::Key(key_event))
+                    if key_event.kind == KeyEventKind::Press =>
+                {
+                    send!(Event::Key(key_event));
+                }
+                Ok(ratatui::crossterm::event::Event::Resize(w, h)) => {
+                    send!(Event::Resize {
                         width: w,
                         height: h,
-                    })
-                    .unwrap();
+                    });
+                }
+                Err(err) => send!(Event::Panic(err.into())),
+                _ => {}
             }
-            Err(err) => input_thread_event_tx
-                .send(Event::Panic(err.into()))
-                .unwrap(),
-            _ => {}
-        }
-    });
+        })
+        .expect("Could not create input thread");
 
     while app.running {
         tui.draw(&mut app)?;

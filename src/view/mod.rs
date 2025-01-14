@@ -81,7 +81,7 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
         Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
 
     let audio_state_text = Line::from_iter([
-        "•".fg(if app.audio_state.is_some() {
+        "• ".fg(if app.audio_state.is_some() {
             Color::LightGreen
         } else {
             Color::LightRed
