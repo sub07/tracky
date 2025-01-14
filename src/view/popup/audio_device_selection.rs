@@ -1,6 +1,7 @@
 use std::sync::mpsc::Sender;
 
 use itertools::Itertools;
+use joy_vector::Vector;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
@@ -13,8 +14,7 @@ use ratatui::{
 
 use crate::{
     audio::device::{Device, Hosts},
-    event::Event,
-    keybindings::Action,
+    event::{Action, Event},
     model::Direction,
     view::{centered_line, responsive_centered_rect},
 };
@@ -110,21 +110,21 @@ impl SelectedHostState {
 
     fn move_cursor(&mut self, direction: Direction) {
         match (direction.vector(), &self.selected_panel) {
-            ((0, d), Panel::Host) => {
+            (Vector([0, d]), Panel::Host) => {
                 let mut selected_host_index = self.selected_host_index as i32;
                 selected_host_index += d;
                 selected_host_index = selected_host_index.rem_euclid(self.hosts_name.len() as i32);
                 self.selected_host_index = selected_host_index as usize;
                 self.load_device_from_selected_host();
             }
-            ((0, d), Panel::Device) => {
+            (Vector([0, d]), Panel::Device) => {
                 let mut selected_device_index = self.device_list_state.selected().unwrap() as i32;
                 selected_device_index += d;
                 selected_device_index = selected_device_index.rem_euclid(self.devices.len() as i32);
                 self.device_list_state
                     .select(Some(selected_device_index as usize));
             }
-            ((_, 0), _) => {
+            (Vector([_, 0]), _) => {
                 self.selected_panel = if matches!(self.selected_panel, Panel::Device) {
                     Panel::Host
                 } else {
@@ -300,7 +300,7 @@ impl Popup {
         match event {
             crate::event::Event::Action(action) => match action {
                 Action::Cancel => Some(PopupEvent::ClosePopup),
-                Action::Move(direction, _) => Some(PopupEvent::Move(*direction)),
+                Action::Move(direction) => Some(PopupEvent::Move(*direction)),
                 Action::Confirm => Some(PopupEvent::Select),
                 _ => None,
             },

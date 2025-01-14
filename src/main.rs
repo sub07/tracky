@@ -1,10 +1,12 @@
 use std::sync::mpsc::channel;
-use std::time::Instant;
 use std::{env, io, thread};
 
 use ::log::{error, info};
-use event::Event;
-use model::pattern::{Field, HexDigit, NoteFieldValue, NoteName, OctaveValue, PatternLine};
+use audio::Hosts;
+use event::{Action, AsyncAction, Event};
+use log::write_logs_to_file;
+use model::pattern::NoteName;
+use model::song;
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::KeyEventKind;
 use ratatui::Terminal;
@@ -14,7 +16,6 @@ use view::popup::Popup;
 
 mod audio;
 mod event;
-mod handler;
 mod keybindings;
 mod log;
 mod model;
@@ -36,12 +37,10 @@ fn main() -> anyhow::Result<()> {
     log::setup()?;
 
     let mut app = Tracky::new();
-
-    *app.patterns.current_line_mut() = PatternLine {
-        note: Field::new(NoteFieldValue::Note(NoteName::C, OctaveValue::OCTAVE_5)),
-        velocity: Field::new((HexDigit::HEX_1, HexDigit::HEX_0)),
-        instrument: Field::new((HexDigit::HEX_0, HexDigit::HEX_0)),
-    };
+    app.song.handle_event(song::Event::SetNoteField {
+        note: NoteName::A,
+        octave_modifier: 0,
+    });
 
     let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend)?;
@@ -85,15 +84,37 @@ fn main() -> anyhow::Result<()> {
         }
         match event {
             Event::Key(key_event) => {
-                if let Some(action) = app.keybindings.action(key_event.code, app.input_context()) {
-                    event_tx.send(Event::Action(action)).unwrap();
+                if let Some(event) = app.keybindings.action(key_event.code, app.input_context()) {
+                    event_tx.send(event).unwrap();
                 }
             }
-            Event::Action(action) => {
-                if let Err(err) = handler::handle_action(action, &mut app, event_tx.clone()) {
-                    error!("{err}");
+            Event::Action(action) => match action {
+                Action::TogglePlay => {}
+                Action::WriteLogsOnDisk => {
+                    if let Err(e) = write_logs_to_file("tracky.log") {
+                        error!("Could not write log: {e}");
+                    }
                 }
-            }
+                Action::ClearLogsPanel => crate::log::clear_entries(),
+                Action::ToggleLogsPanel => app.display_log_console = !app.display_log_console,
+                Action::Cancel | Action::Confirm => {}
+                Action::RequestOpenDeviceSelectionPopup => {
+                    event_tx.send(Event::StartLoading).unwrap();
+                    let event_tx_clone = event_tx.clone();
+                    thread::spawn(move || {
+                        event_tx_clone
+                            .send(Event::LoadingDone(AsyncAction::OpenDeviceSelectionPopup(
+                                Hosts::load(),
+                            )))
+                            .unwrap();
+                    });
+                }
+                Action::Move(direction) => event_tx
+                    .send(Event::Song(song::Event::MoveCursor(direction)))
+                    .unwrap(),
+                Action::Forward => todo!(),
+                Action::Backward => todo!(),
+            },
             Event::Panic(error) => {
                 panic!("{error:?}");
             }
@@ -115,6 +136,8 @@ fn main() -> anyhow::Result<()> {
             }
             Event::ClosePopup => app.close_popup(),
             Event::SetPlayingDevice(device) => app.selected_output_device = Some(device),
+            Event::Song(event) => app.song.handle_event(event),
+            Event::ExitApp => app.exit(),
         }
     }
 

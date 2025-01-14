@@ -2,14 +2,13 @@ use std::iter;
 
 use itertools::izip;
 use joy_macro::New;
-use log::debug;
 use ratatui::{
     layout::{Constraint, Layout},
     text::Line,
     widgets::Widget,
 };
 
-use crate::{log::DebugLogExt, model::pattern::PatternLine};
+use crate::model::pattern::PatternLine;
 
 use super::channel::ChannelView;
 

@@ -1,5 +1,5 @@
 use std::{
-    fmt::{Debug, Display},
+    fmt::Debug,
     fs, iter,
     ops::{Deref, DerefMut},
     path::Path,
@@ -77,7 +77,7 @@ pub fn write_logs_to_file<P: AsRef<Path>>(path: P) -> anyhow::Result<()> {
     let logs = logger
         .entries
         .into_iter()
-        .map(|entry| match entry {
+        .flat_map(|entry| match entry {
             LogEntry::Single(single_log_entry) => {
                 Box::new(iter::once(single_log_entry)) as Box<dyn Iterator<Item = SingleLogEntry>>
             }
@@ -85,7 +85,6 @@ pub fn write_logs_to_file<P: AsRef<Path>>(path: P) -> anyhow::Result<()> {
                 Box::new(iter::repeat_n(single_log_entry, count))
             }
         })
-        .flatten()
         .map(|entry| format!("{:?} - {}", entry.level, entry.content))
         .join("\n");
 

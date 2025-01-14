@@ -1,8 +1,4 @@
-use std::{
-    f32::consts::PI,
-    sync::mpsc::{Receiver, Sender},
-    time::Duration,
-};
+use std::sync::mpsc::{Receiver, Sender};
 
 use anyhow::bail;
 use builder_pattern::Builder;
@@ -14,14 +10,10 @@ use cpal::{
 use joy_error::OptionToResultExt;
 use log::{error, info};
 
-use crate::{event::Event, keybindings::Action};
-
-pub struct SineState {
-    pub freq: f32,
-    pub phase: f32,
-    pub time_played: Duration,
-}
-pub type StateEvent = String;
+use crate::{
+    event::Event,
+    model::song::{self},
+};
 
 pub struct AudioPlayer {
     pub name: String,
@@ -37,8 +29,8 @@ pub struct AudioPlayerBuilder {
     pub name: String,
     #[default(None)]
     pub device: Option<crate::audio::Device>,
-    pub initial_state: SineState,
-    pub state_event_rx: Receiver<StateEvent>,
+    pub initial_state: song::State,
+    pub state_event_rx: Receiver<song::Event>,
     pub event_tx: Sender<Event>,
 }
 
@@ -142,8 +134,8 @@ impl AudioPlayerBuilder {
 fn create_stream<SampleType>(
     device: Device,
     config: StreamConfig,
-    mut state: SineState,
-    state_event_rx: Receiver<StateEvent>,
+    mut state: song::State,
+    state_event_rx: Receiver<song::Event>,
     event_tx: Sender<Event>,
 ) -> anyhow::Result<(Stream, f32)>
 where
@@ -176,82 +168,11 @@ where
 fn audio_callback<SampleType>(
     out: &mut [SampleType],
     frame_rate: f32,
-    state: &mut SineState,
-    state_event_rx: &Receiver<StateEvent>,
+    state: &mut song::State,
+    state_event_rx: &Receiver<song::Event>,
     event_tx: Sender<Event>,
 ) where
     SampleType: Sample + FromSample<f32>,
 {
-    while let Ok(state_event) = state_event_rx.try_recv() {
-        match state_event.as_str() {
-            "up" => state.freq += 20.0,
-            "down" => state.freq -= 20.0,
-            "done" => event_tx.send(Event::Action(Action::TogglePlay)).unwrap(),
-            _ => {}
-        }
-    }
-
-    let buffer_duration = Duration::from_secs_f32(out.len() as f32 / 2.0 / frame_rate);
-    state.time_played += buffer_duration;
-
-    if state.time_played > Duration::from_secs(3) {
-        event_tx.send(Event::Action(Action::TogglePlay)).unwrap();
-    }
-
-    for out in out.chunks_exact_mut(2) {
-        state.phase += 2.0 * PI * state.freq * (1.0 / frame_rate);
-        let s = state.phase.sin() * 0.1;
-        out[0] = SampleType::from_sample(s);
-        out[1] = out[0];
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use std::{thread, time::Duration};
-
-    use super::*;
-
-    #[test]
-    fn test_player() {
-        let (state_event_tx, state_event_rx) = std::sync::mpsc::channel();
-        let (playback_event_tx, event_rx) = std::sync::mpsc::channel();
-
-        let player = AudioPlayerBuilder::new()
-            .name("Test player")
-            .initial_state(SineState {
-                freq: 440.0,
-                phase: 0.0,
-                time_played: Duration::ZERO,
-            })
-            .state_event_rx(state_event_rx)
-            .event_tx(playback_event_tx)
-            .build()
-            .into_player()
-            .unwrap();
-
-        std::thread::spawn(move || {
-            thread::sleep(Duration::from_secs(1));
-            state_event_tx.send("up".to_string()).unwrap();
-            thread::sleep(Duration::from_secs_f32(0.5));
-            state_event_tx.send("up".to_string()).unwrap();
-            thread::sleep(Duration::from_secs_f32(0.5));
-            state_event_tx.send("up".to_string()).unwrap();
-            thread::sleep(Duration::from_secs(1));
-            state_event_tx.send("down".to_string()).unwrap();
-            thread::sleep(Duration::from_secs_f32(0.5));
-            state_event_tx.send("down".to_string()).unwrap();
-            thread::sleep(Duration::from_secs_f32(0.5));
-            state_event_tx.send("down".to_string()).unwrap();
-            thread::sleep(Duration::from_secs(1));
-            state_event_tx.send("done".to_string()).unwrap();
-        });
-
-        loop {
-            let event = event_rx.recv().unwrap();
-            if let Event::Action(Action::ExitApp) = event {
-                break;
-            }
-        }
-    }
+    out.fill(SampleType::from_sample(0.0));
 }

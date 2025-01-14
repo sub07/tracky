@@ -3,7 +3,7 @@ use pattern::PatternView;
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::Stylize,
-    text::{Line, ToLine},
+    text::Line,
     widgets::Widget,
     Frame,
 };
@@ -69,12 +69,12 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
     let buf = frame.buffer_mut();
 
     let pattern_view = PatternView::new(
-        app.patterns.current_pattern_channels(),
-        app.patterns.current_row,
-        app.patterns.current_channel,
-        app.patterns.current_field,
-        app.patterns.channel_len,
-        app.patterns.channel_count,
+        app.song.patterns.current_pattern_channels(),
+        app.song.patterns.current_row,
+        app.song.patterns.current_channel,
+        app.song.patterns.current_field,
+        app.song.patterns.channel_len,
+        app.song.patterns.channel_count,
     );
 
     let [header_area, pattern_area] =

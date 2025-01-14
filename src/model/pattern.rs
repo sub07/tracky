@@ -209,7 +209,6 @@ pub struct Patterns {
     pub current_field: i32,
     pub current_row: i32,
     pub current_pattern: usize,
-    pub default_octave: OctaveValue,
 }
 
 impl Default for Patterns {
@@ -242,7 +241,6 @@ impl Patterns {
             current_field: 0,
             current_row: 0,
             current_pattern: 0,
-            default_octave: Default::default(),
         }
     }
 

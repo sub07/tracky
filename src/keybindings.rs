@@ -1,47 +1,15 @@
 use std::collections::HashMap;
 
 use joy_collection_utils::hash_map_of;
-use joy_macro::DisplayFromDebug;
 use ratatui::crossterm::event::KeyCode;
 
-use crate::model::{
-    pattern::{HexDigit, NoteName, OctaveValue},
-    Direction,
-};
-
-#[derive(PartialEq, Clone, Debug, DisplayFromDebug)]
-pub enum Action {
-    Note {
-        note_name: NoteName,
-        octave_modifier: i32,
+use crate::{
+    event::{self, Event},
+    model::{
+        pattern::{HexDigit, NoteName, OctaveValue},
+        song, Direction,
     },
-    Hex(HexDigit),
-    Octave(OctaveValue),
-    ClearField,
-    Move(Direction, u32),
-    InsertPattern,
-    NextPattern,
-    PreviousPattern,
-    TogglePlay,
-    NoteCut,
-    ModifyDefaultOctave(i32),
-    WriteLogsOnDisk,
-    ClearLogsPanel,
-    ToggleLogsPanel,
-    Confirm,
-    Cancel,
-    RequestOpenDeviceSelectionPopup,
-    ExitApp,
-}
-
-impl Action {
-    const fn note(n: NoteName, o: i32) -> Action {
-        Action::Note {
-            note_name: n,
-            octave_modifier: o,
-        }
-    }
-}
+};
 
 #[derive(PartialEq, Eq, Debug, Hash)]
 pub enum InputContext {
@@ -52,122 +20,116 @@ pub enum InputContext {
     Global,
 }
 
-#[derive(Debug)]
+type EventProducer = Box<dyn Fn() -> Event>;
+
 pub struct KeyBindings {
-    context_bindings: HashMap<InputContext, HashMap<KeyCode, Action>>,
+    context_bindings: HashMap<InputContext, HashMap<KeyCode, EventProducer>>,
 }
 
 impl KeyBindings {
-    pub fn action(&self, key_code: KeyCode, input_context: InputContext) -> Option<Action> {
-        fn get_action(
-            bindings: &HashMap<InputContext, HashMap<KeyCode, Action>>,
-            key_code: KeyCode,
-            input_context: InputContext,
-        ) -> Option<Action> {
-            bindings
+    pub fn action(&self, key_code: KeyCode, input_context: InputContext) -> Option<Event> {
+        let get_action = |input_context| {
+            self.context_bindings
                 .get(&input_context)
                 .and_then(|bindings| bindings.get(&key_code))
-                .cloned()
-        }
-
-        fn get_global_action(
-            bindings: &HashMap<InputContext, HashMap<KeyCode, Action>>,
-            key_code: KeyCode,
-        ) -> Option<Action> {
-            get_action(bindings, key_code, InputContext::Global)
-        }
-
-        fn get_or_global(
-            bindings: &HashMap<InputContext, HashMap<KeyCode, Action>>,
-            key_code: KeyCode,
-            input_context: InputContext,
-        ) -> Option<Action> {
-            get_action(bindings, key_code, input_context)
-                .or_else(|| get_global_action(bindings, key_code))
-        }
+                .map(|event_producer| event_producer())
+        };
 
         match input_context {
-            InputContext::Global => get_global_action(&self.context_bindings, key_code),
-            _ => get_or_global(&self.context_bindings, key_code, input_context),
+            InputContext::Global => get_action(InputContext::Global),
+            _ => get_action(input_context).or_else(|| get_action(InputContext::Global)),
         }
     }
+}
+
+fn song_note_event(n: NoteName, o: i32) -> Event {
+    Event::Song(song::Event::SetNoteField {
+        note: n,
+        octave_modifier: o,
+    })
+}
+
+macro_rules! b {
+    ($event:expr) => {
+        Box::new(|| $event) as Box<dyn Fn() -> Event>
+    };
 }
 
 impl Default for KeyBindings {
     fn default() -> Self {
         let context_bindings = hash_map_of!(
             InputContext::Note => hash_map_of!(
-                KeyCode::Char('a') => Action::note(NoteName::C, 0),
-                KeyCode::Char('é') => Action::note(NoteName::CSharp, 0),
-                KeyCode::Char('z') => Action::note(NoteName::D, 0),
-                KeyCode::Char('"') => Action::note(NoteName::DSharp, 0),
-                KeyCode::Char('e') => Action::note(NoteName::E, 0),
-                KeyCode::Char('r') => Action::note(NoteName::F, 0),
-                KeyCode::Char('(') => Action::note(NoteName::FSharp, 0),
-                KeyCode::Char('t') => Action::note(NoteName::G, 0),
-                KeyCode::Char('-') => Action::note(NoteName::GSharp, 0),
-                KeyCode::Char('y') => Action::note(NoteName::A, 0),
-                KeyCode::Char('è') => Action::note(NoteName::ASharp, 0),
-                KeyCode::Char('u') => Action::note(NoteName::B, 0),
-                KeyCode::Char('&') => Action::NoteCut,
+                KeyCode::Char('a') => b!(song_note_event(NoteName::C, 0)),
+                KeyCode::Char('é') => b!(song_note_event(NoteName::CSharp, 0)),
+                KeyCode::Char('z') => b!(song_note_event(NoteName::D, 0)),
+                KeyCode::Char('"') => b!(song_note_event(NoteName::DSharp, 0)),
+                KeyCode::Char('e') => b!(song_note_event(NoteName::E, 0)),
+                KeyCode::Char('r') => b!(song_note_event(NoteName::F, 0)),
+                KeyCode::Char('(') => b!(song_note_event(NoteName::FSharp, 0)),
+                KeyCode::Char('t') => b!(song_note_event(NoteName::G, 0)),
+                KeyCode::Char('-') => b!(song_note_event(NoteName::GSharp, 0)),
+                KeyCode::Char('y') => b!(song_note_event(NoteName::A, 0)),
+                KeyCode::Char('è') => b!(song_note_event(NoteName::ASharp, 0)),
+                KeyCode::Char('u') => b!(song_note_event(NoteName::B, 0)),
+                KeyCode::Char('&') => b!(Event::Song(song::Event::SetNoteFieldToCut)),
             ),
             InputContext::Octave => hash_map_of!(
-                KeyCode::Char('à') => Action::Octave(OctaveValue::OCTAVE_0),
-                KeyCode::Char('&') => Action::Octave(OctaveValue::OCTAVE_1),
-                KeyCode::Char('é') => Action::Octave(OctaveValue::OCTAVE_2),
-                KeyCode::Char('"') => Action::Octave(OctaveValue::OCTAVE_3),
-                KeyCode::Char('\'') => Action::Octave(OctaveValue::OCTAVE_4),
-                KeyCode::Char('(') => Action::Octave(OctaveValue::OCTAVE_5),
-                KeyCode::Char('-') => Action::Octave(OctaveValue::OCTAVE_6),
-                KeyCode::Char('è') => Action::Octave(OctaveValue::OCTAVE_7),
-                KeyCode::Char('_') => Action::Octave(OctaveValue::OCTAVE_8),
-                KeyCode::Char('ç') => Action::Octave(OctaveValue::OCTAVE_9),
+                KeyCode::Char('à') => b!(Event::Song(song::Event::SetOctaveField(OctaveValue::OCTAVE_0))),
+                KeyCode::Char('&') => b!(Event::Song(song::Event::SetOctaveField(OctaveValue::OCTAVE_1))),
+                KeyCode::Char('é') => b!(Event::Song(song::Event::SetOctaveField(OctaveValue::OCTAVE_2))),
+                KeyCode::Char('"') => b!(Event::Song(song::Event::SetOctaveField(OctaveValue::OCTAVE_3))),
+                KeyCode::Char('\'') => b!(Event::Song(song::Event::SetOctaveField(OctaveValue::OCTAVE_4))),
+                KeyCode::Char('(') => b!(Event::Song(song::Event::SetOctaveField(OctaveValue::OCTAVE_5))),
+                KeyCode::Char('-') => b!(Event::Song(song::Event::SetOctaveField(OctaveValue::OCTAVE_6))),
+                KeyCode::Char('è') => b!(Event::Song(song::Event::SetOctaveField(OctaveValue::OCTAVE_7))),
+                KeyCode::Char('_') => b!(Event::Song(song::Event::SetOctaveField(OctaveValue::OCTAVE_8))),
+                KeyCode::Char('ç') => b!(Event::Song(song::Event::SetOctaveField(OctaveValue::OCTAVE_9))),
             ),
             InputContext::Hex => hash_map_of!(
-                KeyCode::Char('à') => Action::Hex(HexDigit::HEX_0),
-                KeyCode::Char('&') => Action::Hex(HexDigit::HEX_1),
-                KeyCode::Char('é') => Action::Hex(HexDigit::HEX_2),
-                KeyCode::Char('"') => Action::Hex(HexDigit::HEX_3),
-                KeyCode::Char('\'') => Action::Hex(HexDigit::HEX_4),
-                KeyCode::Char('(') => Action::Hex(HexDigit::HEX_5),
-                KeyCode::Char('-') => Action::Hex(HexDigit::HEX_6),
-                KeyCode::Char('è') => Action::Hex(HexDigit::HEX_7),
-                KeyCode::Char('_') => Action::Hex(HexDigit::HEX_8),
-                KeyCode::Char('ç') => Action::Hex(HexDigit::HEX_9),
-                KeyCode::Char('a') => Action::Hex(HexDigit::HEX_A),
-                KeyCode::Char('b') => Action::Hex(HexDigit::HEX_B),
-                KeyCode::Char('c') => Action::Hex(HexDigit::HEX_C),
-                KeyCode::Char('d') => Action::Hex(HexDigit::HEX_D),
-                KeyCode::Char('e') => Action::Hex(HexDigit::HEX_E),
-                KeyCode::Char('f') => Action::Hex(HexDigit::HEX_F),
+                KeyCode::Char('à') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_0))),
+                KeyCode::Char('&') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_1))),
+                KeyCode::Char('é') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_2))),
+                KeyCode::Char('"') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_3))),
+                KeyCode::Char('\'') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_4))),
+                KeyCode::Char('(') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_5))),
+                KeyCode::Char('-') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_6))),
+                KeyCode::Char('è') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_7))),
+                KeyCode::Char('_') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_8))),
+                KeyCode::Char('ç') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_9))),
+                KeyCode::Char('a') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_A))),
+                KeyCode::Char('b') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_B))),
+                KeyCode::Char('c') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_C))),
+                KeyCode::Char('d') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_D))),
+                KeyCode::Char('e') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_E))),
+                KeyCode::Char('f') => b!(Event::Song(song::Event::SetHexField(HexDigit::HEX_F))),
             ),
             InputContext::Popup => hash_map_of!(
-                KeyCode::Down => Action::Move(Direction::Down, 1),
-                KeyCode::Up => Action::Move(Direction::Up, 1),
-                KeyCode::Left => Action::Move(Direction::Left, 1),
-                KeyCode::Right => Action::Move(Direction::Right, 1),
-                KeyCode::Tab => Action::Move(Direction::Right, 1),
-                KeyCode::BackTab => Action::Move(Direction::Left, 1),
-                KeyCode::Enter => Action::Confirm,
-                KeyCode::Esc => Action::Cancel,
+                KeyCode::Down => b!(Event::Action(event::Action::Move(Direction::Down))),
+                KeyCode::Up => b!(Event::Action(event::Action::Move(Direction::Up))),
+                KeyCode::Left => b!(Event::Action(event::Action::Move(Direction::Left))),
+                KeyCode::Right => b!(Event::Action(event::Action::Move(Direction::Right))),
+                KeyCode::Tab => b!(Event::Action(event::Action::Forward)),
+                KeyCode::BackTab => b!(Event::Action(event::Action::Backward)),
+                KeyCode::Enter => b!(Event::Action(event::Action::Confirm)),
+                KeyCode::Esc => b!(Event::Action(event::Action::Cancel)),
             ),
             InputContext::Global => hash_map_of!(
-                KeyCode::Down => Action::Move(Direction::Down, 1),
-                KeyCode::Up => Action::Move(Direction::Up, 1),
-                KeyCode::Left => Action::Move(Direction::Left, 1),
-                KeyCode::Right => Action::Move(Direction::Right, 1),
-                KeyCode::Insert => Action::InsertPattern,
-                KeyCode::Char('+') => Action::NextPattern,
-                KeyCode::Char('-') => Action::PreviousPattern,
-                KeyCode::Delete => Action::ClearField,
-                KeyCode::Char(' ') => Action::TogglePlay,
-                KeyCode::Char('*')=> Action::ModifyDefaultOctave(1),
-                KeyCode::Char('/') => Action::ModifyDefaultOctave(-1),
-                KeyCode::Esc => Action::ExitApp,
-                KeyCode::F(9) => Action::WriteLogsOnDisk,
-                KeyCode::F(10) => Action::ClearLogsPanel,
-                KeyCode::F(12) => Action::ToggleLogsPanel,
-                KeyCode::F(1) => Action::RequestOpenDeviceSelectionPopup,
+                KeyCode::Down => b!(Event::Action(event::Action::Move(Direction::Down))),
+                KeyCode::Up => b!(Event::Action(event::Action::Move(Direction::Up))),
+                KeyCode::Left => b!(Event::Action(event::Action::Move(Direction::Left))),
+                KeyCode::Right => b!(Event::Action(event::Action::Move(Direction::Right))),
+                KeyCode::Insert => b!(Event::Song(song::Event::NewPattern)),
+                KeyCode::Char('+') => b!(Event::Song(song::Event::NextPattern)),
+                KeyCode::Char('-') => b!(Event::Song(song::Event::PreviousPattern)),
+                KeyCode::Delete => b!(Event::Song(song::Event::ClearField)),
+                KeyCode::Char(' ') => b!(Event::Action(event::Action::TogglePlay)),
+                KeyCode::Char('*')=> b!(Event::Song(song::Event::MutateGlobalOctave { increment: 1 })),
+                KeyCode::Char('/') => b!(Event::Song(song::Event::MutateGlobalOctave { increment: -1 })),
+                KeyCode::Esc => b!(Event::ExitApp),
+                KeyCode::F(9) => b!(Event::Action(event::Action::WriteLogsOnDisk)),
+                KeyCode::F(10) => b!(Event::Action(event::Action::ClearLogsPanel)),
+                KeyCode::F(12) => b!(Event::Action(event::Action::ToggleLogsPanel)),
+                KeyCode::F(1) => b!(Event::Action(event::Action::RequestOpenDeviceSelectionPopup)),
             ),
         );
 
