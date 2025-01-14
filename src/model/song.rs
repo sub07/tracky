@@ -3,6 +3,7 @@ use super::{
     Direction,
 };
 
+#[derive(Clone)]
 pub struct State {
     pub patterns: Patterns,
     pub global_octave: OctaveValue,

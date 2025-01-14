@@ -2,7 +2,7 @@ use header::Header;
 use pattern::PatternView;
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::Stylize,
+    style::{Color, Stylize},
     text::Line,
     widgets::Widget,
     Frame,
@@ -80,17 +80,22 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
     let [header_area, pattern_area] =
         Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
 
-    let device_text = Line::from(if let Some(device) = &app.selected_output_device {
-        format!("Device: {}", device)
-    } else {
-        "No device selected (will use default)".to_string()
-    });
-
-    let playing_state_text = Line::from(if app.playback_state.is_some() {
-        "Playing..."
-    } else {
-        "Not playing"
-    });
+    let audio_state_text = Line::from_iter([
+        "•".fg(if app.audio_state.is_some() {
+            Color::LightGreen
+        } else {
+            Color::LightRed
+        }),
+        if app.audio_state.is_some() {
+            match &app.selected_output_device {
+                Some(device) => device.name.clone(),
+                None => "Default device".to_string(),
+            }
+            .into()
+        } else {
+            "No audio".into()
+        },
+    ]);
 
     let loading_text = Line::from(if app.loader_count > 0 {
         "Loading..."
@@ -99,7 +104,7 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
     })
     .underlined();
 
-    Header::new([device_text, playing_state_text, loading_text]).render(header_area, buf);
+    Header::new([audio_state_text, "Placeholder".into(), loading_text]).render(header_area, buf);
 
     pattern_view.render(pattern_area, buf);
 

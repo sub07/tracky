@@ -16,7 +16,6 @@ use crate::{
 };
 
 pub struct AudioPlayer {
-    pub name: String,
     pub frame_rate: f32,
     stream: Stream,
 }
@@ -24,9 +23,6 @@ pub struct AudioPlayer {
 #[rustfmt::skip]
 #[derive(Builder)]
 pub struct AudioPlayerBuilder {
-    #[into]
-    #[default("Unnamed audio player".into())]
-    pub name: String,
     #[default(None)]
     pub device: Option<crate::audio::Device>,
     pub initial_state: song::State,
@@ -117,14 +113,12 @@ impl AudioPlayerBuilder {
         };
 
         info!(
-            "Audio player '{}' playing on {} at {}Hz",
-            self.name.clone(),
+            "Audio playing on {} at {}Hz",
             device.name,
             sample_rate,
         );
 
         Ok(AudioPlayer {
-            name: self.name,
             frame_rate: sample_rate,
             stream,
         })

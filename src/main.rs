@@ -138,6 +138,7 @@ fn main() -> anyhow::Result<()> {
             Event::SetPlayingDevice(device) => app.selected_output_device = Some(device),
             Event::Song(event) => app.song.handle_event(event),
             Event::ExitApp => app.exit(),
+            Event::LaunchAudioPlayer => app.init_audio_player(event_tx.clone()),
         }
     }
 

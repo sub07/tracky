@@ -1,13 +1,22 @@
+use std::sync::mpsc::{channel, Sender};
+
+use log::error;
+
 use crate::{
-    audio::{player::AudioPlayer, Device},
+    audio::{
+        player::{AudioPlayer, AudioPlayerBuilder},
+        Device,
+    },
+    event::Event,
     keybindings::{InputContext, KeyBindings},
-    model::song::State,
+    model::song::{self, State},
     view::popup::Popup,
     DEBUG,
 };
 
-pub struct Playback {
+pub struct AudioState {
     pub player: AudioPlayer,
+    pub state_event_tx: Sender<song::Event>,
 }
 
 pub struct Tracky {
@@ -18,7 +27,7 @@ pub struct Tracky {
     pub selected_output_device: Option<Device>,
     pub popup_state: Option<Popup>,
     pub loader_count: usize,
-    pub playback_state: Option<Playback>,
+    pub audio_state: Option<AudioState>,
 }
 
 impl Default for Tracky {
@@ -30,7 +39,7 @@ impl Default for Tracky {
             keybindings: Default::default(),
             selected_output_device: None,
             popup_state: None,
-            playback_state: None,
+            audio_state: None,
             loader_count: 0,
         }
     }
@@ -55,5 +64,25 @@ impl Tracky {
 
     pub fn close_popup(&mut self) {
         self.popup_state = None;
+    }
+
+    pub fn init_audio_player(&mut self, event_tx: Sender<Event>) {
+        let (state_event_tx, state_event_rx) = channel();
+        match AudioPlayerBuilder::new()
+            .device(self.selected_output_device.clone())
+            .event_tx(event_tx)
+            .initial_state(self.song.clone())
+            .state_event_rx(state_event_rx)
+            .build()
+            .into_player()
+        {
+            Ok(player) => {
+                self.audio_state = Some(AudioState {
+                    player,
+                    state_event_tx,
+                })
+            }
+            Err(error) => error!("{error}"),
+        }
     }
 }

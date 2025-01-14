@@ -16,6 +16,7 @@ pub enum Event {
     LoadingDone(AsyncAction),
     ClosePopup,
     SetPlayingDevice(Device),
+    LaunchAudioPlayer,
     ExitApp,
 }
 

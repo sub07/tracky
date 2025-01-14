@@ -323,6 +323,7 @@ impl Popup {
                             .send(Event::Composite(vec![
                                 Event::ClosePopup,
                                 Event::SetPlayingDevice(state.selected_device()),
+                                Event::LaunchAudioPlayer,
                             ]))
                             .unwrap();
                     }

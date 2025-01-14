@@ -197,10 +197,8 @@ impl Pattern {
     }
 }
 
-#[derive(Derivative)]
-#[derivative(Debug)]
+#[derive(Clone)]
 pub struct Patterns {
-    #[derivative(Debug = "ignore")]
     patterns: Vec<Pattern>,
     pub channel_len: i32,
     pub channel_count: i32,
