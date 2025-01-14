@@ -3,12 +3,13 @@ use std::{
     fs, iter,
     ops::{Deref, DerefMut},
     path::Path,
-    sync::Mutex,
+    sync::{mpsc::Sender, LazyLock, Mutex},
 };
 
 use anyhow::{anyhow, Context};
 use itertools::Itertools;
 
+use joy_error::ResultLogExt;
 use joy_macro::{EnumIter, EnumStr};
 use log::debug;
 use ratatui::{
@@ -18,6 +19,8 @@ use ratatui::{
     widgets::{Block, BorderType, Clear, Paragraph},
     Frame,
 };
+
+use crate::event::Event;
 
 #[derive(Clone, Copy, Debug, PartialEq, EnumStr, EnumIter)]
 enum LogLevel {
@@ -276,8 +279,22 @@ fn render_empty_log_panel(frame: &mut Frame, area: Rect) {
 }
 
 // Sorry future me
-struct DummyLogger;
-static DUMMY_LOGGER: DummyLogger = DummyLogger;
+struct DummyLogger {
+    event_tx: Mutex<Option<Sender<Event>>>,
+}
+
+impl DummyLogger {
+    fn notify(&self) {
+        self.event_tx
+            .lock()
+            .unwrap()
+            .take_if(|event_tx| event_tx.send(Event::RequestRedraw).is_err());
+    }
+}
+
+static DUMMY_LOGGER: DummyLogger = DummyLogger {
+    event_tx: Mutex::new(None),
+};
 
 impl log::Log for DummyLogger {
     fn enabled(&self, _: &log::Metadata) -> bool {
@@ -297,12 +314,14 @@ impl log::Log for DummyLogger {
         };
 
         add_entry(format!("{}", record.args()), level);
+        self.notify();
     }
 
     fn flush(&self) {}
 }
 
-pub fn setup() -> anyhow::Result<()> {
+pub fn setup(event_tx: Sender<Event>) -> anyhow::Result<()> {
+    *DUMMY_LOGGER.event_tx.lock().unwrap() = Some(event_tx);
     log::set_logger(&DUMMY_LOGGER)
         .map_err(|_| anyhow!("Error while setting up logger: maybe setup called twice"))?;
     log::set_max_level(log::LevelFilter::Trace);

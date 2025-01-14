@@ -12,7 +12,7 @@ use log::{error, info};
 
 use crate::{
     event::Event,
-    model::song::{self},
+    model::{self},
 };
 
 pub struct AudioPlayer {
@@ -25,8 +25,8 @@ pub struct AudioPlayer {
 pub struct AudioPlayerBuilder {
     #[default(None)]
     pub device: Option<crate::audio::Device>,
-    pub initial_state: song::State,
-    pub state_event_rx: Receiver<song::Event>,
+    pub initial_state: model::State,
+    pub state_event_rx: Receiver<model::Event>,
     pub event_tx: Sender<Event>,
 }
 
@@ -113,9 +113,8 @@ impl AudioPlayerBuilder {
         };
 
         info!(
-            "Audio playing on {} at {}Hz",
-            device.name,
-            sample_rate,
+            "Audio player up and running on {} at {}Hz",
+            device.name, sample_rate,
         );
 
         Ok(AudioPlayer {
@@ -128,8 +127,8 @@ impl AudioPlayerBuilder {
 fn create_stream<SampleType>(
     device: Device,
     config: StreamConfig,
-    mut state: song::State,
-    state_event_rx: Receiver<song::Event>,
+    mut state: model::State,
+    state_event_rx: Receiver<model::Event>,
     event_tx: Sender<Event>,
 ) -> anyhow::Result<(Stream, f32)>
 where
@@ -162,11 +161,14 @@ where
 fn audio_callback<SampleType>(
     out: &mut [SampleType],
     frame_rate: f32,
-    state: &mut song::State,
-    state_event_rx: &Receiver<song::Event>,
+    state: &mut model::State,
+    state_event_rx: &Receiver<model::Event>,
     event_tx: Sender<Event>,
 ) where
     SampleType: Sample + FromSample<f32>,
 {
+    for event in state_event_rx.try_iter() {
+        info!("Audio callback event: {:?}", event);
+    }
     out.fill(SampleType::from_sample(0.0));
 }

@@ -1,25 +1,58 @@
 use joy_vector::Vector;
+use pattern::{HexDigit, NoteName, OctaveValue, Patterns};
+use playback::song::SongPlayback;
+
+use crate::utils::Direction;
 
 pub mod channel;
 pub mod midi;
 pub mod pattern;
-pub mod song;
+pub mod playback;
 
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
-pub enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
+#[derive(Clone)]
+pub struct State {
+    pub patterns: Patterns,
+    pub global_octave: OctaveValue,
+    pub line_per_second: f32,
+    pub playback: Option<SongPlayback>,
 }
 
-impl Direction {
-    pub const fn vector(self) -> Vector<i32, 2> {
-        match self {
-            Direction::Up => Vector::<_, 2>::new(0, -1),
-            Direction::Down => Vector::<_, 2>::new(0, 1),
-            Direction::Left => Vector::<_, 2>::new(-1, 0),
-            Direction::Right => Vector::<_, 2>::new(1, 0),
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            patterns: Default::default(),
+            global_octave: Default::default(),
+            line_per_second: 16.0,
+            playback: None,
         }
     }
+}
+
+impl State {
+    pub fn is_playing(&self) -> bool {
+        self.playback.is_some()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Event {
+    MutateGlobalOctave {
+        increment: i32,
+    },
+    SetNoteField {
+        note: NoteName,
+        octave_modifier: i32,
+    },
+    MoveCursor(Direction),
+    SetNoteFieldToCut,
+    ClearField,
+    SetOctaveField(OctaveValue),
+    SetHexField(HexDigit),
+    NewPattern,
+    NextPattern,
+    PreviousPattern,
+    StartSongPlayback {
+        frame_rate: f32,
+    },
+    StopSongPlayback,
 }

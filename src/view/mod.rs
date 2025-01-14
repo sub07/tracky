@@ -69,12 +69,12 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
     let buf = frame.buffer_mut();
 
     let pattern_view = PatternView::new(
-        app.song.patterns.current_pattern_channels(),
-        app.song.patterns.current_row,
-        app.song.patterns.current_channel,
-        app.song.patterns.current_field,
-        app.song.patterns.channel_len,
-        app.song.patterns.channel_count,
+        app.state.patterns.current_pattern_channels(),
+        app.state.patterns.current_row,
+        app.state.patterns.current_channel,
+        app.state.patterns.current_field,
+        app.state.patterns.channel_len,
+        app.state.patterns.channel_count,
     );
 
     let [header_area, pattern_area] =
@@ -104,7 +104,13 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
     })
     .underlined();
 
-    Header::new([audio_state_text, "Placeholder".into(), loading_text]).render(header_area, buf);
+    let playback_state_text = Line::from(if app.state.is_playing() {
+        "Playing"
+    } else {
+        "Not playing"
+    });
+
+    Header::new([audio_state_text, playback_state_text, loading_text]).render(header_area, buf);
 
     pattern_view.render(pattern_area, buf);
 

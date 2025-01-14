@@ -1,12 +1,14 @@
 use crate::{
     audio::{Device, Hosts},
-    model::{song, Direction},
+    model::{self},
+    utils::Direction,
 };
 
 #[derive(Debug)]
 pub enum Event {
     Key(ratatui::crossterm::event::KeyEvent),
-    Song(song::Event),
+    State(model::Event),
+    AudioState(model::Event),
     Panic(anyhow::Error),
     Action(Action),
     AsyncAction(AsyncAction),
@@ -17,6 +19,7 @@ pub enum Event {
     ClosePopup,
     SetPlayingDevice(Device),
     LaunchAudioPlayer,
+    RequestRedraw,
     ExitApp,
 }
 

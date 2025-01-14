@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use super::signal::{Signal, StereoSignal};
 
+#[derive(Clone)]
 pub struct Mixer {
     pub output: StereoSignal,
 }

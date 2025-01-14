@@ -15,7 +15,7 @@ use ratatui::{
 use crate::{
     audio::device::{Device, Hosts},
     event::{Action, Event},
-    model::Direction,
+    utils::Direction,
     view::{centered_line, responsive_centered_rect},
 };
 

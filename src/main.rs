@@ -1,12 +1,11 @@
 use std::sync::mpsc::channel;
 use std::{env, io, thread};
 
-use ::log::{error, info};
+use ::log::{error, info, warn};
 use audio::Hosts;
 use event::{Action, AsyncAction, Event};
 use log::write_logs_to_file;
 use model::pattern::NoteName;
-use model::song;
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::KeyEventKind;
 use ratatui::Terminal;
@@ -22,6 +21,7 @@ mod model;
 mod service;
 mod tracky;
 mod tui;
+mod utils;
 mod view;
 
 #[cfg(debug_assertions)]
@@ -34,10 +34,8 @@ fn main() -> anyhow::Result<()> {
     #[cfg(debug_assertions)]
     env::set_var("RUST_BACKTRACE", "1");
 
-    log::setup()?;
-
     let mut app = Tracky::new();
-    app.song.handle_event(song::Event::SetNoteField {
+    app.state.handle_event(model::Event::SetNoteField {
         note: NoteName::A,
         octave_modifier: 0,
     });
@@ -48,6 +46,9 @@ fn main() -> anyhow::Result<()> {
     tui.init()?;
 
     let (event_tx, event_rx) = channel();
+
+    log::setup(event_tx.clone())?;
+
     let input_thread_event_tx = event_tx.clone();
     thread::Builder::new()
         .name("input thread".into())
@@ -78,6 +79,12 @@ fn main() -> anyhow::Result<()> {
         })
         .expect("Could not create input thread");
 
+    macro_rules! send {
+        ($e:expr) => {
+            event_tx.send($e).unwrap()
+        };
+    }
+
     while app.running {
         tui.draw(&mut app)?;
         let mut event = event_rx.recv()?;
@@ -92,11 +99,21 @@ fn main() -> anyhow::Result<()> {
         match event {
             Event::Key(key_event) => {
                 if let Some(event) = app.keybindings.action(key_event.code, app.input_context()) {
-                    event_tx.send(event).unwrap();
+                    send!(event);
                 }
             }
             Event::Action(action) => match action {
-                Action::TogglePlay => {}
+                Action::TogglePlay => {
+                    if app.state.is_playing() {
+                        send!(Event::State(model::Event::StopSongPlayback));
+                    } else if let Some(audio_state) = app.audio_state.as_ref() {
+                        send!(Event::State(model::Event::StartSongPlayback {
+                            frame_rate: audio_state.player.frame_rate,
+                        }));
+                    } else {
+                        warn!("Select a device with F1 to play the song")
+                    }
+                }
                 Action::WriteLogsOnDisk => {
                     if let Err(e) = write_logs_to_file("tracky.log") {
                         error!("Could not write log: {e}");
@@ -117,7 +134,7 @@ fn main() -> anyhow::Result<()> {
                     });
                 }
                 Action::Move(direction) => event_tx
-                    .send(Event::Song(song::Event::MoveCursor(direction)))
+                    .send(Event::State(model::Event::MoveCursor(direction)))
                     .unwrap(),
                 Action::Forward => todo!(),
                 Action::Backward => todo!(),
@@ -143,9 +160,14 @@ fn main() -> anyhow::Result<()> {
             }
             Event::ClosePopup => app.close_popup(),
             Event::SetPlayingDevice(device) => app.selected_output_device = Some(device),
-            Event::Song(event) => app.song.handle_event(event),
+            Event::State(event) => {
+                app.state.handle_event(event.clone());
+                app.send_player_state_event(event);
+            }
+            Event::AudioState(event) => app.state.handle_event(event),
             Event::ExitApp => app.exit(),
             Event::LaunchAudioPlayer => app.init_audio_player(event_tx.clone()),
+            Event::RequestRedraw => {}
         }
     }
 
