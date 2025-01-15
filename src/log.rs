@@ -3,13 +3,12 @@ use std::{
     fs, iter,
     ops::{Deref, DerefMut},
     path::Path,
-    sync::{mpsc::Sender, LazyLock, Mutex},
+    sync::{mpsc::Sender, Mutex},
 };
 
 use anyhow::{anyhow, Context};
 use itertools::Itertools;
 
-use joy_error::ResultLogExt;
 use joy_macro::{EnumIter, EnumStr};
 use log::debug;
 use ratatui::{

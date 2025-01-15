@@ -3,10 +3,10 @@ pub mod field;
 use std::time::Duration;
 
 use joy_vector::Vector;
-use log::{error, info, warn};
+use log::{error, warn};
 
 use crate::{
-    audio::{mixer::Mixer, signal::StereoSignal},
+    audio::mixer::Mixer,
     model::{
         self,
         channel::Channel,

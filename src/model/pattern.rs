@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 
 use anyhow::{anyhow, ensure};
-use derivative::Derivative;
 
 use joy_macro::EnumIter;
 use joy_value_object::{mk_vo, mk_vo_consts};

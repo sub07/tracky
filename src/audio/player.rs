@@ -7,9 +7,8 @@ use cpal::{
     Device, FromSample, Sample, SampleFormat, SizedSample, Stream, StreamConfig,
 };
 
-use itertools::Itertools;
 use joy_error::OptionToResultExt;
-use log::{error, info};
+use log::info;
 
 use crate::{
     event::Event,
@@ -175,7 +174,7 @@ fn audio_callback<SampleType>(
     }
 
     out.fill(SampleType::from_sample(0.0));
-    
+
     for event in state_event_rx.try_iter() {
         state.handle_event(event);
     }

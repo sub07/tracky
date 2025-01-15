@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use log::warn;
 
 use super::{
@@ -44,6 +42,8 @@ impl Mixer {
 
 #[cfg(test)]
 mod test {
+    use std::time::Duration;
+
     use itertools::Itertools;
 
     use crate::audio::signal::test_utils::assert_signal_eq;

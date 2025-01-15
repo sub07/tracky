@@ -1,4 +1,3 @@
-use joy_vector::Vector;
 use pattern::{HexDigit, NoteName, OctaveValue, Patterns};
 use playback::song::SongPlayback;
 

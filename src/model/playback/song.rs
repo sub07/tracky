@@ -1,12 +1,6 @@
 use std::time::Duration;
 
-use log::{error, info};
-
-use crate::{
-    audio::{mixer::Mixer, player::AudioPlayer, signal::StereoSignal},
-    model::channel::Channel,
-    tracky::Tracky,
-};
+use crate::{audio::mixer::Mixer, model::channel::Channel};
 
 #[derive(Clone)]
 pub struct SongPlayback {
