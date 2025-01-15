@@ -167,8 +167,20 @@ fn audio_callback<SampleType>(
 ) where
     SampleType: Sample + FromSample<f32>,
 {
-    for event in state_event_rx.try_iter() {
-        info!("Audio callback event: {:?}", event);
+    macro_rules! update_state {
+        ($event:expr) => {
+            state.handle_event($event);
+            event_tx.send(Event::AudioCallback($event.clone())).unwrap()
+        };
     }
+
     out.fill(SampleType::from_sample(0.0));
+    for event in state_event_rx.try_iter() {
+        state.handle_event(event);
+    }
+    if let Some(playback) = state.playback.as_ref() {
+        if playback.master.sample_count() != out.len() {
+            update_state!(model::Event::UpdatePlaybackSampleCount(out.len()));
+        }
+    }
 }

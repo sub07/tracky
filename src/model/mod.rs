@@ -55,4 +55,5 @@ pub enum Event {
         frame_rate: f32,
     },
     StopSongPlayback,
+    UpdatePlaybackSampleCount(usize),
 }

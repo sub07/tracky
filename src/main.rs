@@ -164,7 +164,7 @@ fn main() -> anyhow::Result<()> {
                 app.state.handle_event(event.clone());
                 app.send_player_state_event(event);
             }
-            Event::AudioState(event) => app.state.handle_event(event),
+            Event::AudioCallback(event) => app.state.handle_event(event),
             Event::ExitApp => app.exit(),
             Event::LaunchAudioPlayer => app.init_audio_player(event_tx.clone()),
             Event::RequestRedraw => {}

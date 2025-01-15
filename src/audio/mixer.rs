@@ -1,34 +1,44 @@
 use std::time::Duration;
 
-use super::signal::{Signal, StereoSignal};
+use log::warn;
+
+use super::{
+    frame::Frame,
+    signal::{Signal, StereoSignal},
+};
 
 #[derive(Clone)]
 pub struct Mixer {
-    pub output: StereoSignal,
+    pub signal: StereoSignal,
+}
+
+impl std::ops::Deref for Mixer {
+    type Target = StereoSignal;
+
+    fn deref(&self) -> &Self::Target {
+        &self.signal
+    }
 }
 
 impl Mixer {
-    pub fn new(frame_rate: f32) -> Mixer {
+    pub fn from_sample_buffer_size(sample_buffer_size: usize, frame_rate: f32) -> Mixer {
         Mixer {
-            output: Signal::new(Duration::ZERO, frame_rate),
+            signal: Signal::from_sample_buffer_size(sample_buffer_size, frame_rate),
         }
     }
 
     pub fn mix(&mut self, signal: &StereoSignal) {
-        assert_eq!(self.output.frame_rate, signal.frame_rate);
-        let frame_iter = signal.frames.iter();
-        for (mut output, input) in self.output.frames.iter_mut().zip(frame_iter) {
-            output += input;
+        debug_assert_eq!(self.signal.frame_rate, signal.frame_rate);
+        if signal.len() != self.signal.len() {
+            warn!("Attempt to mix two signal of different size, mixer signal len: {} / input signal len: {}. Truncation may happen", self.signal.len(), signal.len());
         }
-        if self.output.duration() < signal.duration() {
-            self.output
-                .frames
-                .extend(&signal.frames[self.output.len()..]);
+        for (mut output, input) in self.signal.frames.iter_mut().zip(signal.frames.iter()) {
+            output += input;
         }
     }
 
     pub fn reset(&mut self) {
-        self.output.frames.clear();
+        self.signal.fill(Frame::default());
     }
 }
 
@@ -42,7 +52,7 @@ mod test {
     const TEST_SAMPLE_RATE: f32 = 44100.0;
 
     fn get_mixer() -> Mixer {
-        Mixer::new(TEST_SAMPLE_RATE)
+        Mixer::from_sample_buffer_size(0, TEST_SAMPLE_RATE)
     }
 
     fn get_short_signal() -> StereoSignal {
@@ -57,7 +67,7 @@ mod test {
     fn test_empty_mixer() {
         let mixer = get_mixer();
 
-        assert!(mixer.output.is_empty())
+        assert!(mixer.signal.is_empty())
     }
 
     #[test]
@@ -67,7 +77,7 @@ mod test {
 
         mixer.mix(&signal);
 
-        assert_signal_eq(mixer.output, signal);
+        assert_signal_eq(mixer.signal, signal);
     }
 
     #[test]
@@ -82,7 +92,7 @@ mod test {
             frame *= 2.0;
         }
 
-        assert_signal_eq(mixer.output, signal);
+        assert_signal_eq(mixer.signal, signal);
     }
 
     #[test]
@@ -98,7 +108,7 @@ mod test {
             frame *= 3.0;
         }
 
-        assert_signal_eq(mixer.output, signal);
+        assert_signal_eq(mixer.signal, signal);
     }
 
     #[test]
@@ -110,7 +120,7 @@ mod test {
         mixer.mix(&s1);
         mixer.mix(&s2);
 
-        assert_eq!(s2.frames.len(), mixer.output.len());
+        assert_eq!(s2.frames.len(), mixer.signal.len());
         let first_part = Signal::from_frames(
             s1.iter()
                 .zip(s2.iter())
@@ -123,14 +133,14 @@ mod test {
         assert_signal_eq(
             first_part,
             mixer
-                .output
+                .signal
                 .sub_signal(Duration::ZERO, s1.duration())
                 .unwrap(),
         );
         assert_signal_eq(
             second_part,
             mixer
-                .output
+                .signal
                 .sub_signal(s1.duration(), s2.duration())
                 .unwrap(),
         );

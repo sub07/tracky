@@ -16,59 +16,6 @@ pub struct SongPlayback {
     pub line_duration: Duration,
     pub time_since_last_line: Duration,
 }
-
-// impl SongPlayback {
-//     fn new() -> Self {
-//         let line_duration = Duration::from_secs_f32(1.0 / self.line_per_second);
-//         let line_audio_buffer = StereoSignal::new(line_duration, player.frame_rate);
-//         let master = Mixer::new(player.frame_rate);
-//         let channels = vec![Channel::new(); self.patterns.channel_count as usize];
-//         let sink = StereoSignal::new(Duration::ZERO, player.frame_rate);
-
-//         Self {
-//             channels,
-//             master,
-//             line_audio_buffer,
-//             current_line: 0,
-//             time_since_last_line: line_duration * 2,
-//             line_duration,
-//             sink,
-//         };
-//     }
-
-//     pub fn handle_toggle_playback(&mut self) {
-//         if let Err(err) = self.toggle_playback() {
-//             error!("{err}");
-//         }
-//     }
-
-//     pub fn toggle_playback(&mut self) -> anyhow::Result<()> {
-//         if self.is_playing() {
-//             self.stop_playback()?;
-//         } else {
-//             self.start_playback()?;
-//         }
-//         Ok(())
-//     }
-
-//     pub fn start_playback(&mut self) -> anyhow::Result<()> {
-//         self.setup_realtime_playback()?;
-//         Ok(())
-//     }
-
-//     pub fn stop_playback(&mut self) -> anyhow::Result<()> {
-//         if let Some(mut playback) = self.playback_state.take() {
-//             info!("Stopping playback");
-//             // playback.player.stop()?;
-//         }
-
-//         Ok(())
-//     }
-
-//     pub fn is_playing(&self) -> bool {
-//         self.playback_state.is_some()
-//     }
-
 //     pub fn playback_tick(&mut self, delta: Duration) -> anyhow::Result<()> {
 //         if let Some(ref mut playback) = self.playback_state {
 //             playback.time_since_last_line += delta;

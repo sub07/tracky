@@ -8,7 +8,7 @@ use crate::{
 pub enum Event {
     Key(ratatui::crossterm::event::KeyEvent),
     State(model::Event),
-    AudioState(model::Event),
+    AudioCallback(model::Event),
     Panic(anyhow::Error),
     Action(Action),
     AsyncAction(AsyncAction),

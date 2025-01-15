@@ -1,11 +1,9 @@
-pub mod channel;
 pub mod field;
-pub mod song;
 
 use std::time::Duration;
 
 use joy_vector::Vector;
-use log::info;
+use log::{error, info, warn};
 
 use crate::{
     audio::{mixer::Mixer, signal::StereoSignal},
@@ -36,6 +34,9 @@ impl model::State {
             model::Event::PreviousPattern => todo!(),
             model::Event::StartSongPlayback { frame_rate } => self.start_song_playback(frame_rate),
             model::Event::StopSongPlayback => self.stop_song_playback(),
+            model::Event::UpdatePlaybackSampleCount(new_sample_count) => {
+                self.update_playback_sample_count(new_sample_count)
+            }
         }
     }
 
@@ -127,7 +128,7 @@ impl model::State {
 
     fn start_song_playback(&mut self, frame_rate: f32) {
         let line_duration = Duration::from_secs_f32(1.0 / self.line_per_second);
-        let master = Mixer::new(frame_rate);
+        let master = Mixer::from_sample_buffer_size(0, frame_rate);
         let channels = vec![Channel::new(); self.patterns.channel_count as usize];
 
         self.playback = Some(SongPlayback {
@@ -141,6 +142,20 @@ impl model::State {
 
     fn stop_song_playback(&mut self) {
         self.playback = None;
+    }
+
+    fn update_playback_sample_count(&mut self, new_sample_count: usize) {
+        if let Some(playback) = self.playback.as_mut() {
+            warn!(
+                "Allocation: master mixer sample count changed from {} to {}",
+                playback.master.sample_count(),
+                new_sample_count
+            );
+            playback.master =
+                Mixer::from_sample_buffer_size(new_sample_count, playback.master.signal.frame_rate);
+        } else {
+            error!("Attempting to update playback params, but no playback is active");
+        }
     }
 }
 
