@@ -166,8 +166,17 @@ fn main() -> anyhow::Result<()> {
             }
             Event::AudioCallback(event) => app.state.handle_event(event),
             Event::ExitApp => app.exit(),
-            Event::LaunchAudioPlayer => app.init_audio_player(event_tx.clone()),
+            Event::StartAudioPlayer => app.start_audio_player(event_tx.clone()),
             Event::RequestRedraw => {}
+            Event::StopAudioPlayer(error) => {
+                if let Some(err) = error {
+                    error!("Audio player stopped with error: {err}");
+                }
+                app.stop_audio_player();
+                event_tx
+                    .send(Event::State(model::Event::StopSongPlayback))
+                    .unwrap();
+            }
         }
     }
 

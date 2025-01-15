@@ -18,7 +18,8 @@ pub enum Event {
     LoadingDone(AsyncAction),
     ClosePopup,
     SetPlayingDevice(Device),
-    LaunchAudioPlayer,
+    StartAudioPlayer,
+    StopAudioPlayer(Option<anyhow::Error>),
     RequestRedraw,
     ExitApp,
 }

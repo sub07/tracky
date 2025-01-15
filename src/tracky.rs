@@ -74,7 +74,7 @@ impl Tracky {
         }
     }
 
-    pub fn init_audio_player(&mut self, event_tx: Sender<Event>) {
+    pub fn start_audio_player(&mut self, event_tx: Sender<Event>) {
         let (state_event_tx, state_event_rx) = channel();
         match AudioPlayerBuilder::new()
             .device(self.selected_output_device.clone())
@@ -92,5 +92,9 @@ impl Tracky {
             }
             Err(error) => error!("{error}"),
         }
+    }
+
+    pub fn stop_audio_player(&mut self) {
+        self.audio_state = None;
     }
 }

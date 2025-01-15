@@ -145,6 +145,10 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
     pub fn sample_count(&self) -> usize {
         self.len() * FRAME_SIZE
     }
+
+    pub fn samples(&self) -> impl Iterator<Item = f32> + '_ {
+        self.iter().flat_map(|frame| frame.0)
+    }
 }
 
 impl StereoSignal {

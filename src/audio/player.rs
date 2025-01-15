@@ -7,6 +7,7 @@ use cpal::{
     Device, FromSample, Sample, SampleFormat, SizedSample, Stream, StreamConfig,
 };
 
+use itertools::Itertools;
 use joy_error::OptionToResultExt;
 use log::{error, info};
 
@@ -138,18 +139,18 @@ where
 
     assert!(config.channels == 2);
 
+    let event_tx_error = event_tx.clone();
+
     let stream = device.build_output_stream(
         &config,
         move |out: &mut [SampleType], _| {
-            audio_callback(
-                out,
-                sample_rate,
-                &mut state,
-                &state_event_rx,
-                event_tx.clone(),
-            );
+            audio_callback(out, &mut state, &state_event_rx, event_tx.clone());
         },
-        |e| error!("Cannot start audio stream: {e:?}"),
+        move |e| {
+            event_tx_error
+                .send(Event::StopAudioPlayer(Some(e.into())))
+                .unwrap();
+        },
         None,
     )?;
 
@@ -160,7 +161,6 @@ where
 
 fn audio_callback<SampleType>(
     out: &mut [SampleType],
-    frame_rate: f32,
     state: &mut model::State,
     state_event_rx: &Receiver<model::Event>,
     event_tx: Sender<Event>,
@@ -175,12 +175,16 @@ fn audio_callback<SampleType>(
     }
 
     out.fill(SampleType::from_sample(0.0));
+    
     for event in state_event_rx.try_iter() {
         state.handle_event(event);
     }
-    if let Some(playback) = state.playback.as_ref() {
-        if playback.master.sample_count() != out.len() {
-            update_state!(model::Event::UpdatePlaybackSampleCount(out.len()));
-        }
+
+    if state
+        .playback
+        .as_ref()
+        .is_some_and(|playback| playback.master.sample_count() != out.len())
+    {
+        update_state!(model::Event::UpdatePlaybackSampleCount(out.len()));
     }
 }

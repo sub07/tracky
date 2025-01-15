@@ -8,7 +8,8 @@ use crate::{
     model::{
         self,
         pattern::{HexDigit, NoteName, OctaveValue},
-    }, utils::Direction,
+    },
+    utils::Direction,
 };
 
 #[derive(PartialEq, Eq, Debug, Hash)]
