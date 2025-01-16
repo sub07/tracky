@@ -6,7 +6,7 @@ use joy_vector::Vector;
 use log::{error, warn};
 
 use crate::{
-    audio::mixer::Mixer,
+    audio::{mixer::Mixer, signal::Signal},
     model::{
         self,
         channel::Channel,
@@ -111,30 +111,26 @@ impl model::State {
     }
 
     fn set_hex_field(&mut self, digit: HexDigit) {
-        match PatternLineDescriptor::field_by_cursor(self.patterns.current_field) {
-            PatternLineDescriptor::Velocity => set_double_hex_field(
-                self.patterns.current_field,
-                &mut self.patterns.current_line_mut().velocity,
-                digit,
-            ),
-            PatternLineDescriptor::Instrument => set_double_hex_field(
-                self.patterns.current_field,
-                &mut self.patterns.current_line_mut().instrument,
-                digit,
-            ),
+        let current_field = self.patterns.current_field;
+        let line = self.patterns.current_line_mut();
+        let field = match PatternLineDescriptor::field_by_cursor(current_field) {
+            PatternLineDescriptor::Velocity => &mut line.velocity,
+            PatternLineDescriptor::Instrument => &mut line.instrument,
             _ => unreachable!(),
-        }
+        };
+        field.set_by_index(current_field, digit);
     }
 
     fn start_song_playback(&mut self, frame_rate: f32) {
         let line_duration = Duration::from_secs_f32(1.0 / self.line_per_second);
-        let master = Mixer::from_sample_buffer_size(0, frame_rate);
+        let master = Mixer::from_sample_count(0, frame_rate);
         let channels = vec![Channel::new(); self.patterns.channel_count as usize];
 
         self.playback = Some(SongPlayback {
             channels,
             master,
             current_line: 0,
+            line_audio_signal: Signal::new(frame_rate),
             line_duration,
             time_since_last_line: Duration::ZERO,
         });
@@ -145,28 +141,46 @@ impl model::State {
     }
 
     fn update_playback_sample_count(&mut self, new_sample_count: usize) {
-        if let Some(playback) = self.playback.as_mut() {
-            warn!(
-                "Allocation: master mixer sample count changed from {} to {}",
-                playback.master.sample_count(),
-                new_sample_count
-            );
-            playback.master =
-                Mixer::from_sample_buffer_size(new_sample_count, playback.master.signal.frame_rate);
-        } else {
-            error!("Attempting to update playback params, but no playback is active");
-        }
+        let Some(playback) = self.playback.as_mut() else {
+            error!("Attempting to update sample_count with no active playback");
+            return;
+        };
+        warn!(
+            "Heap allocations triggered: playback sample count changed from {} to {}",
+            playback.master.as_ref().sample_count(),
+            new_sample_count
+        );
+        playback.line_audio_signal =
+            Signal::from_sample_count(new_sample_count, playback.line_audio_signal.frame_rate);
+        playback.master =
+            Mixer::from_sample_count(new_sample_count, playback.master.signal.frame_rate);
     }
-}
 
-fn set_double_hex_field(
-    field_cursor: i32,
-    field: &mut Field<(HexDigit, HexDigit)>,
-    digit: HexDigit,
-) {
-    match PatternLineDescriptor::local_field_cursor(field_cursor) {
-        0 => field.set_first_digit(digit),
-        1 => field.set_second_digit(digit),
-        _ => unreachable!(),
+    fn perform_playback(&mut self) {
+        let Some(playback) = self.playback.as_mut() else {
+            error!("Attempting to perform playback without any active playback");
+            return;
+        };
+
+        let frame_rate = playback.master.frame_rate;
+
+        let step_duration = Duration::from_secs_f32(1.0 / frame_rate);
+        let mut duration_left = step_duration;
+
+        while duration_left > Duration::ZERO {
+            let duration_to_next_line = playback.line_duration - playback.time_since_last_line;
+            let frame_count_to_next_line =
+                (duration_to_next_line.as_secs_f32() * frame_rate) as usize;
+
+            playback.master.reset();
+
+            for (line, channel) in self
+                .patterns
+                .current_pattern_row(playback.current_line)
+                .zip(&mut playback.channels)
+            {}
+
+            duration_left -= duration_to_next_line;
+        }
     }
 }

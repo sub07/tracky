@@ -170,12 +170,12 @@ fn main() -> anyhow::Result<()> {
             Event::RequestRedraw => {}
             Event::StopAudioPlayer(error) => {
                 if let Some(err) = error {
-                    error!("Audio player stopped with error: {err}");
+                    error!("Audio player stopped: {err}");
+                } else {
+                    info!("Audio played stopped");
                 }
                 app.stop_audio_player();
-                event_tx
-                    .send(Event::State(model::Event::StopSongPlayback))
-                    .unwrap();
+                app.state.handle_event(model::Event::StopSongPlayback);
             }
         }
     }

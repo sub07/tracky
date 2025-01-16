@@ -288,13 +288,9 @@ impl Patterns {
             .unwrap()
     }
 
-    pub fn current_pattern_row(
-        &self,
-        index: usize,
-    ) -> anyhow::Result<impl Iterator<Item = &PatternLine>> {
-        ensure!(index < self.channel_len as usize);
-        Ok((0..self.channel_count as usize).map(move |channel_index| {
+    pub fn current_pattern_row(&self, index: usize) -> impl Iterator<Item = &PatternLine> {
+        (0..self.channel_count as usize).map(move |channel_index| {
             &self.current_pattern().lines[channel_index * self.channel_len as usize + index]
-        }))
+        })
     }
 }

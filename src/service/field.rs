@@ -1,4 +1,6 @@
-use crate::model::pattern::{Field, HexDigit, NoteFieldValue, NoteName, OctaveValue};
+use crate::model::pattern::{
+    Field, HexDigit, NoteFieldValue, NoteName, OctaveValue, PatternLineDescriptor,
+};
 
 impl Field<NoteFieldValue> {
     pub fn set_note_name(&mut self, note: NoteName, octave: OctaveValue) {
@@ -43,5 +45,13 @@ impl Field<(HexDigit, HexDigit)> {
 
     pub fn get_percentage(&self) -> Option<f32> {
         self.get_u8().map(|hex| hex as f32 / u8::MAX as f32)
+    }
+
+    pub fn set_by_index(&mut self, field_index: i32, value: HexDigit) {
+        match PatternLineDescriptor::local_field_cursor(field_index) {
+            0 => self.set_first_digit(value),
+            1 => self.set_second_digit(value),
+            _ => unreachable!(),
+        }
     }
 }

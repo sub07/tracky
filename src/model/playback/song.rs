@@ -1,18 +1,19 @@
 use std::time::Duration;
 
-use crate::{audio::mixer::Mixer, model::channel::Channel};
+use crate::{
+    audio::{mixer::Mixer, signal::StereoSignal},
+    model::channel::Channel,
+};
 
 #[derive(Clone)]
 pub struct SongPlayback {
     pub channels: Vec<Channel>,
     pub master: Mixer,
     pub current_line: usize,
+    pub line_audio_signal: StereoSignal,
     pub line_duration: Duration,
     pub time_since_last_line: Duration,
 }
-//     pub fn playback_tick(&mut self, delta: Duration) -> anyhow::Result<()> {
-//         if let Some(ref mut playback) = self.playback_state {
-//             playback.time_since_last_line += delta;
 //             while playback.time_since_last_line >= playback.line_duration {
 //                 playback.time_since_last_line -= playback.line_duration;
 //                 playback.master.reset();
@@ -45,6 +46,3 @@ pub struct SongPlayback {
 //                 self.stop_playback()?;
 //             }
 //         }
-//         Ok(())
-//     }
-// }

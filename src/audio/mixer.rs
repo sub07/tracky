@@ -19,9 +19,9 @@ impl std::ops::Deref for Mixer {
 }
 
 impl Mixer {
-    pub fn from_sample_buffer_size(sample_buffer_size: usize, frame_rate: f32) -> Mixer {
+    pub fn from_sample_count(sample_buffer_size: usize, frame_rate: f32) -> Mixer {
         Mixer {
-            signal: Signal::from_sample_buffer_size(sample_buffer_size, frame_rate),
+            signal: Signal::from_sample_count(sample_buffer_size, frame_rate),
         }
     }
 
@@ -30,7 +30,7 @@ impl Mixer {
         if signal.len() != self.signal.len() {
             warn!("Attempt to mix two signal of different size, mixer signal len: {} / input signal len: {}. Truncation may happen", self.signal.len(), signal.len());
         }
-        for (mut output, input) in self.signal.frames.iter_mut().zip(signal.frames.iter()) {
+        for (mut output, input) in self.signal.iter_mut().zip(signal.iter()) {
             output += input;
         }
     }
@@ -52,7 +52,7 @@ mod test {
     const TEST_SAMPLE_RATE: f32 = 44100.0;
 
     fn get_mixer() -> Mixer {
-        Mixer::from_sample_buffer_size(0, TEST_SAMPLE_RATE)
+        Mixer::from_sample_count(0, TEST_SAMPLE_RATE)
     }
 
     fn get_short_signal() -> StereoSignal {
@@ -88,7 +88,7 @@ mod test {
         mixer.mix(&signal);
         mixer.mix(&signal);
 
-        for mut frame in signal.frames.iter_mut() {
+        for mut frame in signal.iter_mut() {
             frame *= 2.0;
         }
 
@@ -104,7 +104,7 @@ mod test {
         mixer.mix(&signal);
         mixer.mix(&signal);
 
-        for mut frame in signal.frames.iter_mut() {
+        for mut frame in signal.iter_mut() {
             frame *= 3.0;
         }
 
@@ -120,7 +120,7 @@ mod test {
         mixer.mix(&s1);
         mixer.mix(&s2);
 
-        assert_eq!(s2.frames.len(), mixer.signal.len());
+        assert_eq!(s2.len(), mixer.signal.len());
         let first_part = Signal::from_frames(
             s1.iter()
                 .zip(s2.iter())
@@ -128,20 +128,22 @@ mod test {
                 .collect_vec(),
             s1.frame_rate,
         );
-        let second_part = s2.sub_signal(s1.duration(), s2.duration()).unwrap();
+        let second_part = s2
+            .clone_sub_signal(s1.as_ref().duration(), s2.as_ref().duration())
+            .unwrap();
 
         assert_signal_eq(
             first_part,
             mixer
                 .signal
-                .sub_signal(Duration::ZERO, s1.duration())
+                .clone_sub_signal(Duration::ZERO, s1.as_ref().duration())
                 .unwrap(),
         );
         assert_signal_eq(
             second_part,
             mixer
                 .signal
-                .sub_signal(s1.duration(), s2.duration())
+                .clone_sub_signal(s1.as_ref().duration(), s2.as_ref().duration())
                 .unwrap(),
         );
     }

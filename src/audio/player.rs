@@ -182,7 +182,7 @@ fn audio_callback<SampleType>(
     if state
         .playback
         .as_ref()
-        .is_some_and(|playback| playback.master.sample_count() != out.len())
+        .is_some_and(|playback| playback.master.as_ref().sample_count() != out.len())
     {
         update_state!(model::Event::UpdatePlaybackSampleCount(out.len()));
     }

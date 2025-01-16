@@ -1,30 +1,50 @@
 use std::{
-    ops::{Deref, DerefMut},
+    ops::{Deref, DerefMut, RangeTo},
     path::Path,
     time::Duration,
 };
 
 use anyhow::{bail, ensure};
-use itertools::Itertools;
 use joy_iter::zip_self::ZipSelf;
 use joy_vector::Vector;
+use log::error;
 
 use crate::audio::dsp;
 
 use super::{frame::Frame, load_samples_from_file};
 
-pub type StereoSignal = Signal<2>;
-
 #[derive(Clone)]
 pub struct Signal<const FRAME_SIZE: usize> {
-    pub frames: Vec<Frame<FRAME_SIZE>>,
+    frames: Vec<Frame<FRAME_SIZE>>,
     pub frame_rate: f32,
 }
 
+#[derive(Clone)]
+pub struct SigRef<'a, const FRAME_SIZE: usize> {
+    frames: &'a [Frame<FRAME_SIZE>],
+    pub frame_rate: f32,
+}
+
+pub struct SigMut<'a, const FRAME_SIZE: usize> {
+    frames: &'a mut [Frame<FRAME_SIZE>],
+    pub frame_rate: f32,
+}
+
+pub type StereoSignal = Signal<2>;
+pub type StereoSigRef<'a> = SigRef<'a, 2>;
+pub type StereoSigMut<'a> = SigMut<'a, 2>;
+
 impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
-    pub fn from_sample_buffer_size(buffer_size: usize, frame_rate: f32) -> Self {
+    pub fn new(frame_rate: f32) -> Self {
+        Self {
+            frames: Vec::new(),
+            frame_rate,
+        }
+    }
+
+    pub fn from_sample_count(sample_count: usize, frame_rate: f32) -> Self {
         Signal {
-            frames: vec![Frame::default(); buffer_size / FRAME_SIZE],
+            frames: vec![Frame::default(); sample_count / FRAME_SIZE],
             frame_rate,
         }
     }
@@ -40,41 +60,20 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         Signal { frames, frame_rate }
     }
 
-    pub fn duration(&self) -> Duration {
-        Duration::from_secs_f32(self.frames.len() as f32 / self.frame_rate)
+    #[inline]
+    pub fn as_ref(&self) -> SigRef<FRAME_SIZE> {
+        SigRef {
+            frames: &self.frames,
+            frame_rate: self.frame_rate,
+        }
     }
 
-    fn frame_index_from_duration(&self, duration: Duration) -> (usize, f32) {
-        let index = duration.as_secs_f32() * self.frame_rate;
-        (index as usize, index.fract())
-    }
-
-    pub fn write_signal_at_duration(
-        &mut self,
-        duration: Duration,
-        signal: &Self,
-    ) -> anyhow::Result<()> {
-        ensure!(
-            self.frame_rate == signal.frame_rate,
-            "The two signal must have the same frame rate"
-        );
-        let (copy_start_index, _) = self.frame_index_from_duration(duration);
-        let copy_end_index = usize::min(
-            self.frames.len() - 1,
-            copy_start_index + signal.frames.len(),
-        );
-        self.frames[copy_start_index..copy_end_index]
-            .copy_from_slice(&signal.frames[..(copy_end_index - copy_start_index)]);
-        Ok(())
-    }
-
-    pub fn append_signal(&mut self, signal: &Signal<FRAME_SIZE>) -> anyhow::Result<()> {
-        ensure!(
-            self.frame_rate == signal.frame_rate,
-            "The two signal must have the same frame rate"
-        );
-        self.frames.extend(signal.frames.iter());
-        Ok(())
+    #[inline]
+    pub fn as_mut(&mut self) -> SigMut<FRAME_SIZE> {
+        SigMut {
+            frames: &mut self.frames,
+            frame_rate: self.frame_rate,
+        }
     }
 
     pub unsafe fn into_samples(mut self) -> Vec<f32> {
@@ -97,36 +96,30 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         Ok(Signal::from_frames(frames, frame_rate))
     }
 
-    pub fn lerp_frame_at_duration(&self, duration: Duration) -> anyhow::Result<Frame<FRAME_SIZE>> {
-        let (frame_index, rem) = self.frame_index_from_duration(duration);
-
-        ensure!(
-            frame_index < self.frames.len(),
-            "Input duration must not exceed signal duration"
+    pub fn append_signal(&mut self, signal: &Signal<FRAME_SIZE>) {
+        error!(
+            "Trying to append signal with different frame_rates, self={}Hz / input={}Hz",
+            self.frame_rate, signal.frame_rate
         );
-
-        if frame_index == self.frames.len() - 1 {
-            if let [.., last_frame] = self.frames.as_slice() {
-                return Ok(*last_frame);
-            }
-        }
-
-        Ok(dsp::interpolation::linear(
-            &self.frames[frame_index],
-            &self.frames[frame_index + 1],
-            rem,
-        ))
+        self.frames.extend(signal.frames.iter());
     }
 
-    pub fn sub_signal(&self, start: Duration, end: Duration) -> anyhow::Result<Signal<FRAME_SIZE>> {
+    pub fn clone_sub_signal(
+        &self,
+        start: Duration,
+        end: Duration,
+    ) -> anyhow::Result<Signal<FRAME_SIZE>> {
         ensure!(
-            start <= self.duration(),
+            start <= self.as_ref().duration(),
             "start can't exceed signal duration"
         );
-        ensure!(end <= self.duration(), "end can't exceed signal duration");
+        ensure!(
+            end <= self.as_ref().duration(),
+            "end can't exceed signal duration"
+        );
         ensure!(start <= end, "start must be less than end");
-        let (start_index, _) = self.frame_index_from_duration(start);
-        let (end_index, _) = self.frame_index_from_duration(end);
+        let (start_index, _) = self.as_ref().frame_index_from_duration(start);
+        let (end_index, _) = self.as_ref().frame_index_from_duration(end);
         let sub_signal_frames = self.frames[start_index..end_index].to_owned();
         Ok(Self {
             frames: sub_signal_frames,
@@ -134,64 +127,115 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         })
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Frame<FRAME_SIZE>> {
-        self.frames.iter()
+    pub fn sub_signal_mut(&mut self, range: RangeTo<usize>) -> SigMut<FRAME_SIZE> {
+        SigMut {
+            frames: &mut self.frames[range],
+            frame_rate: self.frame_rate,
+        }
     }
 
-    pub fn fill(&mut self, value: Frame<FRAME_SIZE>) {
-        self.frames.fill(value);
+    pub fn sub_signal(&self, range: RangeTo<usize>) -> SigRef<FRAME_SIZE> {
+        SigRef {
+            frames: &self.frames[range],
+            frame_rate: self.frame_rate,
+        }
+    }
+}
+
+impl<const FRAME_SIZE: usize> SigRef<'_, FRAME_SIZE> {
+    pub fn duration(&self) -> Duration {
+        Duration::from_secs_f32(self.frames.len() as f32 / self.frame_rate)
     }
 
     pub fn sample_count(&self) -> usize {
-        self.len() * FRAME_SIZE
+        self.frames.len() * FRAME_SIZE
+    }
+
+    fn frame_index_from_duration(&self, duration: Duration) -> (usize, f32) {
+        let index = duration.as_secs_f32() * self.frame_rate;
+        (index as usize, index.fract())
+    }
+
+    pub fn lerp_frame_at_duration(&self, duration: Duration) -> Frame<FRAME_SIZE> {
+        let (frame_index, rem) = self.frame_index_from_duration(duration);
+        error!(
+            "duration longer than sign when trying to lerp: self={:?} / input={:?}",
+            self.duration(),
+            duration
+        );
+
+        if frame_index == self.frames.len() - 1 {
+            if let [.., last_frame] = self.frames {
+                return *last_frame;
+            }
+        }
+
+        dsp::interpolation::linear(
+            &self.frames[frame_index],
+            &self.frames[frame_index + 1],
+            rem,
+        )
+    }
+
+    pub fn sub_signal(&self, range: RangeTo<usize>) -> SigRef<FRAME_SIZE> {
+        SigRef {
+            frames: &self.frames[range],
+            frame_rate: self.frame_rate,
+        }
     }
 
     pub fn samples(&self) -> impl Iterator<Item = f32> + '_ {
         self.iter().flat_map(|frame| frame.0)
     }
+
+    pub fn clone(&self) -> Signal<FRAME_SIZE> {
+        Signal::from_frames(self.frames.to_vec(), self.frame_rate)
+    }
 }
 
-impl StereoSignal {
-    #[allow(dead_code)]
-    pub fn from_path<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
-        let audio_data = load_samples_from_file(path)?;
-
-        let samples: &mut dyn Iterator<Item = f32> = match audio_data.channel_count {
-            1 => &mut audio_data.samples.into_iter().zip_self(2),
-            2 => &mut audio_data.samples.into_iter(),
-            _ => bail!("Audio file must be mono or stereo"),
-        };
-
-        unsafe { Self::from_samples(samples.collect_vec(), audio_data.frame_rate) }
+impl<const FRAME_SIZE: usize> SigMut<'_, FRAME_SIZE> {
+    pub fn as_ref(&self) -> SigRef<FRAME_SIZE> {
+        SigRef {
+            frames: self.frames,
+            frame_rate: self.frame_rate,
+        }
     }
 
-    pub fn plot<P: AsRef<Path>>(&self, path: P) -> anyhow::Result<()> {
-        use plotters::prelude::*;
+    pub fn fill(&mut self, frame: Frame<FRAME_SIZE>) {
+        self.frames.fill(frame);
+    }
 
-        let root = SVGBackend::new(&path, (100000, 100000)).into_drawing_area();
-        root.fill(&WHITE)?;
-        let mut chart = ChartBuilder::on(&root)
-            .build_cartesian_2d(0.0f32..self.duration().as_secs_f32(), -1.0f32..1.0)?;
-        chart.configure_mesh().draw()?;
-
-        let left_data = self
-            .frames
-            .iter()
-            .enumerate()
-            .map(|(i, Vector([left, _]))| (i as f32 / self.frame_rate, *left))
-            .collect_vec();
-
-        chart.draw_series(LineSeries::new(left_data, &RED))?;
-
-        chart
-            .configure_series_labels()
-            .background_style(WHITE.mix(0.8))
-            .border_style(BLACK)
-            .draw()?;
-
-        root.present()?;
-
+    pub fn write_signal_at_duration(
+        &mut self,
+        duration: Duration,
+        signal: &Self,
+    ) -> anyhow::Result<()> {
+        ensure!(
+            self.frame_rate == signal.frame_rate,
+            "The two signal must have the same frame rate"
+        );
+        let (copy_start_index, _) = self.as_ref().frame_index_from_duration(duration);
+        let copy_end_index = usize::min(
+            self.frames.len() - 1,
+            copy_start_index + signal.frames.len(),
+        );
+        self.frames[copy_start_index..copy_end_index]
+            .copy_from_slice(&signal.frames[..(copy_end_index - copy_start_index)]);
         Ok(())
+    }
+
+    pub fn sub_signal_mut(&mut self, range: RangeTo<usize>) -> SigMut<FRAME_SIZE> {
+        SigMut {
+            frames: &mut self.frames[range],
+            frame_rate: self.frame_rate,
+        }
+    }
+
+    pub fn sub_signal(&self, range: RangeTo<usize>) -> SigRef<FRAME_SIZE> {
+        SigRef {
+            frames: &self.frames[range],
+            frame_rate: self.frame_rate,
+        }
     }
 }
 
@@ -206,6 +250,70 @@ impl<const FRAME_SIZE: usize> Deref for Signal<FRAME_SIZE> {
 impl<const FRAME_SIZE: usize> DerefMut for Signal<FRAME_SIZE> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.frames
+    }
+}
+
+impl<const FRAME_SIZE: usize> Deref for SigRef<'_, FRAME_SIZE> {
+    type Target = [Frame<FRAME_SIZE>];
+
+    fn deref(&self) -> &Self::Target {
+        self.frames
+    }
+}
+
+impl<const FRAME_SIZE: usize> Deref for SigMut<'_, FRAME_SIZE> {
+    type Target = [Frame<FRAME_SIZE>];
+
+    fn deref(&self) -> &Self::Target {
+        self.frames
+    }
+}
+
+impl<const FRAME_SIZE: usize> DerefMut for SigMut<'_, FRAME_SIZE> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.frames
+    }
+}
+
+impl StereoSignal {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+        let audio_data = load_samples_from_file(path)?;
+
+        let samples: &mut dyn Iterator<Item = f32> = match audio_data.channel_count {
+            1 => &mut audio_data.samples.into_iter().zip_self(2),
+            2 => &mut audio_data.samples.into_iter(),
+            _ => bail!("Audio file must be mono or stereo"),
+        };
+
+        unsafe { Self::from_samples(samples.collect(), audio_data.frame_rate) }
+    }
+
+    pub fn plot<P: AsRef<Path>>(&self, path: P) -> anyhow::Result<()> {
+        use plotters::prelude::*;
+
+        let root = SVGBackend::new(&path, (100000, 100000)).into_drawing_area();
+        root.fill(&WHITE)?;
+        let mut chart = ChartBuilder::on(&root)
+            .build_cartesian_2d(0.0f32..self.as_ref().duration().as_secs_f32(), -1.0f32..1.0)?;
+        chart.configure_mesh().draw()?;
+
+        let left_data = self
+            .frames
+            .iter()
+            .enumerate()
+            .map(|(i, Vector([left, _]))| (i as f32 / self.frame_rate, *left));
+
+        chart.draw_series(LineSeries::new(left_data, &RED))?;
+
+        chart
+            .configure_series_labels()
+            .background_style(WHITE.mix(0.8))
+            .border_style(BLACK)
+            .draw()?;
+
+        root.present()?;
+
+        Ok(())
     }
 }
 
@@ -244,6 +352,7 @@ pub mod test_utils {
 
 #[cfg(test)]
 mod test {
+    use itertools::Itertools;
     use test_utils::assert_signal_eq;
 
     use crate::audio::frame::StereoFrame;
@@ -322,12 +431,12 @@ mod test {
     }
 
     #[test]
-    fn test_sub_signal() {
+    fn test_clone_sub_signal() {
         let signal = get_signal();
-        let sub_signal = signal.sub_signal(Duration::from_secs(1), Duration::from_secs(2));
+        let sub_signal = signal.clone_sub_signal(Duration::from_secs(1), Duration::from_secs(2));
         assert!(sub_signal.is_ok());
         let sub_signal = sub_signal.unwrap();
-        assert_eq!(Duration::from_secs(1), sub_signal.duration());
+        assert_eq!(Duration::from_secs(1), sub_signal.as_ref().duration());
         let start_index = signal.frame_rate as usize;
         let end_index = signal.frame_rate as usize * 2;
 
@@ -343,7 +452,7 @@ mod test {
     fn test_sub_signal_start_gt_end() {
         let signal = get_signal();
         let sub_signal_err = signal
-            .sub_signal(Duration::from_secs(2), Duration::from_secs(1))
+            .clone_sub_signal(Duration::from_secs(2), Duration::from_secs(1))
             .err()
             .unwrap()
             .to_string();
@@ -355,7 +464,7 @@ mod test {
     fn test_sub_signal_start_exceeds_sig_duration() {
         let signal = get_signal();
         let sub_signal_err = signal
-            .sub_signal(Duration::from_secs(91), Duration::from_secs(92))
+            .clone_sub_signal(Duration::from_secs(91), Duration::from_secs(92))
             .err()
             .unwrap()
             .to_string();
@@ -367,7 +476,7 @@ mod test {
     fn test_sub_signal_end_exceeds_sig_duration() {
         let signal = get_signal();
         let sub_signal_err = signal
-            .sub_signal(Duration::from_secs(1), Duration::from_secs(90))
+            .clone_sub_signal(Duration::from_secs(1), Duration::from_secs(90))
             .err()
             .unwrap()
             .to_string();
