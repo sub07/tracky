@@ -3,7 +3,7 @@ use std::iter;
 use itertools::Itertools;
 use joy_vector::Vector;
 
-use super::{signal::StereoSigMut, Pan, Volume};
+use super::{signal, Pan, Volume};
 
 pub type Frame<const SIZE: usize> = Vector<f32, SIZE>;
 pub type StereoFrame = Frame<2>;
@@ -20,7 +20,7 @@ pub trait YieldFrame {
 
     fn collect_in(
         &mut self,
-        mut signal: StereoSigMut,
+        mut signal: signal::stereo::Mut,
         freq: f32,
         volume: Volume,
         pan: Pan,

@@ -1,12 +1,12 @@
 use std::time::Duration;
 
-use crate::audio::signal::{SigRef, Signal};
+use crate::audio::signal::{Owned, Ref};
 
 #[allow(dead_code)]
 pub fn linear<const FRAME_SIZE: usize>(
-    src: SigRef<FRAME_SIZE>,
+    src: Ref<FRAME_SIZE>,
     target_sample_rate: f32,
-) -> Signal<FRAME_SIZE> {
+) -> Owned<FRAME_SIZE> {
     let target_frame_rate = target_sample_rate.round();
 
     if src.frame_rate == target_frame_rate {
@@ -25,5 +25,5 @@ pub fn linear<const FRAME_SIZE: usize>(
         current_duration += period;
     }
 
-    Signal::from_frames(frames, target_frame_rate)
+    Owned::from_frames(frames, target_frame_rate)
 }

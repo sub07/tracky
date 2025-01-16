@@ -6,7 +6,7 @@ use joy_vector::Vector;
 use log::{error, warn};
 
 use crate::{
-    audio::{mixer::Mixer, signal::Signal},
+    audio::{mixer::Mixer, signal::Owned},
     model::{
         self,
         channel::Channel,
@@ -130,7 +130,7 @@ impl model::State {
             channels,
             master,
             current_line: 0,
-            line_audio_signal: Signal::new(frame_rate),
+            line_audio_signal: Owned::new(frame_rate),
             line_duration,
             time_since_last_line: Duration::ZERO,
         });
@@ -151,7 +151,7 @@ impl model::State {
             new_sample_count
         );
         playback.line_audio_signal =
-            Signal::from_sample_count(new_sample_count, playback.line_audio_signal.frame_rate);
+            Owned::from_sample_count(new_sample_count, playback.line_audio_signal.frame_rate);
         playback.master =
             Mixer::from_sample_count(new_sample_count, playback.master.signal.frame_rate);
     }

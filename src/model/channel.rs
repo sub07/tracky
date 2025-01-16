@@ -1,6 +1,6 @@
 use crate::audio::{
     frame::YieldFrame,
-    signal::{StereoSigMut, StereoSignal},
+    signal,
     synthesis::{SawWave, SineWave, SquareWave},
     Pan, Volume,
 };
@@ -55,7 +55,7 @@ impl Channel {
         };
     }
 
-    pub fn collect_signal(&mut self, mut output_signal: StereoSigMut) {
+    pub fn collect_signal(&mut self, mut output_signal: signal::stereo::Mut) {
         if let (
             Some((note, octave)),
             volume,

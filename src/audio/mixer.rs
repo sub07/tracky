@@ -1,17 +1,14 @@
 use log::warn;
 
-use super::{
-    frame::Frame,
-    signal::{Signal, StereoSignal},
-};
+use super::{frame::Frame, signal};
 
 #[derive(Clone)]
 pub struct Mixer {
-    pub signal: StereoSignal,
+    pub signal: signal::stereo::Owned,
 }
 
 impl std::ops::Deref for Mixer {
-    type Target = StereoSignal;
+    type Target = signal::stereo::Owned;
 
     fn deref(&self) -> &Self::Target {
         &self.signal
@@ -21,11 +18,11 @@ impl std::ops::Deref for Mixer {
 impl Mixer {
     pub fn from_sample_count(sample_buffer_size: usize, frame_rate: f32) -> Mixer {
         Mixer {
-            signal: Signal::from_sample_count(sample_buffer_size, frame_rate),
+            signal: signal::Owned::from_sample_count(sample_buffer_size, frame_rate),
         }
     }
 
-    pub fn mix(&mut self, signal: &StereoSignal) {
+    pub fn mix(&mut self, signal: &signal::stereo::Owned) {
         debug_assert_eq!(self.signal.frame_rate, signal.frame_rate);
         if signal.len() != self.signal.len() {
             warn!("Attempt to mix two signal of different size, mixer signal len: {} / input signal len: {}. Truncation may happen", self.signal.len(), signal.len());
@@ -55,12 +52,12 @@ mod test {
         Mixer::from_sample_count(0, TEST_SAMPLE_RATE)
     }
 
-    fn get_short_signal() -> StereoSignal {
-        StereoSignal::from_path("assets/stereo.wav").unwrap()
+    fn get_short_signal() -> signal::stereo::Owned {
+        signal::stereo::Owned::from_path("assets/stereo.wav").unwrap()
     }
 
-    fn get_long_signal() -> StereoSignal {
-        StereoSignal::from_path("assets/stereo2.wav").unwrap()
+    fn get_long_signal() -> signal::stereo::Owned {
+        signal::stereo::Owned::from_path("assets/stereo2.wav").unwrap()
     }
 
     #[test]
@@ -121,7 +118,7 @@ mod test {
         mixer.mix(&s2);
 
         assert_eq!(s2.len(), mixer.signal.len());
-        let first_part = Signal::from_frames(
+        let first_part = signal::Owned::from_frames(
             s1.iter()
                 .zip(s2.iter())
                 .map(|(f1, f2)| f1 + f2)

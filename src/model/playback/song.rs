@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::{
-    audio::{mixer::Mixer, signal::StereoSignal},
+    audio::{mixer::Mixer, signal},
     model::channel::Channel,
 };
 
@@ -10,7 +10,7 @@ pub struct SongPlayback {
     pub channels: Vec<Channel>,
     pub master: Mixer,
     pub current_line: usize,
-    pub line_audio_signal: StereoSignal,
+    pub line_audio_signal: signal::stereo::Owned,
     pub line_duration: Duration,
     pub time_since_last_line: Duration,
 }

@@ -14,27 +14,81 @@ use crate::audio::dsp;
 use super::{frame::Frame, load_samples_from_file};
 
 #[derive(Clone)]
-pub struct Signal<const FRAME_SIZE: usize> {
+pub struct Owned<const FRAME_SIZE: usize> {
     frames: Vec<Frame<FRAME_SIZE>>,
     pub frame_rate: f32,
 }
 
 #[derive(Clone)]
-pub struct SigRef<'a, const FRAME_SIZE: usize> {
+pub struct Ref<'a, const FRAME_SIZE: usize> {
     frames: &'a [Frame<FRAME_SIZE>],
     pub frame_rate: f32,
 }
 
-pub struct SigMut<'a, const FRAME_SIZE: usize> {
+pub struct Mut<'a, const FRAME_SIZE: usize> {
     frames: &'a mut [Frame<FRAME_SIZE>],
     pub frame_rate: f32,
 }
 
-pub type StereoSignal = Signal<2>;
-pub type StereoSigRef<'a> = SigRef<'a, 2>;
-pub type StereoSigMut<'a> = SigMut<'a, 2>;
+pub mod stereo {
+    use std::path::Path;
 
-impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
+    use anyhow::bail;
+    use joy_iter::zip_self::ZipSelf;
+    use joy_vector::Vector;
+
+    use crate::audio::load_samples_from_file;
+
+    pub type Owned = super::Owned<2>;
+    pub type Ref<'a> = super::Ref<'a, 2>;
+    pub type Mut<'a> = super::Mut<'a, 2>;
+
+    impl Owned {
+        pub fn from_path<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+            let audio_data = load_samples_from_file(path)?;
+
+            let samples: &mut dyn Iterator<Item = f32> = match audio_data.channel_count {
+                1 => &mut audio_data.samples.into_iter().zip_self(2),
+                2 => &mut audio_data.samples.into_iter(),
+                _ => bail!("Audio file must be mono or stereo"),
+            };
+
+            unsafe { Self::from_samples(samples.collect(), audio_data.frame_rate) }
+        }
+    }
+
+    impl Ref<'_> {
+        pub fn plot<P: AsRef<Path>>(&self, path: P) -> anyhow::Result<()> {
+            use plotters::prelude::*;
+
+            let root = SVGBackend::new(&path, (100000, 100000)).into_drawing_area();
+            root.fill(&WHITE)?;
+            let mut chart = ChartBuilder::on(&root)
+                .build_cartesian_2d(0.0f32..self.duration().as_secs_f32(), -1.0f32..1.0)?;
+            chart.configure_mesh().draw()?;
+
+            let left_data = self
+                .frames
+                .iter()
+                .enumerate()
+                .map(|(i, Vector([left, _]))| (i as f32 / self.frame_rate, *left));
+
+            chart.draw_series(LineSeries::new(left_data, &RED))?;
+
+            chart
+                .configure_series_labels()
+                .background_style(WHITE.mix(0.8))
+                .border_style(BLACK)
+                .draw()?;
+
+            root.present()?;
+
+            Ok(())
+        }
+    }
+}
+
+impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
     pub fn new(frame_rate: f32) -> Self {
         Self {
             frames: Vec::new(),
@@ -43,34 +97,34 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
     }
 
     pub fn from_sample_count(sample_count: usize, frame_rate: f32) -> Self {
-        Signal {
+        Owned {
             frames: vec![Frame::default(); sample_count / FRAME_SIZE],
             frame_rate,
         }
     }
 
     pub fn from_duration(duration: Duration, frame_rate: f32) -> Self {
-        Signal {
+        Owned {
             frames: vec![Frame::default(); (duration.as_secs_f32() * frame_rate) as usize],
             frame_rate,
         }
     }
 
     pub fn from_frames(frames: Vec<Frame<FRAME_SIZE>>, frame_rate: f32) -> Self {
-        Signal { frames, frame_rate }
+        Owned { frames, frame_rate }
     }
 
     #[inline]
-    pub fn as_ref(&self) -> SigRef<FRAME_SIZE> {
-        SigRef {
+    pub fn as_ref(&self) -> Ref<FRAME_SIZE> {
+        Ref {
             frames: &self.frames,
             frame_rate: self.frame_rate,
         }
     }
 
     #[inline]
-    pub fn as_mut(&mut self) -> SigMut<FRAME_SIZE> {
-        SigMut {
+    pub fn as_mut(&mut self) -> Mut<FRAME_SIZE> {
+        Mut {
             frames: &mut self.frames,
             frame_rate: self.frame_rate,
         }
@@ -93,10 +147,10 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
             len / FRAME_SIZE,
             cap / FRAME_SIZE,
         );
-        Ok(Signal::from_frames(frames, frame_rate))
+        Ok(Owned::from_frames(frames, frame_rate))
     }
 
-    pub fn append_signal(&mut self, signal: &Signal<FRAME_SIZE>) {
+    pub fn append_signal(&mut self, signal: &Owned<FRAME_SIZE>) {
         error!(
             "Trying to append signal with different frame_rates, self={}Hz / input={}Hz",
             self.frame_rate, signal.frame_rate
@@ -108,7 +162,7 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         &self,
         start: Duration,
         end: Duration,
-    ) -> anyhow::Result<Signal<FRAME_SIZE>> {
+    ) -> anyhow::Result<Owned<FRAME_SIZE>> {
         ensure!(
             start <= self.as_ref().duration(),
             "start can't exceed signal duration"
@@ -127,22 +181,22 @@ impl<const FRAME_SIZE: usize> Signal<FRAME_SIZE> {
         })
     }
 
-    pub fn sub_signal_mut(&mut self, range: RangeTo<usize>) -> SigMut<FRAME_SIZE> {
-        SigMut {
+    pub fn sub_signal_mut(&mut self, range: RangeTo<usize>) -> Mut<FRAME_SIZE> {
+        Mut {
             frames: &mut self.frames[range],
             frame_rate: self.frame_rate,
         }
     }
 
-    pub fn sub_signal(&self, range: RangeTo<usize>) -> SigRef<FRAME_SIZE> {
-        SigRef {
+    pub fn sub_signal(&self, range: RangeTo<usize>) -> Ref<FRAME_SIZE> {
+        Ref {
             frames: &self.frames[range],
             frame_rate: self.frame_rate,
         }
     }
 }
 
-impl<const FRAME_SIZE: usize> SigRef<'_, FRAME_SIZE> {
+impl<const FRAME_SIZE: usize> Ref<'_, FRAME_SIZE> {
     pub fn duration(&self) -> Duration {
         Duration::from_secs_f32(self.frames.len() as f32 / self.frame_rate)
     }
@@ -177,8 +231,8 @@ impl<const FRAME_SIZE: usize> SigRef<'_, FRAME_SIZE> {
         )
     }
 
-    pub fn sub_signal(&self, range: RangeTo<usize>) -> SigRef<FRAME_SIZE> {
-        SigRef {
+    pub fn sub_signal(&self, range: RangeTo<usize>) -> Ref<FRAME_SIZE> {
+        Ref {
             frames: &self.frames[range],
             frame_rate: self.frame_rate,
         }
@@ -188,14 +242,14 @@ impl<const FRAME_SIZE: usize> SigRef<'_, FRAME_SIZE> {
         self.iter().flat_map(|frame| frame.0)
     }
 
-    pub fn clone(&self) -> Signal<FRAME_SIZE> {
-        Signal::from_frames(self.frames.to_vec(), self.frame_rate)
+    pub fn clone(&self) -> Owned<FRAME_SIZE> {
+        Owned::from_frames(self.frames.to_vec(), self.frame_rate)
     }
 }
 
-impl<const FRAME_SIZE: usize> SigMut<'_, FRAME_SIZE> {
-    pub fn as_ref(&self) -> SigRef<FRAME_SIZE> {
-        SigRef {
+impl<const FRAME_SIZE: usize> Mut<'_, FRAME_SIZE> {
+    pub fn as_ref(&self) -> Ref<FRAME_SIZE> {
+        Ref {
             frames: self.frames,
             frame_rate: self.frame_rate,
         }
@@ -224,22 +278,22 @@ impl<const FRAME_SIZE: usize> SigMut<'_, FRAME_SIZE> {
         Ok(())
     }
 
-    pub fn sub_signal_mut(&mut self, range: RangeTo<usize>) -> SigMut<FRAME_SIZE> {
-        SigMut {
+    pub fn sub_signal_mut(&mut self, range: RangeTo<usize>) -> Mut<FRAME_SIZE> {
+        Mut {
             frames: &mut self.frames[range],
             frame_rate: self.frame_rate,
         }
     }
 
-    pub fn sub_signal(&self, range: RangeTo<usize>) -> SigRef<FRAME_SIZE> {
-        SigRef {
+    pub fn sub_signal(&self, range: RangeTo<usize>) -> Ref<FRAME_SIZE> {
+        Ref {
             frames: &self.frames[range],
             frame_rate: self.frame_rate,
         }
     }
 }
 
-impl<const FRAME_SIZE: usize> Deref for Signal<FRAME_SIZE> {
+impl<const FRAME_SIZE: usize> Deref for Owned<FRAME_SIZE> {
     type Target = [Frame<FRAME_SIZE>];
 
     fn deref(&self) -> &Self::Target {
@@ -247,13 +301,13 @@ impl<const FRAME_SIZE: usize> Deref for Signal<FRAME_SIZE> {
     }
 }
 
-impl<const FRAME_SIZE: usize> DerefMut for Signal<FRAME_SIZE> {
+impl<const FRAME_SIZE: usize> DerefMut for Owned<FRAME_SIZE> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.frames
     }
 }
 
-impl<const FRAME_SIZE: usize> Deref for SigRef<'_, FRAME_SIZE> {
+impl<const FRAME_SIZE: usize> Deref for Ref<'_, FRAME_SIZE> {
     type Target = [Frame<FRAME_SIZE>];
 
     fn deref(&self) -> &Self::Target {
@@ -261,7 +315,7 @@ impl<const FRAME_SIZE: usize> Deref for SigRef<'_, FRAME_SIZE> {
     }
 }
 
-impl<const FRAME_SIZE: usize> Deref for SigMut<'_, FRAME_SIZE> {
+impl<const FRAME_SIZE: usize> Deref for Mut<'_, FRAME_SIZE> {
     type Target = [Frame<FRAME_SIZE>];
 
     fn deref(&self) -> &Self::Target {
@@ -269,62 +323,20 @@ impl<const FRAME_SIZE: usize> Deref for SigMut<'_, FRAME_SIZE> {
     }
 }
 
-impl<const FRAME_SIZE: usize> DerefMut for SigMut<'_, FRAME_SIZE> {
+impl<const FRAME_SIZE: usize> DerefMut for Mut<'_, FRAME_SIZE> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.frames
-    }
-}
-
-impl StereoSignal {
-    pub fn from_path<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
-        let audio_data = load_samples_from_file(path)?;
-
-        let samples: &mut dyn Iterator<Item = f32> = match audio_data.channel_count {
-            1 => &mut audio_data.samples.into_iter().zip_self(2),
-            2 => &mut audio_data.samples.into_iter(),
-            _ => bail!("Audio file must be mono or stereo"),
-        };
-
-        unsafe { Self::from_samples(samples.collect(), audio_data.frame_rate) }
-    }
-
-    pub fn plot<P: AsRef<Path>>(&self, path: P) -> anyhow::Result<()> {
-        use plotters::prelude::*;
-
-        let root = SVGBackend::new(&path, (100000, 100000)).into_drawing_area();
-        root.fill(&WHITE)?;
-        let mut chart = ChartBuilder::on(&root)
-            .build_cartesian_2d(0.0f32..self.as_ref().duration().as_secs_f32(), -1.0f32..1.0)?;
-        chart.configure_mesh().draw()?;
-
-        let left_data = self
-            .frames
-            .iter()
-            .enumerate()
-            .map(|(i, Vector([left, _]))| (i as f32 / self.frame_rate, *left));
-
-        chart.draw_series(LineSeries::new(left_data, &RED))?;
-
-        chart
-            .configure_series_labels()
-            .background_style(WHITE.mix(0.8))
-            .border_style(BLACK)
-            .draw()?;
-
-        root.present()?;
-
-        Ok(())
     }
 }
 
 #[cfg(test)]
 pub mod test_utils {
 
-    use super::Signal;
+    use super::Owned;
 
     pub fn assert_signal_eq<const FRAME_SIZE: usize>(
-        signal1: Signal<FRAME_SIZE>,
-        signal2: Signal<FRAME_SIZE>,
+        signal1: Owned<FRAME_SIZE>,
+        signal2: Owned<FRAME_SIZE>,
     ) {
         const FLOAT_EQ_EPSILON: f32 = 0.001;
 
@@ -359,8 +371,8 @@ mod test {
 
     use super::*;
 
-    fn get_signal() -> StereoSignal {
-        StereoSignal::from_path("assets/stereo2.wav").unwrap()
+    fn get_signal() -> stereo::Owned {
+        stereo::Owned::from_path("assets/stereo2.wav").unwrap()
     }
 
     #[test]
@@ -378,7 +390,7 @@ mod test {
 
     #[test]
     fn test_unsafe_into_samples_with_empty_signal() {
-        let signal = Signal::<1>::from_duration(Duration::ZERO, 0.0);
+        let signal = Owned::<1>::from_duration(Duration::ZERO, 0.0);
         let samples = unsafe { signal.into_samples() };
 
         assert!(samples.is_empty());
@@ -389,7 +401,7 @@ mod test {
     fn test_unsafe_from_samples_stereo_yields_valid_signal() {
         let audio_data = load_samples_from_file("assets/stereo.wav").unwrap();
         let signal = unsafe {
-            Signal::<2>::from_samples(audio_data.samples.clone(), audio_data.frame_rate).unwrap()
+            Owned::<2>::from_samples(audio_data.samples.clone(), audio_data.frame_rate).unwrap()
         };
         assert_eq!(audio_data.samples.len() / 2, signal.frames.len());
         for i in 0..audio_data.samples.len() / audio_data.channel_count as usize {
@@ -401,7 +413,7 @@ mod test {
 
     #[test]
     fn test_unsafe_from_samples_empty_yields_valid_signal() {
-        let signal = unsafe { Signal::<2>::from_samples(Vec::new(), 0.0).unwrap() };
+        let signal = unsafe { Owned::<2>::from_samples(Vec::new(), 0.0).unwrap() };
         assert!(signal.frames.is_empty());
         assert_eq!(0, signal.frames.capacity());
     }
@@ -409,16 +421,16 @@ mod test {
     #[test]
     #[should_panic(expected = "frame 0 differs: [32.0, 63.0] != [33.0, 64.0]")]
     fn test_assert_signal_eq_differs() {
-        let s1 = unsafe { Signal::<2>::from_samples(vec![32.0, 63.0], 44100.0).unwrap() };
-        let s2 = unsafe { Signal::<2>::from_samples(vec![33.0, 64.0], 44100.0).unwrap() };
+        let s1 = unsafe { Owned::<2>::from_samples(vec![32.0, 63.0], 44100.0).unwrap() };
+        let s2 = unsafe { Owned::<2>::from_samples(vec![33.0, 64.0], 44100.0).unwrap() };
 
         assert_signal_eq(s1, s2);
     }
 
     #[test]
     fn test_assert_signal_eq_same() {
-        let s1 = unsafe { Signal::<2>::from_samples(vec![32.0, 63.0], 44100.0).unwrap() };
-        let s2 = unsafe { Signal::<2>::from_samples(vec![32.0, 63.0], 44100.0).unwrap() };
+        let s1 = unsafe { Owned::<2>::from_samples(vec![32.0, 63.0], 44100.0).unwrap() };
+        let s2 = unsafe { Owned::<2>::from_samples(vec![32.0, 63.0], 44100.0).unwrap() };
 
         assert_signal_eq(s1, s2);
     }
