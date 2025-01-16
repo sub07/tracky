@@ -31,6 +31,12 @@ impl State {
     pub fn is_playing(&self) -> bool {
         self.playback.is_some()
     }
+
+    pub fn is_playback_done(&self) -> bool {
+        self.playback
+            .as_ref()
+            .is_some_and(|playback| playback.current_line as i32 >= self.patterns.channel_len)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -55,4 +61,5 @@ pub enum Event {
     },
     StopSongPlayback,
     UpdatePlaybackSampleCount(usize),
+    PerformStepPlayback,
 }

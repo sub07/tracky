@@ -1,5 +1,5 @@
 use crate::audio::{
-    frame::YieldFrame,
+    frame::MakeFrame,
     signal,
     synthesis::{SawWave, SineWave, SquareWave},
     Pan, Volume,
@@ -69,7 +69,7 @@ impl Channel {
             &mut self.current_instrument,
         ) {
             let freq = note_to_freq(note, octave);
-            let frames: &mut dyn YieldFrame = match index {
+            let frames: &mut dyn MakeFrame = match index {
                 0 => &mut SineWave,
                 1 => &mut SawWave,
                 2 => &mut SquareWave,

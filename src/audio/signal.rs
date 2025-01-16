@@ -181,18 +181,48 @@ impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
         })
     }
 
-    pub fn sub_signal_mut(&mut self, range: RangeTo<usize>) -> Mut<FRAME_SIZE> {
-        Mut {
-            frames: &mut self.frames[range],
+    pub fn sub_signal_mut(
+        &mut self,
+        start: Duration,
+        end: Duration,
+    ) -> anyhow::Result<Mut<FRAME_SIZE>> {
+        ensure!(
+            start <= self.as_ref().duration(),
+            "start can't exceed signal duration"
+        );
+        ensure!(
+            end <= self.as_ref().duration(),
+            "end can't exceed signal duration"
+        );
+        ensure!(start <= end, "start must be less than end");
+        let (start_index, _) = self.as_ref().frame_index_from_duration(start);
+        let (end_index, _) = self.as_ref().frame_index_from_duration(end);
+        Ok(Mut {
+            frames: &mut self.frames[start_index..end_index],
             frame_rate: self.frame_rate,
-        }
+        })
     }
 
-    pub fn sub_signal(&self, range: RangeTo<usize>) -> Ref<FRAME_SIZE> {
-        Ref {
-            frames: &self.frames[range],
+    pub fn sub_signal(
+        &mut self,
+        start: Duration,
+        end: Duration,
+    ) -> anyhow::Result<Ref<FRAME_SIZE>> {
+        ensure!(
+            start <= self.as_ref().duration(),
+            "start can't exceed signal duration"
+        );
+        ensure!(
+            end <= self.as_ref().duration(),
+            "end can't exceed signal duration"
+        );
+        ensure!(start <= end, "start must be less than end");
+        let (start_index, _) = self.as_ref().frame_index_from_duration(start);
+        let (end_index, _) = self.as_ref().frame_index_from_duration(end);
+        Ok(Ref {
+            frames: &self.frames[start_index..end_index],
             frame_rate: self.frame_rate,
-        }
+        })
     }
 }
 

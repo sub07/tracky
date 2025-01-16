@@ -1,2 +1,6 @@
 - Handle multiple same popup
-- Handle input popup horizontal scroll 
+- Handle input popup horizontal scroll
+- Fix ASIO
+- Request device sample_rate & buffer size
+- explore simd for audio callback mixing add operation
+- avoid SongPlayback.step_signal by wrapping audio_callback slice directly

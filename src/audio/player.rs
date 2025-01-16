@@ -7,7 +7,9 @@ use cpal::{
     Device, FromSample, Sample, SampleFormat, SizedSample, Stream, StreamConfig,
 };
 
+use itertools::Itertools;
 use joy_error::OptionToResultExt;
+use joy_vector::Vector;
 use log::info;
 
 use crate::{
@@ -182,8 +184,31 @@ fn audio_callback<SampleType>(
     if state
         .playback
         .as_ref()
-        .is_some_and(|playback| playback.master.as_ref().sample_count() != out.len())
+        .is_some_and(|playback| playback.step_signal.as_ref().sample_count() != out.len())
     {
         update_state!(model::Event::UpdatePlaybackSampleCount(out.len()));
+    }
+
+    if state.is_playing() {
+        update_state!(model::Event::PerformStepPlayback);
+
+        if let Some(playback) = state.playback.as_ref() {
+            for (out, Vector([left, right])) in out[..playback.last_step_computed_sample_count]
+                .chunks_mut(2)
+                .zip(
+                    playback
+                        .step_signal
+                        .iter()
+                        .take(playback.last_step_computed_sample_count / 2),
+                )
+            {
+                out[0] = SampleType::from_sample(*left);
+                out[1] = SampleType::from_sample(*right);
+            }
+        }
+
+        if state.is_playback_done() {
+            update_state!(model::Event::StopSongPlayback);
+        }
     }
 }

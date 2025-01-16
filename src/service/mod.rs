@@ -2,11 +2,15 @@ pub mod field;
 
 use std::time::Duration;
 
+use itertools::Itertools;
 use joy_vector::Vector;
 use log::{error, warn};
 
 use crate::{
-    audio::{mixer::Mixer, signal::Owned},
+    audio::{
+        frame::Frame,
+        signal::{self, Owned},
+    },
     model::{
         self,
         channel::Channel,
@@ -16,6 +20,9 @@ use crate::{
     utils::Direction,
 };
 
+///
+/// Event handling methods
+///
 impl model::State {
     pub fn handle_event(&mut self, event: model::Event) {
         match event {
@@ -37,6 +44,7 @@ impl model::State {
             model::Event::UpdatePlaybackSampleCount(new_sample_count) => {
                 self.update_playback_sample_count(new_sample_count)
             }
+            model::Event::PerformStepPlayback => self.perform_step_playback(),
         }
     }
 
@@ -122,17 +130,21 @@ impl model::State {
     }
 
     fn start_song_playback(&mut self, frame_rate: f32) {
-        let line_duration = Duration::from_secs_f32(1.0 / self.line_per_second);
-        let master = Mixer::from_sample_count(0, frame_rate);
-        let channels = vec![Channel::new(); self.patterns.channel_count as usize];
+        let mut channels = vec![Channel::new(); self.patterns.channel_count as usize];
+
+        // Init first line
+        for (line, channel) in self.patterns.current_pattern_row(0).zip(&mut channels) {
+            channel.setup_line(line);
+        }
 
         self.playback = Some(SongPlayback {
             channels,
-            master,
+            step_signal: signal::stereo::Owned::new(frame_rate),
+            line_signal: signal::stereo::Owned::new(frame_rate),
             current_line: 0,
-            line_audio_signal: Owned::new(frame_rate),
-            line_duration,
-            time_since_last_line: Duration::ZERO,
+            current_line_duration: Duration::ZERO,
+            line_duration: Duration::from_secs_f32(1.0 / self.line_per_second),
+            last_step_computed_sample_count: 0,
         });
     }
 
@@ -147,40 +159,83 @@ impl model::State {
         };
         warn!(
             "Heap allocations triggered: playback sample count changed from {} to {}",
-            playback.master.as_ref().sample_count(),
+            playback.step_signal.as_ref().sample_count(),
             new_sample_count
         );
-        playback.line_audio_signal =
-            Owned::from_sample_count(new_sample_count, playback.line_audio_signal.frame_rate);
-        playback.master =
-            Mixer::from_sample_count(new_sample_count, playback.master.signal.frame_rate);
+        playback.line_signal =
+            Owned::from_sample_count(new_sample_count, playback.line_signal.frame_rate);
+        playback.step_signal = playback.line_signal.clone();
     }
 
-    fn perform_playback(&mut self) {
+    fn perform_step_playback(&mut self) {
         let Some(playback) = self.playback.as_mut() else {
             error!("Attempting to perform playback without any active playback");
             return;
         };
 
-        let frame_rate = playback.master.frame_rate;
+        playback.last_step_computed_sample_count = 0;
 
-        let step_duration = Duration::from_secs_f32(1.0 / frame_rate);
-        let mut duration_left = step_duration;
-
-        while duration_left > Duration::ZERO {
-            let duration_to_next_line = playback.line_duration - playback.time_since_last_line;
-            let frame_count_to_next_line =
-                (duration_to_next_line.as_secs_f32() * frame_rate) as usize;
-
-            playback.master.reset();
-
-            for (line, channel) in self
-                .patterns
-                .current_pattern_row(playback.current_line)
-                .zip(&mut playback.channels)
-            {}
-
-            duration_left -= duration_to_next_line;
+        if playback.current_line as i32 >= self.patterns.channel_len {
+            return;
         }
+
+        playback.step_signal.fill(Frame::default());
+
+        let step_duration = playback.step_signal.as_ref().duration();
+        let mut sub_step_start_duration = Duration::ZERO;
+
+        while sub_step_start_duration < step_duration {
+            let sub_step_duration = (playback.line_duration - playback.current_line_duration)
+                .min(step_duration - sub_step_start_duration);
+
+            let sub_step_end_duration = sub_step_start_duration + sub_step_duration;
+
+            for channel in playback.channels.iter_mut() {
+                channel.collect_signal(
+                    playback
+                        .line_signal
+                        .sub_signal_mut(sub_step_start_duration, sub_step_end_duration)
+                        .unwrap(),
+                );
+                for (mut out, input) in playback
+                    .step_signal
+                    .sub_signal_mut(sub_step_start_duration, sub_step_end_duration)
+                    .unwrap()
+                    .iter_mut()
+                    .zip_eq(
+                        playback
+                            .line_signal
+                            .sub_signal(sub_step_start_duration, sub_step_end_duration)
+                            .unwrap()
+                            .iter(),
+                    )
+                {
+                    out += input;
+                }
+            }
+
+            sub_step_start_duration = sub_step_end_duration;
+
+            playback.current_line_duration += sub_step_duration;
+            if playback.current_line_duration >= playback.line_duration {
+                playback.current_line += 1;
+                if playback.current_line as i32 >= self.patterns.channel_len {
+                    break;
+                }
+
+                playback.current_line_duration -= playback.line_duration;
+                for (line, channel) in self
+                    .patterns
+                    .current_pattern_row(playback.current_line)
+                    .zip(&mut playback.channels)
+                {
+                    channel.setup_line(line);
+                }
+            }
+        }
+
+        playback.last_step_computed_sample_count = (sub_step_start_duration.as_secs_f32()
+            * playback.step_signal.frame_rate
+            * 2.0) as usize;
     }
 }

@@ -1,4 +1,4 @@
-use std::iter;
+use std::{iter, time::Duration};
 
 use itertools::Itertools;
 use joy_vector::Vector;
@@ -8,14 +8,14 @@ use super::{signal, Pan, Volume};
 pub type Frame<const SIZE: usize> = Vector<f32, SIZE>;
 pub type StereoFrame = Frame<2>;
 
-pub trait YieldFrame {
+pub trait MakeFrame {
     fn next(
         &mut self,
         freq: f32,
         volume: Volume,
         pan: Pan,
         phase: &mut f32,
-        sample_rate: f32,
+        frame_rate: f32,
     ) -> Option<StereoFrame>;
 
     fn collect_in(

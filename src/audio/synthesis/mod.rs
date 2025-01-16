@@ -3,13 +3,13 @@ use std::f32::consts::PI;
 use joy_vector::vector;
 
 use super::{
-    frame::{StereoFrame, YieldFrame},
+    frame::{MakeFrame, StereoFrame},
     Pan, Volume,
 };
 
 pub struct SineWave;
 
-impl YieldFrame for SineWave {
+impl MakeFrame for SineWave {
     fn next(
         &mut self,
         freq: f32,
@@ -33,7 +33,7 @@ impl YieldFrame for SineWave {
 
 pub struct SquareWave;
 
-impl YieldFrame for SquareWave {
+impl MakeFrame for SquareWave {
     fn next(
         &mut self,
         freq: f32,
@@ -64,7 +64,7 @@ impl YieldFrame for SquareWave {
 
 pub struct SawWave;
 
-impl YieldFrame for SawWave {
+impl MakeFrame for SawWave {
     fn next(
         &mut self,
         freq: f32,
