@@ -2,11 +2,13 @@ use crate::{
     audio::{Device, Hosts},
     model::{self},
     utils::Direction,
+    view::popup::input::InputId,
 };
 
 #[derive(Debug)]
 pub enum Event {
     Key(ratatui::crossterm::event::KeyEvent),
+    Text(Text),
     State(model::Event),
     AudioCallback(model::Event),
     Panic(anyhow::Error),
@@ -21,6 +23,7 @@ pub enum Event {
     StartAudioPlayer,
     StopAudioPlayer(Option<anyhow::Error>),
     RequestRedraw,
+    TextSubmitted(InputId, String),
     ExitApp,
 }
 
@@ -41,4 +44,12 @@ pub enum Action {
     Confirm,
     Cancel,
     RequestOpenDeviceSelectionPopup,
+}
+
+#[derive(Debug, Clone)]
+pub enum Text {
+    WriteDataAtCursor(char),
+    RemoveCharAtCursor,
+    MoveCursorLeft,
+    MoveCursorRight,
 }

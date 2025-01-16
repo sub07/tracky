@@ -47,6 +47,14 @@ fn centered_rows(area: Rect, height: Constraint) -> Rect {
     height
 }
 
+fn margin(area: Rect, margin: u16) -> Rect {
+    let [area] = Layout::default()
+        .constraints([Constraint::Min(0)])
+        .margin(margin)
+        .areas(area);
+    area
+}
+
 fn clamp_layout_width(area: Rect, value: Constraint, min: Constraint, max: Constraint) -> Rect {
     let [_, wanted_area, _] =
         Layout::horizontal([Constraint::Fill(1), value, Constraint::Fill(1)]).areas(area);
@@ -97,27 +105,25 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
         },
     ]);
 
-    let loading_text = Line::from(if app.loader_count > 0 {
-        "Loading..."
-    } else {
-        ""
-    })
-    .underlined();
-
     let playback_state_text = Line::from(if app.state.is_playing() {
         "Playing"
     } else {
         "Not playing"
     });
 
-    Header::new([audio_state_text, playback_state_text, loading_text]).render(header_area, buf);
+    Header::new([audio_state_text, playback_state_text]).render(header_area, buf);
 
     pattern_view.render(pattern_area, buf);
 
-    if let Some(popup) = &mut app.popup_state {
+    for popup in app.popup_state.iter_mut() {
         match popup {
             popup::Popup::AudioDeviceSelection(popup) => popup.render(area, buf),
+            popup::Popup::Input(popup) => popup.render(area, buf),
         }
+    }
+
+    if app.loader_count > 0 {
+        popup::loading::Popup.render(area, buf);
     }
 
     if app.display_log_console {

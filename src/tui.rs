@@ -1,8 +1,10 @@
 use crate::log::write_logs_to_file;
 use crate::tracky::Tracky;
 use crate::view::render_root;
+use log::error;
 use ratatui::backend::Backend;
 use ratatui::crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
+use ratatui::layout::Position;
 use ratatui::{crossterm, Terminal};
 use std::io;
 use std::panic;

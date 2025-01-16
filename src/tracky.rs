@@ -25,7 +25,7 @@ pub struct Tracky {
     pub display_log_console: bool,
     pub keybindings: KeyBindings,
     pub selected_output_device: Option<Device>,
-    pub popup_state: Option<Popup>,
+    pub popup_state: Vec<Popup>,
     pub loader_count: usize,
     pub audio_state: Option<AudioState>,
 }
@@ -38,7 +38,7 @@ impl Default for Tracky {
             display_log_console: DEBUG,
             keybindings: Default::default(),
             selected_output_device: None,
-            popup_state: None,
+            popup_state: Vec::new(),
             audio_state: None,
             loader_count: 0,
         }
@@ -55,15 +55,15 @@ impl Tracky {
     }
 
     pub fn input_context(&self) -> crate::keybindings::InputContext {
-        if self.popup_state.is_some() {
-            InputContext::Popup
+        if let Some(popup) = self.popup_state.last() {
+            popup.input_context()
         } else {
             self.state.patterns.current_input_context()
         }
     }
 
     pub fn close_popup(&mut self) {
-        self.popup_state = None;
+        self.popup_state.pop();
     }
 
     pub fn send_player_state_event(&self, event: model::Event) {

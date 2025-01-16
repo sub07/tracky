@@ -12,13 +12,14 @@ use crate::{
     utils::Direction,
 };
 
-#[derive(PartialEq, Eq, Debug, Hash)]
+#[derive(PartialEq, Eq, Debug, Hash, Clone, Copy)]
 pub enum InputContext {
     Popup,
     Note,
     Octave,
     Hex,
     Global,
+    Text,
 }
 
 type EventProducer = Box<dyn Fn() -> Event>;
@@ -29,6 +30,10 @@ pub struct KeyBindings {
 
 impl KeyBindings {
     pub fn action(&self, key_code: KeyCode, input_context: InputContext) -> Option<Event> {
+        if let (KeyCode::Char(c), InputContext::Text) = (key_code, input_context) {
+            return Some(Event::Text(event::Text::WriteDataAtCursor(c)));
+        }
+
         let get_action = |input_context| {
             self.context_bindings
                 .get(&input_context)
@@ -126,11 +131,17 @@ impl Default for KeyBindings {
                 KeyCode::Char(' ') => b!(Event::Action(event::Action::TogglePlay)),
                 KeyCode::Char('*')=> b!(Event::State(model::Event::MutateGlobalOctave { increment: 1 })),
                 KeyCode::Char('/') => b!(Event::State(model::Event::MutateGlobalOctave { increment: -1 })),
-                KeyCode::Esc => b!(Event::ExitApp),
+                KeyCode::Esc => b!(Event::Action(event::Action::Cancel)),
+                KeyCode::Enter => b!(Event::Action(event::Action::Confirm)),
                 KeyCode::F(9) => b!(Event::Action(event::Action::WriteLogsOnDisk)),
                 KeyCode::F(10) => b!(Event::Action(event::Action::ClearLogsPanel)),
                 KeyCode::F(12) => b!(Event::Action(event::Action::ToggleLogsPanel)),
                 KeyCode::F(1) => b!(Event::Action(event::Action::RequestOpenDeviceSelectionPopup)),
+            ),
+            InputContext::Text => hash_map_of!(
+                KeyCode::Backspace => b!(Event::Text(event::Text::RemoveCharAtCursor)),
+                KeyCode::Left => b!(Event::Text(event::Text::MoveCursorLeft)),
+                KeyCode::Right => b!(Event::Text(event::Text::MoveCursorRight)),
             ),
         );
 

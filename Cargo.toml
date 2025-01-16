@@ -25,6 +25,8 @@ audrey = "0.3"
 plotters = "0.3"
 builder-pattern = "0"
 log = "0.4"
+tui-input = "0"
+uid = "0"
 
 [dev-dependencies]
 approx = "0.5"

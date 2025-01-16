@@ -15,9 +15,12 @@ use ratatui::{
 use crate::{
     audio::device::{Device, Hosts},
     event::{Action, Event},
+    keybindings::InputContext,
     utils::Direction,
     view::{centered_line, responsive_centered_rect},
 };
+
+use super::{input::InputId, HandleEvent};
 
 pub enum Popup {
     NoHost,
@@ -55,6 +58,52 @@ pub struct SelectedHostState {
     device_panel_width: u16,
     popup_width: u16,
     selected_panel: Panel,
+    requested_sample_rate: Option<u32>,
+    requested_buffer_size: Option<u32>,
+    sample_size_input_id: Option<InputId>,
+    buffer_size_input_id: Option<InputId>,
+}
+
+impl HandleEvent<PopupEvent> for Popup {
+    fn map_event(&self, event: &Event) -> Option<PopupEvent> {
+        match event {
+            crate::event::Event::Action(action) => match action {
+                Action::Cancel => Some(PopupEvent::ClosePopup),
+                Action::Move(direction) => Some(PopupEvent::Move(*direction)),
+                Action::Confirm => Some(PopupEvent::Select),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
+    fn update(&mut self, event: PopupEvent, event_tx: Sender<Event>) {
+        match event {
+            PopupEvent::ClosePopup => event_tx.send(Event::ClosePopup).unwrap(),
+            PopupEvent::Move(direction) => {
+                if let Popup::SelectedHost(selected_host_state) = self {
+                    selected_host_state.move_cursor(direction);
+                }
+            }
+            PopupEvent::Select => {
+                if let Popup::SelectedHost(state) = self {
+                    if matches!(state.selected_panel, Panel::Device) {
+                        event_tx
+                            .send(Event::Composite(vec![
+                                Event::ClosePopup,
+                                Event::SetPlayingDevice(state.selected_device()),
+                                Event::StartAudioPlayer,
+                            ]))
+                            .unwrap();
+                    }
+                }
+            }
+        }
+    }
+
+    fn input_context(&self) -> crate::keybindings::InputContext {
+        InputContext::Global
+    }
 }
 
 impl SelectedHostState {
@@ -102,6 +151,10 @@ impl SelectedHostState {
             device_panel_width: 0,
             popup_width: 0,
             selected_panel,
+            requested_sample_rate: Some(44100),
+            requested_buffer_size: Some(256),
+            sample_size_input_id: None,
+            buffer_size_input_id: None,
         };
         state.load_device_from_selected_host();
 
@@ -208,6 +261,9 @@ impl Popup {
                 device_panel_width,
                 popup_width,
                 selected_panel,
+                requested_sample_rate,
+                requested_buffer_size,
+                ..
             }) => {
                 let area = responsive_centered_rect(
                     area,
@@ -292,42 +348,6 @@ impl Popup {
                     buf,
                     device_list_state,
                 );
-            }
-        }
-    }
-
-    pub fn map_event(&self, event: &Event) -> Option<PopupEvent> {
-        match event {
-            crate::event::Event::Action(action) => match action {
-                Action::Cancel => Some(PopupEvent::ClosePopup),
-                Action::Move(direction) => Some(PopupEvent::Move(*direction)),
-                Action::Confirm => Some(PopupEvent::Select),
-                _ => None,
-            },
-            _ => None,
-        }
-    }
-
-    pub fn handle_event(&mut self, event: PopupEvent, event_tx: Sender<Event>) {
-        match event {
-            PopupEvent::ClosePopup => event_tx.send(Event::ClosePopup).unwrap(),
-            PopupEvent::Move(direction) => {
-                if let Popup::SelectedHost(selected_host_state) = self {
-                    selected_host_state.move_cursor(direction);
-                }
-            }
-            PopupEvent::Select => {
-                if let Popup::SelectedHost(state) = self {
-                    if matches!(state.selected_panel, Panel::Device) {
-                        event_tx
-                            .send(Event::Composite(vec![
-                                Event::ClosePopup,
-                                Event::SetPlayingDevice(state.selected_device()),
-                                Event::StartAudioPlayer,
-                            ]))
-                            .unwrap();
-                    }
-                }
             }
         }
     }

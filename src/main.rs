@@ -11,7 +11,8 @@ use ratatui::crossterm::event::KeyEventKind;
 use ratatui::Terminal;
 use tracky::Tracky;
 use tui::Tui;
-use view::popup::Popup;
+use view::popup::input::InputId;
+use view::popup::{self, Popup};
 
 mod audio;
 mod event;
@@ -89,13 +90,14 @@ fn main() -> anyhow::Result<()> {
         tui.draw(&mut app)?;
         let mut event = event_rx.recv()?;
         // debug!("{event:?}");
-        if let Some(popup) = &mut app.popup_state {
+        if let Some(popup) = app.popup_state.last_mut() {
             if let Some(unprocessed_event) = popup.handle_event(event, event_tx.clone()) {
                 event = unprocessed_event;
             } else {
                 continue;
             }
         }
+
         match event {
             Event::Key(key_event) => {
                 if let Some(event) = app.keybindings.action(key_event.code, app.input_context()) {
@@ -121,9 +123,10 @@ fn main() -> anyhow::Result<()> {
                 }
                 Action::ClearLogsPanel => crate::log::clear_entries(),
                 Action::ToggleLogsPanel => app.display_log_console = !app.display_log_console,
-                Action::Cancel | Action::Confirm => {}
+                Action::Cancel => send!(Event::ExitApp),
+                Action::Confirm => {}
                 Action::RequestOpenDeviceSelectionPopup => {
-                    event_tx.send(Event::StartLoading).unwrap();
+                    send!(Event::StartLoading);
                     let event_tx_clone = event_tx.clone();
                     thread::spawn(move || {
                         event_tx_clone
@@ -133,9 +136,7 @@ fn main() -> anyhow::Result<()> {
                             .unwrap();
                     });
                 }
-                Action::Move(direction) => event_tx
-                    .send(Event::State(model::Event::MoveCursor(direction)))
-                    .unwrap(),
+                Action::Move(direction) => send!(Event::State(model::Event::MoveCursor(direction))),
                 Action::Forward => todo!(),
                 Action::Backward => todo!(),
             },
@@ -144,19 +145,20 @@ fn main() -> anyhow::Result<()> {
             }
             Event::Composite(events) => {
                 for event in events {
-                    event_tx.send(event).unwrap();
+                    send!(event);
                 }
             }
             Event::Resize { width, height } => info!("{width}x{height}"),
             Event::AsyncAction(async_action) => match async_action {
                 event::AsyncAction::OpenDeviceSelectionPopup(hosts) => {
-                    app.popup_state = Some(Popup::AudioDeviceSelection(hosts.into()));
+                    app.popup_state
+                        .push(Popup::AudioDeviceSelection(hosts.into()));
                 }
             },
             Event::StartLoading => app.loader_count += 1,
             Event::LoadingDone(async_action) => {
                 app.loader_count = app.loader_count.saturating_sub(1);
-                event_tx.send(Event::AsyncAction(async_action)).unwrap();
+                send!(Event::AsyncAction(async_action));
             }
             Event::ClosePopup => app.close_popup(),
             Event::SetPlayingDevice(device) => app.selected_output_device = Some(device),
@@ -177,9 +179,12 @@ fn main() -> anyhow::Result<()> {
                 app.stop_audio_player();
                 app.state.handle_event(model::Event::StopSongPlayback);
             }
+            Event::Text(_) => unreachable!(), // For now
+            Event::TextSubmitted(id, value) => {
+                info!("Text submitted: {value} with id: {id}");
+            } // For now
         }
     }
-
     tui.exit()?;
 
     Ok(())
