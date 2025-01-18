@@ -157,11 +157,6 @@ impl model::State {
             error!("Attempting to update sample_count with no active playback");
             return;
         };
-        warn!(
-            "Heap allocations triggered: playback sample count changed from {} to {}",
-            playback.step_signal.as_ref().sample_count(),
-            new_sample_count
-        );
         playback.line_signal =
             Owned::from_sample_count(new_sample_count, playback.line_signal.frame_rate);
         playback.step_signal = playback.line_signal.clone();
@@ -169,7 +164,6 @@ impl model::State {
 
     fn perform_step_playback(&mut self) {
         let Some(playback) = self.playback.as_mut() else {
-            error!("Attempting to perform playback without any active playback");
             return;
         };
 

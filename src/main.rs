@@ -1,7 +1,7 @@
 use std::sync::mpsc::channel;
 use std::{env, io, thread};
 
-use ::log::{error, info, warn};
+use ::log::{debug, error, info, warn};
 use audio::Hosts;
 use event::{Action, AsyncAction, Event};
 use log::write_logs_to_file;

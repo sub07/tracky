@@ -10,7 +10,7 @@ use cpal::{
 use itertools::Itertools;
 use joy_error::OptionToResultExt;
 use joy_vector::Vector;
-use log::info;
+use log::{info, warn};
 
 use crate::{
     event::Event,
@@ -181,11 +181,17 @@ fn audio_callback<SampleType>(
         state.handle_event(event);
     }
 
-    if state
+    if let Some(old_sample_count) = state
         .playback
         .as_ref()
-        .is_some_and(|playback| playback.step_signal.as_ref().sample_count() != out.len())
+        .filter(|playback| playback.step_signal.as_ref().sample_count() != out.len())
+        .map(|playback| playback.step_signal.as_ref().sample_count())
     {
+        warn!(
+            "Heap allocations triggered in audio thread: playback sample count changed from {} to {}",
+            old_sample_count,
+            out.len(),
+        );
         update_state!(model::Event::UpdatePlaybackSampleCount(out.len()));
     }
 
