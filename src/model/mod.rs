@@ -1,9 +1,10 @@
 use pattern::{HexDigit, NoteName, OctaveValue, Patterns};
 use playback::song::SongPlayback;
 
-use crate::utils::Direction;
+use crate::{audio::Volume, utils::Direction};
 
 pub mod channel;
+pub mod instrument;
 pub mod midi;
 pub mod pattern;
 pub mod playback;
@@ -13,6 +14,7 @@ pub struct State {
     pub patterns: Patterns,
     pub global_octave: OctaveValue,
     pub line_per_second: f32,
+    pub global_volume: Volume,
     pub playback: Option<SongPlayback>,
 }
 
@@ -22,6 +24,7 @@ impl Default for State {
             patterns: Default::default(),
             global_octave: Default::default(),
             line_per_second: 16.0,
+            global_volume: Volume::new_unchecked(0.3),
             playback: None,
         }
     }

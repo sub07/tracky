@@ -10,7 +10,7 @@ use cpal::{
 use itertools::Itertools;
 use joy_error::OptionToResultExt;
 use joy_vector::Vector;
-use log::{info, warn};
+use log::{error, info, warn};
 
 use crate::{
     event::Event,
@@ -171,7 +171,9 @@ fn audio_callback<SampleType>(
     macro_rules! update_state {
         ($event:expr) => {
             state.handle_event($event);
-            event_tx.send(Event::AudioCallback($event.clone())).unwrap()
+            if let Err(e) = event_tx.send(Event::AudioCallback($event)) {
+                error!("Event channel broken: {e}");
+            }
         };
     }
 

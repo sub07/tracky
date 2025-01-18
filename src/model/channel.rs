@@ -1,27 +1,23 @@
-use crate::audio::{
-    frame::MakeFrame,
-    signal,
-    synthesis::{SawWave, SineWave, SquareWave},
-    Pan, Volume,
-};
+use crate::audio::{frame::MakeFrame, signal, Pan, Volume};
 
 use super::{
+    instrument::{self, Instrument},
     midi::note_to_freq,
     pattern::{NoteFieldValue, NoteName, OctaveValue, PatternLine},
 };
 
-// Simplify for now, only synthesis instrument with no state (other than phase)
-#[derive(PartialEq, Debug, Clone)]
-pub struct Instrument {
-    pub index: u8,
-    pub current_phase: f32,
+#[derive(Clone)]
+struct PlayingInstrument {
+    phase: f32,
+    source: Instrument,
+    index: u8,
 }
 
 #[derive(Clone)]
 pub struct Channel {
     pub current_note: Option<(NoteName, OctaveValue)>,
     pub current_volume: Option<Volume>,
-    pub current_instrument: Option<Instrument>,
+    pub current_instrument: Option<PlayingInstrument>,
 }
 
 impl Channel {
@@ -47,11 +43,27 @@ impl Channel {
         if let Some(volume) = line.velocity.get_percentage().map(Volume::new_unchecked) {
             self.current_volume = Some(volume);
         };
-        if let Some(instrument) = line.instrument.get_u8().map(|index| Instrument {
-            index,
-            current_phase: 0.0,
-        }) {
-            self.current_instrument = Some(instrument);
+        if let Some(new_index) = line.instrument.get_u8() {
+            let instrument_kind = match new_index {
+                0 => Some(instrument::Kind::Sine),
+                1 => Some(instrument::Kind::Square),
+                2 => Some(instrument::Kind::Sawtooth),
+                _ => None,
+            };
+
+            if let Some(kind) = instrument_kind {
+                if self
+                    .current_instrument
+                    .as_ref()
+                    .is_none_or(|current_instrument| current_instrument.index != new_index)
+                {
+                    self.current_instrument = Some(PlayingInstrument {
+                        phase: 0.0,
+                        source: Instrument::from(kind),
+                        index: new_index,
+                    });
+                }
+            }
         };
     }
 
@@ -59,9 +71,10 @@ impl Channel {
         if let (
             Some((note, octave)),
             volume,
-            Some(Instrument {
-                index,
-                current_phase,
+            Some(PlayingInstrument {
+                index: _,
+                phase,
+                source,
             }),
         ) = (
             self.current_note,
@@ -69,19 +82,13 @@ impl Channel {
             &mut self.current_instrument,
         ) {
             let freq = note_to_freq(note, octave);
-            let frames: &mut dyn MakeFrame = match index {
-                0 => &mut SineWave,
-                1 => &mut SawWave,
-                2 => &mut SquareWave,
-                _ => return,
-            };
 
-            frames.collect_in(
+            source.collect_frame_in(
                 output_signal,
                 freq,
                 volume.unwrap_or_default(),
                 Pan::DEFAULT,
-                current_phase,
+                phase,
             )
         } else {
             output_signal.fill(Default::default());

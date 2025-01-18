@@ -4,6 +4,7 @@ use log::{error, warn};
 
 use crate::{
     audio::{
+        device,
         player::{AudioPlayer, AudioPlayerBuilder},
         Device,
     },

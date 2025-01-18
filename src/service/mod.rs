@@ -204,7 +204,7 @@ impl model::State {
                             .iter(),
                     )
                 {
-                    out += input;
+                    out += input * self.global_volume.value();
                 }
             }
 

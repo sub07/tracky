@@ -2,7 +2,7 @@ use std::sync::mpsc::channel;
 use std::{env, io, thread};
 
 use ::log::{debug, error, info, warn};
-use audio::Hosts;
+use audio::{device, Hosts};
 use event::{Action, AsyncAction, Event};
 use log::write_logs_to_file;
 use model::pattern::NoteName;
@@ -85,6 +85,9 @@ fn main() -> anyhow::Result<()> {
             event_tx.send($e).unwrap()
         };
     }
+
+    send!(Event::SetPlayingDevice(device::default_output().unwrap()));
+    send!(Event::StartAudioPlayer);
 
     while app.running {
         tui.draw(&mut app)?;
