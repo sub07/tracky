@@ -4,6 +4,7 @@ use joy_value_object::mk_vo;
 
 use super::pattern::{NoteName, OctaveValue};
 
+// Make static when note_to_freq can be made static
 pub static C5_FREQ: LazyLock<f32> =
     LazyLock::new(|| note_to_freq(NoteName::C, OctaveValue::OCTAVE_5));
 

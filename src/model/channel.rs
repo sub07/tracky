@@ -1,7 +1,7 @@
 use crate::audio::{signal, Pan, Volume};
 
 use super::{
-    instrument::{self, Instrument},
+    instrument::{self, Instrument, Instruments},
     midi::note_to_freq,
     pattern::{NoteFieldValue, NoteName, OctaveValue, PatternLine},
 };
@@ -9,7 +9,6 @@ use super::{
 #[derive(Clone)]
 struct PlayingInstrument {
     phase: f32,
-    source: Instrument,
     index: u8,
 }
 
@@ -44,55 +43,40 @@ impl Channel {
             self.current_volume = Some(volume);
         };
         if let Some(new_index) = line.instrument.get_u8() {
-            let instrument_kind = match new_index {
-                0 => Some(instrument::Kind::Sine),
-                1 => Some(instrument::Kind::Square),
-                2 => Some(instrument::Kind::Sawtooth),
-                3 => Some(instrument::Kind::Sample(
-                    signal::Owned::from_path("assets/stereo.wav").unwrap(),
-                )),
-                _ => None,
-            };
-
-            if let Some(kind) = instrument_kind {
-                if self
-                    .current_instrument
-                    .as_ref()
-                    .is_none_or(|current_instrument| current_instrument.index != new_index)
-                {
-                    self.current_instrument = Some(PlayingInstrument {
-                        phase: 0.0,
-                        source: Instrument::from(kind),
-                        index: new_index,
-                    });
-                }
+            if self
+                .current_instrument
+                .as_ref()
+                .is_none_or(|current_instrument| current_instrument.index != new_index)
+            {
+                self.current_instrument = Some(PlayingInstrument {
+                    phase: 0.0,
+                    index: new_index,
+                });
             }
         };
     }
 
-    pub fn collect_signal(&mut self, mut output_signal: signal::stereo::Mut) {
-        if let (
-            Some((note, octave)),
-            volume,
-            Some(PlayingInstrument {
-                index: _,
-                phase,
-                source,
-            }),
-        ) = (
+    pub fn collect_signal(
+        &mut self,
+        mut output_signal: signal::stereo::Mut,
+        instruments: &Instruments,
+    ) {
+        if let (Some((note, octave)), volume, Some(PlayingInstrument { index, phase })) = (
             self.current_note,
             self.current_volume,
             &mut self.current_instrument,
         ) {
             let freq = note_to_freq(note, octave);
 
-            source.collect_frame_in(
-                output_signal,
-                freq,
-                volume.unwrap_or_default(),
-                Pan::DEFAULT,
-                phase,
-            )
+            if let Some(instrument) = instruments.get(*index) {
+                instrument.collect_frame_in(
+                    output_signal,
+                    freq,
+                    volume.unwrap_or_default(),
+                    Pan::DEFAULT,
+                    phase,
+                );
+            }
         } else {
             output_signal.fill(Default::default());
         }

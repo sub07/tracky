@@ -1,3 +1,4 @@
+use instrument::Instruments;
 use pattern::{HexDigit, NoteName, OctaveValue, Patterns};
 use playback::song::SongPlayback;
 
@@ -16,6 +17,7 @@ pub struct State {
     pub line_per_second: f32,
     pub global_volume: Volume,
     pub playback: Option<SongPlayback>,
+    pub instruments: Instruments,
 }
 
 impl Default for State {
@@ -26,6 +28,7 @@ impl Default for State {
             line_per_second: 16.0,
             global_volume: Volume::new_unchecked(0.3),
             playback: None,
+            instruments: Default::default(),
         }
     }
 }

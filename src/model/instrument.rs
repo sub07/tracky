@@ -103,3 +103,29 @@ impl Instrument {
         }
     }
 }
+
+pub const MAX_SLOT: usize = 64;
+
+#[derive(Clone)]
+pub struct Instruments {
+    slots: [Option<Instrument>; MAX_SLOT],
+}
+
+impl Default for Instruments {
+    fn default() -> Self {
+        let mut slots = [const { None }; MAX_SLOT];
+        slots[0] = Some(Instrument::from(Kind::Sine));
+        slots[1] = Some(Instrument::from(Kind::Square));
+        slots[2] = Some(Instrument::from(Kind::Sawtooth));
+        slots[3] = Some(Instrument::from(Kind::Sample(
+            signal::stereo::Owned::from_path("assets/stereo.wav").unwrap(),
+        )));
+        Self { slots }
+    }
+}
+
+impl Instruments {
+    pub fn get(&self, index: u8) -> Option<&Instrument> {
+        self.slots.get(index as usize).map(Option::as_ref).flatten()
+    }
+}

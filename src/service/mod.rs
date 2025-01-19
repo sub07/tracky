@@ -190,6 +190,7 @@ impl model::State {
                         .line_signal
                         .sub_signal_mut(sub_step_start_duration, sub_step_end_duration)
                         .unwrap(),
+                    &self.instruments,
                 );
                 for (mut out, input) in playback
                     .step_signal
