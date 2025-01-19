@@ -34,8 +34,10 @@ pub mod stereo {
     use std::path::Path;
 
     use anyhow::bail;
+    use itertools::Itertools;
     use joy_iter::zip_self::ZipSelf;
-    use joy_vector::Vector;
+    use joy_vector::{vector, Vector};
+    use ratatui::Frame;
 
     use crate::audio::load_samples_from_file;
 
@@ -53,7 +55,14 @@ pub mod stereo {
                 _ => bail!("Audio file must be mono or stereo"),
             };
 
-            unsafe { Self::from_samples(samples.collect(), audio_data.frame_rate) }
+            Ok(Owned::from_frames(
+                samples
+                    .collect_vec()
+                    .chunks_exact(2)
+                    .map(|frame| vector!(frame[0], frame[1]))
+                    .collect(),
+                audio_data.frame_rate,
+            ))
         }
     }
 
@@ -128,26 +137,6 @@ impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
             frames: &mut self.frames,
             frame_rate: self.frame_rate,
         }
-    }
-
-    pub unsafe fn into_samples(mut self) -> Vec<f32> {
-        let (ptr, len, cap) = (
-            self.frames.as_mut_ptr(),
-            self.frames.len(),
-            self.frames.capacity(),
-        );
-        Vec::from_raw_parts(ptr as *mut f32, len * FRAME_SIZE, cap * FRAME_SIZE)
-    }
-
-    pub unsafe fn from_samples(mut samples: Vec<f32>, frame_rate: f32) -> anyhow::Result<Self> {
-        ensure!(samples.len() % FRAME_SIZE == 0);
-        let (ptr, len, cap) = (samples.as_mut_ptr(), samples.len(), samples.capacity());
-        let frames = Vec::from_raw_parts(
-            ptr as *mut Frame<FRAME_SIZE>,
-            len / FRAME_SIZE,
-            cap / FRAME_SIZE,
-        );
-        Ok(Owned::from_frames(frames, frame_rate))
     }
 
     pub fn append_signal(&mut self, signal: &Owned<FRAME_SIZE>) {
@@ -240,25 +229,23 @@ impl<const FRAME_SIZE: usize> Ref<'_, FRAME_SIZE> {
         (index as usize, index.fract())
     }
 
-    pub fn lerp_frame_at_duration(&self, duration: Duration) -> Frame<FRAME_SIZE> {
+    pub fn lerp_frame_at_duration(&self, duration: Duration) -> Option<Frame<FRAME_SIZE>> {
         let (frame_index, rem) = self.frame_index_from_duration(duration);
-        error!(
-            "duration longer than sign when trying to lerp: self={:?} / input={:?}",
-            self.duration(),
-            duration
-        );
+        if frame_index >= self.frames.len() {
+            return None;
+        }
 
         if frame_index == self.frames.len() - 1 {
             if let [.., last_frame] = self.frames {
-                return *last_frame;
+                return Some(*last_frame);
             }
         }
 
-        dsp::interpolation::linear(
+        Some(dsp::interpolation::linear(
             &self.frames[frame_index],
             &self.frames[frame_index + 1],
             rem,
-        )
+        ))
     }
 
     pub fn sub_signal(&self, range: RangeTo<usize>) -> Ref<FRAME_SIZE> {
@@ -403,66 +390,6 @@ mod test {
 
     fn get_signal() -> stereo::Owned {
         stereo::Owned::from_path("assets/stereo2.wav").unwrap()
-    }
-
-    #[test]
-    fn test_unsafe_into_samples_returns_correct_vec() {
-        let signal = get_signal();
-        let samples = unsafe { signal.clone().into_samples() };
-
-        assert_eq!(signal.frames.len() * 2, samples.len());
-
-        for i in 0..signal.len() {
-            let into_samples_frame: StereoFrame = [samples[2 * i], samples[2 * i + 1]].into();
-            assert_eq!(signal.frames[i], into_samples_frame);
-        }
-    }
-
-    #[test]
-    fn test_unsafe_into_samples_with_empty_signal() {
-        let signal = Owned::<1>::from_duration(Duration::ZERO, 0.0);
-        let samples = unsafe { signal.into_samples() };
-
-        assert!(samples.is_empty());
-        assert_eq!(0, samples.capacity());
-    }
-
-    #[test]
-    fn test_unsafe_from_samples_stereo_yields_valid_signal() {
-        let audio_data = load_samples_from_file("assets/stereo.wav").unwrap();
-        let signal = unsafe {
-            Owned::<2>::from_samples(audio_data.samples.clone(), audio_data.frame_rate).unwrap()
-        };
-        assert_eq!(audio_data.samples.len() / 2, signal.frames.len());
-        for i in 0..audio_data.samples.len() / audio_data.channel_count as usize {
-            let expected_frame: StereoFrame =
-                [audio_data.samples[2 * i], audio_data.samples[2 * i + 1]].into();
-            assert_eq!(expected_frame, signal.frames[i]);
-        }
-    }
-
-    #[test]
-    fn test_unsafe_from_samples_empty_yields_valid_signal() {
-        let signal = unsafe { Owned::<2>::from_samples(Vec::new(), 0.0).unwrap() };
-        assert!(signal.frames.is_empty());
-        assert_eq!(0, signal.frames.capacity());
-    }
-
-    #[test]
-    #[should_panic(expected = "frame 0 differs: [32.0, 63.0] != [33.0, 64.0]")]
-    fn test_assert_signal_eq_differs() {
-        let s1 = unsafe { Owned::<2>::from_samples(vec![32.0, 63.0], 44100.0).unwrap() };
-        let s2 = unsafe { Owned::<2>::from_samples(vec![33.0, 64.0], 44100.0).unwrap() };
-
-        assert_signal_eq(s1, s2);
-    }
-
-    #[test]
-    fn test_assert_signal_eq_same() {
-        let s1 = unsafe { Owned::<2>::from_samples(vec![32.0, 63.0], 44100.0).unwrap() };
-        let s2 = unsafe { Owned::<2>::from_samples(vec![32.0, 63.0], 44100.0).unwrap() };
-
-        assert_signal_eq(s1, s2);
     }
 
     #[test]

@@ -2,7 +2,7 @@ use std::sync::mpsc::channel;
 use std::{env, io, thread};
 
 use ::log::{debug, error, info, warn};
-use audio::{device, Hosts};
+use audio::{device, signal, Hosts};
 use event::{Action, AsyncAction, Event};
 use log::write_logs_to_file;
 use model::pattern::NoteName;

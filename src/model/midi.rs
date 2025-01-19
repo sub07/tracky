@@ -1,6 +1,11 @@
+use std::sync::LazyLock;
+
 use joy_value_object::mk_vo;
 
 use super::pattern::{NoteName, OctaveValue};
+
+pub static C5_FREQ: LazyLock<f32> =
+    LazyLock::new(|| note_to_freq(NoteName::C, OctaveValue::OCTAVE_5));
 
 mk_vo! {
     pub MidiValue: i32,

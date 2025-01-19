@@ -2,10 +2,7 @@ use std::f32::consts::PI;
 
 use joy_vector::vector;
 
-use super::{
-    frame::{MakeFrame, StereoFrame},
-    Pan, Volume,
-};
+use super::{frame::StereoFrame, Pan, Volume};
 
 pub fn sine_wave(
     freq: f32,

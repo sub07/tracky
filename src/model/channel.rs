@@ -1,4 +1,4 @@
-use crate::audio::{frame::MakeFrame, signal, Pan, Volume};
+use crate::audio::{signal, Pan, Volume};
 
 use super::{
     instrument::{self, Instrument},
@@ -48,6 +48,9 @@ impl Channel {
                 0 => Some(instrument::Kind::Sine),
                 1 => Some(instrument::Kind::Square),
                 2 => Some(instrument::Kind::Sawtooth),
+                3 => Some(instrument::Kind::Sample(
+                    signal::Owned::from_path("assets/stereo.wav").unwrap(),
+                )),
                 _ => None,
             };
 
