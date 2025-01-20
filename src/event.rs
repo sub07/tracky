@@ -1,3 +1,5 @@
+use winit::event::KeyEvent;
+
 use crate::{
     audio::{Device, Hosts},
     model::{self},
@@ -7,7 +9,7 @@ use crate::{
 
 #[derive(Debug)]
 pub enum Event {
-    Key(ratatui::crossterm::event::KeyEvent),
+    KeyPressed(KeyEvent),
     Text(Text),
     State(model::Event),
     AudioCallback(model::Event),
@@ -38,9 +40,7 @@ pub enum Action {
     Forward,
     Backward,
     TogglePlay,
-    WriteLogsOnDisk,
-    ClearLogsPanel,
-    ToggleLogsPanel,
+    ToggleFullscreen,
     Confirm,
     Cancel,
     RequestOpenDeviceSelectionPopup,

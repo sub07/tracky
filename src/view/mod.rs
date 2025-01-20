@@ -8,7 +8,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::{log::render_log_panel, tracky::Tracky};
+use crate::tracky::Tracky;
 
 pub mod channel;
 pub mod header;
@@ -124,15 +124,5 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
 
     if app.loader_count > 0 {
         popup::loading::Popup.render(area, buf);
-    }
-
-    if app.display_log_console {
-        let [_, console_area] =
-            Layout::vertical([Constraint::Min(0), Constraint::Percentage(30)]).areas(area);
-
-        let [_, console_area] =
-            Layout::horizontal([Constraint::Fill(2), Constraint::Min(50)]).areas(console_area);
-
-        render_log_panel(frame, console_area);
     }
 }

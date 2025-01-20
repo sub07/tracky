@@ -3,6 +3,7 @@ use crate::{
     event::{self, Action, Event},
     keybindings::InputContext,
     view::{centered_line, centered_rect, margin, responsive_centered_rect},
+    EventSender,
 };
 use ratatui::{
     buffer::Buffer,
@@ -12,7 +13,7 @@ use ratatui::{
     widgets::{Block, Clear, Paragraph, Widget},
 };
 use std::{marker::PhantomData, sync::mpsc::Sender};
-use tui_input::{backend::crossterm::EventHandler, Input, InputRequest};
+use tui_input::{Input, InputRequest};
 use uid::{Id, IdU64};
 
 pub type InputId = Id<()>;
@@ -63,9 +64,9 @@ impl HandleEvent<PopupEvent> for Popup {
         }
     }
 
-    fn update(&mut self, event: PopupEvent, event_tx: Sender<crate::event::Event>) {
+    fn update(&mut self, event: PopupEvent, event_tx: EventSender) {
         match event {
-            PopupEvent::Close => event_tx.send(Event::ClosePopup).unwrap(),
+            PopupEvent::Close => event_tx.send_event(Event::ClosePopup).unwrap(),
             PopupEvent::Input(text_event) => {
                 let input_request = match text_event {
                     event::Text::WriteDataAtCursor(c) => {
@@ -82,7 +83,7 @@ impl HandleEvent<PopupEvent> for Popup {
             PopupEvent::Submit => {
                 if (self.submit_validator)(self.input.value()) {
                     event_tx
-                        .send(Event::Composite(vec![
+                        .send_event(Event::Composite(vec![
                             Event::ClosePopup,
                             Event::TextSubmitted(self.id, self.input.value().to_owned()),
                         ]))

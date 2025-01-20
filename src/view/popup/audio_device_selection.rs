@@ -18,6 +18,7 @@ use crate::{
     keybindings::InputContext,
     utils::Direction,
     view::{centered_line, responsive_centered_rect},
+    EventSender,
 };
 
 use super::{input::InputId, HandleEvent};
@@ -77,9 +78,9 @@ impl HandleEvent<PopupEvent> for Popup {
         }
     }
 
-    fn update(&mut self, event: PopupEvent, event_tx: Sender<Event>) {
+    fn update(&mut self, event: PopupEvent, event_tx: EventSender) {
         match event {
-            PopupEvent::ClosePopup => event_tx.send(Event::ClosePopup).unwrap(),
+            PopupEvent::ClosePopup => event_tx.send_event(Event::ClosePopup).unwrap(),
             PopupEvent::Move(direction) => {
                 if let Popup::SelectedHost(selected_host_state) = self {
                     selected_host_state.move_cursor(direction);
@@ -89,7 +90,7 @@ impl HandleEvent<PopupEvent> for Popup {
                 if let Popup::SelectedHost(state) = self {
                     if matches!(state.selected_panel, Panel::Device) {
                         event_tx
-                            .send(Event::Composite(vec![
+                            .send_event(Event::Composite(vec![
                                 Event::ClosePopup,
                                 Event::SetPlayingDevice(state.selected_device()),
                                 Event::StartAudioPlayer,
@@ -107,7 +108,7 @@ impl HandleEvent<PopupEvent> for Popup {
 }
 
 impl SelectedHostState {
-    const LIST_SELECTION_SYMBOL: &str = "\u{2B9E} "; // ⮞
+    const LIST_SELECTION_SYMBOL: &str = "\u{276F} ";
     const LIST_SELECTION_SYMBOL_LEN: u16 = Self::LIST_SELECTION_SYMBOL.len() as u16;
 
     const HOST_LIST_TITLE: &str = "Hosts";

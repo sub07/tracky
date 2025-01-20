@@ -15,6 +15,7 @@ use log::{error, info, warn};
 use crate::{
     event::Event,
     model::{self},
+    EventSender,
 };
 
 pub struct AudioPlayer {
@@ -29,7 +30,7 @@ pub struct AudioPlayerBuilder {
     pub device: Option<crate::audio::Device>,
     pub initial_state: model::State,
     pub state_event_rx: Receiver<model::Event>,
-    pub event_tx: Sender<Event>,
+    pub event_tx: EventSender,
 }
 
 impl AudioPlayerBuilder {
@@ -131,7 +132,7 @@ fn create_stream<SampleType>(
     config: StreamConfig,
     mut state: model::State,
     state_event_rx: Receiver<model::Event>,
-    event_tx: Sender<Event>,
+    event_tx: EventSender,
 ) -> anyhow::Result<(Stream, f32)>
 where
     SampleType: SizedSample + FromSample<f32>,
@@ -149,7 +150,7 @@ where
         },
         move |e| {
             event_tx_error
-                .send(Event::StopAudioPlayer(Some(e.into())))
+                .send_event(Event::StopAudioPlayer(Some(e.into())))
                 .unwrap();
         },
         None,
@@ -164,14 +165,14 @@ fn audio_callback<SampleType>(
     out: &mut [SampleType],
     state: &mut model::State,
     state_event_rx: &Receiver<model::Event>,
-    event_tx: Sender<Event>,
+    event_tx: EventSender,
 ) where
     SampleType: Sample + FromSample<f32>,
 {
     macro_rules! update_state {
         ($event:expr) => {
             state.handle_event($event);
-            if let Err(e) = event_tx.send(Event::AudioCallback($event)) {
+            if let Err(e) = event_tx.send_event(Event::AudioCallback($event)) {
                 error!("Event channel broken: {e}");
             }
         };

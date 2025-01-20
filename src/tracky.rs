@@ -1,6 +1,19 @@
-use std::sync::mpsc::{channel, Sender};
+use std::{
+    num::NonZeroU32,
+    sync::{
+        mpsc::{channel, Sender},
+        Arc,
+    },
+};
 
 use log::{error, warn};
+use ratatui::{style::Color, Terminal};
+use ratatui_wgpu::WgpuBackend;
+use winit::{
+    application::ApplicationHandler,
+    event::WindowEvent,
+    window::{Window, WindowAttributes},
+};
 
 use crate::{
     audio::{
@@ -11,8 +24,8 @@ use crate::{
     event::Event,
     keybindings::{InputContext, KeyBindings},
     model::{self},
-    view::popup::Popup,
-    DEBUG,
+    view::{popup::Popup, render_root},
+    EventSender,
 };
 
 pub struct AudioState {
@@ -21,9 +34,7 @@ pub struct AudioState {
 }
 
 pub struct Tracky {
-    pub running: bool,
     pub state: model::State,
-    pub display_log_console: bool,
     pub keybindings: KeyBindings,
     pub selected_output_device: Option<Device>,
     pub popup_state: Vec<Popup>,
@@ -34,9 +45,7 @@ pub struct Tracky {
 impl Default for Tracky {
     fn default() -> Self {
         Self {
-            running: true,
             state: Default::default(),
-            display_log_console: DEBUG,
             keybindings: Default::default(),
             selected_output_device: None,
             popup_state: Vec::new(),
@@ -49,10 +58,6 @@ impl Default for Tracky {
 impl Tracky {
     pub fn new() -> Self {
         Self::default()
-    }
-
-    pub fn exit(&mut self) {
-        self.running = false;
     }
 
     pub fn input_context(&self) -> crate::keybindings::InputContext {
@@ -75,7 +80,7 @@ impl Tracky {
         }
     }
 
-    pub fn start_audio_player(&mut self, event_tx: Sender<Event>) {
+    pub fn start_audio_player(&mut self, event_tx: EventSender) {
         let (state_event_tx, state_event_rx) = channel();
         match AudioPlayerBuilder::new()
             .device(self.selected_output_device.clone())
