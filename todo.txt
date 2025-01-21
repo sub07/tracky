@@ -1,5 +1,4 @@
 - Handle multiple same popup (delegate to popup)
-- Handle input popup horizontal scroll
 - Fix ASIO
 - Request device sample_rate & buffer size
 - explore simd for audio callback mixing add operation

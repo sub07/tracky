@@ -8,9 +8,9 @@ use crate::{
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Flex, Layout, Rect},
-    style::{Color, Stylize},
+    style::{Color, Style, Stylize},
     text::Line,
-    widgets::{Block, Clear, Paragraph, Widget},
+    widgets::{Block, BorderType, Clear, Paragraph, Widget},
 };
 use std::{marker::PhantomData, sync::mpsc::Sender};
 use tui_input::{Input, InputRequest};
@@ -99,8 +99,8 @@ impl HandleEvent<PopupEvent> for Popup {
 }
 
 impl Popup {
-    const INPUT_BG_COLOR: Color = Color::Gray;
-    const INPUT_FG_COLOR: Color = Color::Black;
+    const INPUT_BG_COLOR: Color = Color::Rgb(17, 17, 27);
+    const INPUT_FG_COLOR: Color = Color::Rgb(205, 214, 244);
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let area = responsive_centered_rect(
             area,
@@ -110,7 +110,7 @@ impl Popup {
             Constraint::Percentage(30),
         );
 
-        let block = Block::bordered();
+        let block = Block::new().bg(Color::Rgb(49, 50, 68));
 
         let area = {
             let inner = block.inner(area);
@@ -133,9 +133,10 @@ impl Popup {
             .fg(Self::INPUT_FG_COLOR)
             .render(input_area, buf);
 
-        if let Some(cursor_cell) =
-            buf.cell_mut((input_area.x + (self.input.cursor() - input_scroll) as u16, input_area.y))
-        {
+        if let Some(cursor_cell) = buf.cell_mut((
+            input_area.x + (self.input.cursor() - input_scroll) as u16,
+            input_area.y,
+        )) {
             cursor_cell.bg = Color::Rgb(245, 224, 220);
             cursor_cell.fg = Color::Rgb(17, 17, 27);
         }
