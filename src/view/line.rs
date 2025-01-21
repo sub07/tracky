@@ -96,7 +96,7 @@ impl Widget for PatternLineView<'_> {
             vel_char_1,
             vel_char_2,
             instr_char_1,
-            instr_char_2
+            instr_char_2,
         ))
         .render(area, buf);
 
@@ -105,8 +105,8 @@ impl Widget for PatternLineView<'_> {
             let cursor_cell = buf
                 .cell_mut((area.x + current_field as u16 + offset_x as u16, area.y))
                 .unwrap();
-            cursor_cell.bg = Color::White;
-            cursor_cell.fg = Color::Black;
+            cursor_cell.bg = Color::Rgb(245, 224, 220);
+            cursor_cell.fg = Color::Rgb(17, 17, 27);
         }
     }
 }

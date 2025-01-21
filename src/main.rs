@@ -40,7 +40,7 @@ struct App<'d> {
     event_tx: EventSender,
 }
 
-const CHAR_PIXEL_HEIGHT: f32 = 18.0;
+const CHAR_PIXEL_HEIGHT: f32 = 16.0;
 const CHAR_PIXEL_WIDTH: f32 = CHAR_PIXEL_HEIGHT / 2.0;
 
 impl ApplicationHandler<Event> for App<'_> {
@@ -63,8 +63,8 @@ impl ApplicationHandler<Event> for App<'_> {
                         .unwrap(),
                     )
                     .with_font_size_px(CHAR_PIXEL_HEIGHT as u32)
-                    .with_bg_color(Color::Black)
-                    .with_fg_color(Color::White)
+                    .with_bg_color(Color::Rgb(30, 30, 46))
+                    .with_fg_color(Color::Rgb(205, 214, 244))
                     .with_width_and_height(ratatui_wgpu::Dimensions {
                         width: NonZeroU32::new(size.width).unwrap(),
                         height: NonZeroU32::new(size.height).unwrap(),

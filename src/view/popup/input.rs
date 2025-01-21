@@ -101,7 +101,6 @@ impl HandleEvent<PopupEvent> for Popup {
 impl Popup {
     const INPUT_BG_COLOR: Color = Color::Gray;
     const INPUT_FG_COLOR: Color = Color::Black;
-    const INPUT_CURSOR_BG_COLOR: Color = Color::DarkGray;
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let area = responsive_centered_rect(
             area,
@@ -133,9 +132,11 @@ impl Popup {
             .fg(Self::INPUT_FG_COLOR)
             .render(input_area, buf);
 
-        if let Some(cell) = buf.cell_mut((input_area.x + self.input.cursor() as u16, input_area.y))
+        if let Some(cursor_cell) =
+            buf.cell_mut((input_area.x + self.input.cursor() as u16, input_area.y))
         {
-            cell.set_bg(Self::INPUT_CURSOR_BG_COLOR);
+            cursor_cell.bg = Color::Rgb(245, 224, 220);
+            cursor_cell.fg = Color::Rgb(17, 17, 27);
         }
     }
 }
