@@ -6,6 +6,5 @@
 - avoid SongPlayback.step_signal by wrapping audio_callback slice directly
 - display current played line during playback
 - display and control global volume (with input popup?)
-- toggle fullscreen log display
 - introduce instrument panel on display
 - Explore unsafe transmutation when loading signal from file to avoid converting f32s to Frame<2>

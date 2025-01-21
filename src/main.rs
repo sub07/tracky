@@ -198,24 +198,24 @@ impl ApplicationHandler<Event> for App<'_> {
                 Action::Cancel => {}
                 Action::Confirm => {}
                 Action::RequestOpenDeviceSelectionPopup => {
-                    send!(Event::StartLoading);
-                    let event_tx_clone = self.event_tx.clone();
-                    thread::spawn(move || {
-                        event_tx_clone
-                            .send_event(Event::LoadingDone(AsyncAction::OpenDeviceSelectionPopup(
-                                Hosts::load(),
-                            )))
-                            .unwrap();
-                    });
-                    // self.tracky
-                    //     .popup_state
-                    //     .push(Popup::Input(popup::input::Popup::new(
-                    //         InputId::new(),
-                    //         "My label".into(),
-                    //         None,
-                    //         |_| true,
-                    //         |_| true,
-                    //     )));
+                    // send!(Event::StartLoading);
+                    // let event_tx_clone = self.event_tx.clone();
+                    // thread::spawn(move || {
+                    //     event_tx_clone
+                    //         .send_event(Event::LoadingDone(AsyncAction::OpenDeviceSelectionPopup(
+                    //             Hosts::load(),
+                    //         )))
+                    //         .unwrap();
+                    // });
+                    self.tracky
+                        .popup_state
+                        .push(Popup::Input(popup::input::Popup::new(
+                            InputId::new(),
+                            "My label".into(),
+                            None,
+                            |_| true,
+                            |_| true,
+                        )));
                 }
                 Action::Move(direction) => send!(Event::State(model::Event::MoveCursor(direction))),
                 Action::Forward => todo!(),
