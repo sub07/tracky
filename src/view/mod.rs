@@ -111,9 +111,9 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
         "Not playing"
     });
 
-    // Header::new([audio_state_text, playback_state_text]).render(header_area, buf);
+    Header::new([audio_state_text, playback_state_text]).render(header_area, buf);
 
-    // pattern_view.render(pattern_area, buf);
+    pattern_view.render(pattern_area, buf);
 
     for popup in app.popup_state.iter_mut() {
         match popup {

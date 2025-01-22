@@ -40,9 +40,6 @@ struct App<'d> {
     event_tx: EventSender,
 }
 
-const CHAR_PIXEL_HEIGHT: f32 = 16.0;
-const CHAR_PIXEL_WIDTH: f32 = CHAR_PIXEL_HEIGHT / 2.0;
-
 impl ApplicationHandler<Event> for App<'_> {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         self.window = Some(Arc::new(
@@ -62,7 +59,7 @@ impl ApplicationHandler<Event> for App<'_> {
                         )))
                         .unwrap(),
                     )
-                    .with_font_size_px(CHAR_PIXEL_HEIGHT as u32)
+                    .with_font_size_px(18)
                     .with_bg_color(Color::Rgb(30, 30, 46))
                     .with_fg_color(Color::Rgb(205, 214, 244))
                     .with_width_and_height(ratatui_wgpu::Dimensions {
@@ -104,15 +101,6 @@ impl ApplicationHandler<Event> for App<'_> {
                 terminal
                     .backend_mut()
                     .resize(new_size.width, new_size.height);
-                // Ugly fix to avoid text rendering artifacts
-                let Ok(ratatui::prelude::Size { width, height }) = terminal.size() else {
-                    return;
-                };
-                let ideal_width = width as f32 * CHAR_PIXEL_WIDTH;
-                let ideal_height = height as f32 * CHAR_PIXEL_HEIGHT;
-                terminal
-                    .backend_mut()
-                    .resize(ideal_width as u32, ideal_height as u32);
             }
             WindowEvent::RedrawRequested => {
                 terminal
