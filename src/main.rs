@@ -15,6 +15,7 @@ use tracky::Tracky;
 use view::popup::input::InputId;
 use view::popup::{self, Popup};
 use view::render_root;
+use view::theme::THEME;
 use winit::application::ApplicationHandler;
 use winit::event::{ElementState, KeyEvent, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy};
@@ -60,8 +61,8 @@ impl ApplicationHandler<Event> for App<'_> {
                         .unwrap(),
                     )
                     .with_font_size_px(18)
-                    .with_bg_color(Color::Rgb(30, 30, 46))
-                    .with_fg_color(Color::Rgb(205, 214, 244))
+                    .with_bg_color(THEME.background)
+                    .with_fg_color(THEME.on_background)
                     .with_width_and_height(ratatui_wgpu::Dimensions {
                         width: NonZeroU32::new(size.width).unwrap(),
                         height: NonZeroU32::new(size.height).unwrap(),
@@ -121,7 +122,7 @@ impl ApplicationHandler<Event> for App<'_> {
                 self.event_tx.send_event($e).unwrap()
             };
         }
-        if let Some(popup) = self.tracky.popup_state.last_mut() {
+        if let Some(popup) = &mut self.tracky.current_popup {
             if let Some(unprocessed_event) = popup.handle_event(event, self.event_tx.clone()) {
                 event = unprocessed_event;
             } else {
@@ -186,24 +187,15 @@ impl ApplicationHandler<Event> for App<'_> {
                 Action::Cancel => {}
                 Action::Confirm => {}
                 Action::RequestOpenDeviceSelectionPopup => {
-                    // send!(Event::StartLoading);
-                    // let event_tx_clone = self.event_tx.clone();
-                    // thread::spawn(move || {
-                    //     event_tx_clone
-                    //         .send_event(Event::LoadingDone(AsyncAction::OpenDeviceSelectionPopup(
-                    //             Hosts::load(),
-                    //         )))
-                    //         .unwrap();
-                    // });
-                    self.tracky
-                        .popup_state
-                        .push(Popup::Input(popup::input::Popup::new(
-                            InputId::new(),
-                            "My label".into(),
-                            None,
-                            |_| true,
-                            |_| true,
-                        )));
+                    send!(Event::StartLoading);
+                    let event_tx_clone = self.event_tx.clone();
+                    thread::spawn(move || {
+                        event_tx_clone
+                            .send_event(Event::LoadingDone(AsyncAction::OpenDeviceSelectionPopup(
+                                Hosts::load(),
+                            )))
+                            .unwrap();
+                    });
                 }
                 Action::Move(direction) => send!(Event::State(model::Event::MoveCursor(direction))),
                 Action::Forward => todo!(),
@@ -229,8 +221,7 @@ impl ApplicationHandler<Event> for App<'_> {
             Event::AsyncAction(async_action) => match async_action {
                 event::AsyncAction::OpenDeviceSelectionPopup(hosts) => {
                     self.tracky
-                        .popup_state
-                        .push(Popup::AudioDeviceSelection(hosts.into()));
+                        .open_popup(Popup::AudioDeviceSelection(hosts.into()));
                 }
             },
             Event::StartLoading => self.tracky.loader_count += 1,

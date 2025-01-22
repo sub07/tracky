@@ -4,7 +4,7 @@ use itertools::Itertools;
 use joy_vector::Vector;
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Flex, Layout, Rect},
     style::{Color, Style, Stylize},
     text::{Line, ToLine},
     widgets::{
@@ -17,7 +17,7 @@ use crate::{
     event::{Action, Event},
     keybindings::InputContext,
     utils::Direction,
-    view::{centered_line, responsive_centered_rect},
+    view::{centered_line, responsive_centered_rect, theme::THEME},
     EventSender,
 };
 
@@ -108,9 +108,6 @@ impl HandleEvent<PopupEvent> for Popup {
 }
 
 impl SelectedHostState {
-    const LIST_SELECTION_SYMBOL: &str = "\u{276F} ";
-    const LIST_SELECTION_SYMBOL_LEN: u16 = Self::LIST_SELECTION_SYMBOL.len() as u16;
-
     const HOST_LIST_TITLE: &str = "Hosts";
     const DEVICE_LIST_TITLE: &str = "Devices";
     const LIST_TITLE_HEIGHT: u16 = 2;
@@ -120,8 +117,11 @@ impl SelectedHostState {
 
     const KEYBINDINGS_LABEL: &str = " <Tab> Shift - <Esc> Cancel - <Enter> Confirm ";
 
-    const UNSELECTED_HIGHLIGHT_STYLE: Style = Style::new().fg(Color::White).bg(Color::Black);
-    const SELECTED_HIGHLIGHT_STYLE: Style = Style::new().fg(Color::Black).bg(Color::White);
+    const UNSELECTED_HIGHLIGHT_STYLE: Style = Style::new()
+        .fg(THEME.on_elevated_background_2)
+        .bg(THEME.elevated_background_2);
+    const SELECTED_HIGHLIGHT_STYLE: Style =
+        Style::new().fg(THEME.on_cursor).bg(THEME.cursor_background);
 
     pub fn new(cache: Hosts) -> Self {
         let hosts_name = cache.0.iter().map(|host| host.name.clone()).collect_vec();
@@ -130,7 +130,7 @@ impl SelectedHostState {
             .iter()
             .map(String::len)
             .max()
-            .map(|width| width as u16 + SelectedHostState::LIST_SELECTION_SYMBOL_LEN)
+            .map(|width| width as u16)
             .unwrap()
             .max(const { Self::HOST_LIST_TITLE.len() as u16 });
 
@@ -180,8 +180,10 @@ impl SelectedHostState {
             }
             (Vector([_, 0]), _) => {
                 self.selected_panel = if matches!(self.selected_panel, Panel::Device) {
+                    self.device_list_state.select(None);
                     Panel::Host
                 } else {
+                    self.device_list_state.select_first();
                     Panel::Device
                 };
             }
@@ -197,7 +199,7 @@ impl SelectedHostState {
             .iter()
             .map(|device| device.name.len())
             .max()
-            .map(|width| width as u16 + Self::LIST_SELECTION_SYMBOL_LEN)
+            .map(|width| width as u16)
             .unwrap()
             .max(const { Self::DEVICE_LIST_TITLE.len() as u16 });
 
@@ -275,6 +277,8 @@ impl Popup {
                 );
 
                 let block = Block::bordered()
+                    .bg(THEME.elevated_background)
+                    .fg(THEME.on_elevated_background)
                     .border_type(BorderType::Rounded)
                     .title_top(Self::POPUP_TITLE)
                     .title_bottom(Line::from(SelectedHostState::KEYBINDINGS_LABEL).right_aligned());
@@ -291,6 +295,7 @@ impl Popup {
                     Constraint::Length(SelectedHostState::INTER_LIST_GAP),
                     Constraint::Min(*device_panel_width),
                 ])
+                .flex(Flex::SpaceAround)
                 .spacing(SelectedHostState::LIST_SPACING)
                 .areas(area);
 
@@ -320,7 +325,6 @@ impl Popup {
                 StatefulWidget::render(
                     List::new(hosts_name.clone())
                         .highlight_spacing(HighlightSpacing::Always)
-                        .highlight_symbol(SelectedHostState::LIST_SELECTION_SYMBOL)
                         .highlight_style(host_list_highlight_style),
                     host_item_list_area,
                     buf,
@@ -343,7 +347,6 @@ impl Popup {
                 StatefulWidget::render(
                     List::new(devices_name)
                         .highlight_spacing(HighlightSpacing::Always)
-                        .highlight_symbol(SelectedHostState::LIST_SELECTION_SYMBOL)
                         .highlight_style(device_list_highlight_style),
                     device_item_list_area,
                     buf,

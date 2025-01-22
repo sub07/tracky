@@ -7,6 +7,8 @@ use ratatui::{
 
 use crate::model::pattern::{NoteFieldValue, NoteName, PatternLine, PatternLineDescriptor};
 
+use super::theme::THEME;
+
 #[derive(New)]
 pub struct PatternLineView<'a> {
     pub line: &'a PatternLine,
@@ -105,8 +107,8 @@ impl Widget for PatternLineView<'_> {
             let cursor_cell = buf
                 .cell_mut((area.x + current_field as u16 + offset_x as u16, area.y))
                 .unwrap();
-            cursor_cell.bg = Color::Rgb(245, 224, 220);
-            cursor_cell.fg = Color::Rgb(17, 17, 27);
+            cursor_cell.bg = THEME.cursor_background;
+            cursor_cell.fg = THEME.on_cursor;
         }
     }
 }

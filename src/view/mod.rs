@@ -7,6 +7,7 @@ use ratatui::{
     widgets::Widget,
     Frame,
 };
+use theme::THEME;
 
 use crate::tracky::Tracky;
 
@@ -15,6 +16,7 @@ pub mod header;
 pub mod line;
 pub mod pattern;
 pub mod popup;
+pub mod theme;
 
 fn centered_rect(area: Rect, width: Constraint, height: Constraint) -> Rect {
     let [_, center, _] =
@@ -90,9 +92,9 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
 
     let audio_state_text = Line::from_iter([
         "• ".fg(if app.audio_state.is_some() {
-            Color::LightGreen
+            THEME.success
         } else {
-            Color::LightRed
+            THEME.danger
         }),
         if app.audio_state.is_some() {
             match &app.selected_output_device {
@@ -115,7 +117,7 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
 
     pattern_view.render(pattern_area, buf);
 
-    for popup in app.popup_state.iter_mut() {
+    for popup in app.current_popup.iter_mut() {
         match popup {
             popup::Popup::AudioDeviceSelection(popup) => popup.render(area, buf),
             popup::Popup::Input(popup) => popup.render(area, buf),

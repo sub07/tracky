@@ -2,7 +2,7 @@ use super::HandleEvent;
 use crate::{
     event::{self, Action, Event},
     keybindings::InputContext,
-    view::{centered_line, centered_rect, margin, responsive_centered_rect},
+    view::{centered_line, centered_rect, margin, responsive_centered_rect, theme::THEME},
     EventSender,
 };
 use ratatui::{
@@ -99,8 +99,6 @@ impl HandleEvent<PopupEvent> for Popup {
 }
 
 impl Popup {
-    const INPUT_BG_COLOR: Color = Color::Rgb(17, 17, 27);
-    const INPUT_FG_COLOR: Color = Color::Rgb(205, 214, 244);
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let area = responsive_centered_rect(
             area,
@@ -110,7 +108,7 @@ impl Popup {
             Constraint::Percentage(30),
         );
 
-        let block = Block::new().bg(Color::Rgb(49, 50, 68));
+        let block = Block::new().bg(THEME.elevated_background);
 
         let area = {
             let inner = block.inner(area);
@@ -129,16 +127,16 @@ impl Popup {
         Line::from(self.label.as_str()).render(label_area, buf);
         let input_scroll = self.input.visual_scroll(input_area.width as usize - 1);
         Paragraph::new(&self.input.value()[input_scroll..])
-            .bg(Self::INPUT_BG_COLOR)
-            .fg(Self::INPUT_FG_COLOR)
+            .bg(THEME.elevated_background_2)
+            .fg(THEME.on_elevated_background_2)
             .render(input_area, buf);
 
         if let Some(cursor_cell) = buf.cell_mut((
             input_area.x + (self.input.cursor() - input_scroll) as u16,
             input_area.y,
         )) {
-            cursor_cell.bg = Color::Rgb(245, 224, 220);
-            cursor_cell.fg = Color::Rgb(17, 17, 27);
+            cursor_cell.bg = THEME.cursor_background;
+            cursor_cell.fg = THEME.on_cursor;
         }
     }
 }
