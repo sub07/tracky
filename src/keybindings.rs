@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use joy_collection_utils::hash_map_of;
-use winit::keyboard::{KeyCode, PhysicalKey};
+use winit::keyboard::KeyCode;
 
 use crate::{
     event::{self, Event},

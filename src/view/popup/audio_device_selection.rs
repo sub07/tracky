@@ -1,11 +1,9 @@
-use std::sync::mpsc::Sender;
-
 use itertools::Itertools;
 use joy_vector::Vector;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Flex, Layout, Rect},
-    style::{Color, Style, Stylize},
+    style::{Style, Stylize},
     text::{Line, ToLine},
     widgets::{
         Block, BorderType, Clear, HighlightSpacing, List, ListState, StatefulWidget, Widget,

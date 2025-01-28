@@ -1,5 +1,3 @@
-use std::sync::mpsc::Sender;
-
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Rect},
@@ -7,7 +5,7 @@ use ratatui::{
     widgets::{Block, Clear, Widget},
 };
 
-use crate::view::{centered_line, centered_rows, responsive_centered_rect};
+use crate::view::{centered_line, responsive_centered_rect};
 
 pub struct Popup;
 

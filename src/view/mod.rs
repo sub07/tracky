@@ -2,7 +2,7 @@ use header::Header;
 use pattern::PatternView;
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Color, Stylize},
+    style::Stylize,
     text::Line,
     widgets::Widget,
     Frame,

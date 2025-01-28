@@ -1,23 +1,11 @@
-use std::{
-    cell::{LazyCell, OnceCell},
-    iter,
-    sync::LazyLock,
-    time::Duration,
-};
+use std::{iter, time::Duration};
 
 use itertools::Itertools;
-use joy_macro::EnumIter;
 use joy_vector::{vector, Vector};
 
-use crate::{
-    audio::{
-        frame::{Frame, StereoFrame},
-        signal, synthesis, Pan, Volume,
-    },
-    model::{
-        midi::note_to_freq,
-        pattern::{NoteName, OctaveValue},
-    },
+use crate::audio::{
+    frame::{Frame, StereoFrame},
+    signal, synthesis, Pan, Volume,
 };
 
 use super::midi::C5_FREQ;

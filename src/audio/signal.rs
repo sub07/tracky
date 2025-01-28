@@ -1,17 +1,14 @@
 use std::{
     ops::{Deref, DerefMut, RangeTo},
-    path::Path,
     time::Duration,
 };
 
-use anyhow::{bail, ensure};
-use joy_iter::zip_self::ZipSelf;
-use joy_vector::Vector;
+use anyhow::ensure;
 use log::error;
 
 use crate::audio::dsp;
 
-use super::{frame::Frame, load_samples_from_file};
+use super::frame::Frame;
 
 #[derive(Clone)]
 pub struct Owned<const FRAME_SIZE: usize> {
@@ -37,7 +34,6 @@ pub mod stereo {
     use itertools::Itertools;
     use joy_iter::zip_self::ZipSelf;
     use joy_vector::{vector, Vector};
-    use ratatui::Frame;
 
     use crate::audio::load_samples_from_file;
 
@@ -382,9 +378,6 @@ pub mod test_utils {
 #[cfg(test)]
 mod test {
     use itertools::Itertools;
-    use test_utils::assert_signal_eq;
-
-    use crate::audio::frame::StereoFrame;
 
     use super::*;
 

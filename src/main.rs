@@ -1,19 +1,15 @@
 use std::num::NonZeroU32;
-use std::sync::mpsc::{channel, Sender};
 use std::sync::Arc;
-use std::{env, io, panic, thread};
+use std::{env, panic, thread};
 
-use ::log::{debug, error, info, warn};
-use audio::{device, signal, Hosts};
+use ::log::{error, info, warn};
+use audio::{device, Hosts};
 use event::{Action, AsyncAction, Event, Text};
 use model::pattern::{HexDigit, NoteName};
-use ratatui::style::Color;
 use ratatui::Terminal;
-use ratatui_wgpu::shaders::DefaultPostProcessor;
 use ratatui_wgpu::WgpuBackend;
 use tracky::Tracky;
-use view::popup::input::InputId;
-use view::popup::{self, Popup};
+use view::popup::Popup;
 use view::render_root;
 use view::theme::THEME;
 use winit::application::ApplicationHandler;
@@ -21,7 +17,6 @@ use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, KeyEvent, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy};
 use winit::keyboard::{Key, PhysicalKey};
-use winit::platform::pump_events::EventLoopExtPumpEvents;
 use winit::window::{Fullscreen, Window, WindowAttributes};
 
 mod audio;

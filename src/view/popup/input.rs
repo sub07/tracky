@@ -2,19 +2,18 @@ use super::HandleEvent;
 use crate::{
     event::{self, Action, Event},
     keybindings::InputContext,
-    view::{centered_line, centered_rect, margin, responsive_centered_rect, theme::THEME},
+    view::{margin, responsive_centered_rect, theme::THEME},
     EventSender,
 };
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Flex, Layout, Rect},
-    style::{Color, Style, Stylize},
+    layout::{Constraint, Layout, Rect},
+    style::Stylize,
     text::Line,
-    widgets::{Block, BorderType, Clear, Paragraph, Widget},
+    widgets::{Block, Clear, Paragraph, Widget},
 };
-use std::{marker::PhantomData, sync::mpsc::Sender};
 use tui_input::{Input, InputRequest};
-use uid::{Id, IdU64};
+use uid::Id;
 
 pub type InputId = Id<()>;
 

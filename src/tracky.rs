@@ -1,30 +1,15 @@
-use std::{
-    num::NonZeroU32,
-    sync::{
-        mpsc::{channel, Sender},
-        Arc,
-    },
-};
+use std::sync::mpsc::{channel, Sender};
 
 use log::{error, warn};
-use ratatui::{style::Color, Terminal};
-use ratatui_wgpu::WgpuBackend;
-use winit::{
-    application::ApplicationHandler,
-    event::WindowEvent,
-    window::{Window, WindowAttributes},
-};
 
 use crate::{
     audio::{
-        device,
         player::{AudioPlayer, AudioPlayerBuilder},
         Device,
     },
-    event::Event,
-    keybindings::{InputContext, KeyBindings},
+    keybindings::KeyBindings,
     model::{self},
-    view::{popup::Popup, render_root},
+    view::popup::Popup,
     EventSender,
 };
 

@@ -1,9 +1,6 @@
 use std::time::Duration;
 
-use crate::{
-    audio::signal,
-    model::{channel::Channel, pattern::PatternLine},
-};
+use crate::{audio::signal, model::channel::Channel};
 
 #[derive(Clone)]
 pub struct SongPlayback {

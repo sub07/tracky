@@ -1,7 +1,6 @@
 use joy_macro::New;
 use ratatui::{
     prelude::{Buffer, Rect},
-    style::Color,
     widgets::{Paragraph, Widget},
 };
 

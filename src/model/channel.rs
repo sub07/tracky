@@ -1,7 +1,7 @@
 use crate::audio::{signal, Pan, Volume};
 
 use super::{
-    instrument::{self, Instrument, Instruments},
+    instrument::Instruments,
     midi::note_to_freq,
     pattern::{NoteFieldValue, NoteName, OctaveValue, PatternLine},
 };

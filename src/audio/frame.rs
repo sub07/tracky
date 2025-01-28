@@ -1,9 +1,8 @@
-use std::{iter, ops, time::Duration};
+use std::ops;
 
-use itertools::Itertools;
 use joy_vector::Vector;
 
-use super::{signal, Pan, Volume};
+use super::Volume;
 
 pub type Frame<const SIZE: usize> = Vector<f32, SIZE>;
 pub type StereoFrame = Frame<2>;

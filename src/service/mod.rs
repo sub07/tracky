@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use itertools::Itertools;
 use joy_vector::Vector;
-use log::{error, warn};
+use log::error;
 
 use crate::{
     audio::{
@@ -14,7 +14,7 @@ use crate::{
     model::{
         self,
         channel::Channel,
-        pattern::{Field, HexDigit, NoteFieldValue, NoteName, OctaveValue, PatternLineDescriptor},
+        pattern::{HexDigit, NoteFieldValue, NoteName, OctaveValue, PatternLineDescriptor},
         playback::song::SongPlayback,
     },
     utils::Direction,

@@ -1,5 +1,3 @@
-use std::sync::mpsc::Sender;
-
 use crate::{event::Event, keybindings::InputContext, EventSender};
 
 pub mod audio_device_selection;

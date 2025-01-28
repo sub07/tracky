@@ -1,4 +1,4 @@
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::Receiver;
 
 use anyhow::bail;
 use builder_pattern::Builder;
@@ -7,7 +7,6 @@ use cpal::{
     Device, FromSample, Sample, SampleFormat, SizedSample, Stream, StreamConfig,
 };
 
-use itertools::Itertools;
 use joy_error::OptionToResultExt;
 use joy_vector::Vector;
 use log::{error, info, warn};
