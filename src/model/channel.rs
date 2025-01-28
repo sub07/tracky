@@ -14,9 +14,9 @@ struct PlayingInstrument {
 
 #[derive(Clone)]
 pub struct Channel {
-    pub current_note: Option<(NoteName, OctaveValue)>,
-    pub current_volume: Option<Volume>,
-    pub current_instrument: Option<PlayingInstrument>,
+    current_note: Option<(NoteName, OctaveValue)>,
+    current_volume: Option<Volume>,
+    current_instrument: Option<PlayingInstrument>,
 }
 
 impl Channel {

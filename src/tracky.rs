@@ -18,6 +18,7 @@ pub struct AudioState {
     pub state_event_tx: Sender<model::Event>,
 }
 
+#[derive(Default)]
 pub struct Tracky {
     pub state: model::State,
     pub keybindings: KeyBindings,
@@ -25,19 +26,6 @@ pub struct Tracky {
     pub current_popup: Option<Popup>,
     pub loader_count: usize,
     pub audio_state: Option<AudioState>,
-}
-
-impl Default for Tracky {
-    fn default() -> Self {
-        Self {
-            state: Default::default(),
-            keybindings: Default::default(),
-            selected_output_device: None,
-            current_popup: None,
-            audio_state: None,
-            loader_count: 0,
-        }
-    }
 }
 
 impl Tracky {

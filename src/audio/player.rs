@@ -19,7 +19,7 @@ use crate::{
 
 pub struct AudioPlayer {
     pub frame_rate: f32,
-    stream: Stream,
+    _stream: Stream,
 }
 
 #[rustfmt::skip]
@@ -121,7 +121,7 @@ impl AudioPlayerBuilder {
 
         Ok(AudioPlayer {
             frame_rate: sample_rate,
-            stream,
+            _stream: stream,
         })
     }
 }

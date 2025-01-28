@@ -63,6 +63,7 @@ pub mod stereo {
     }
 
     impl Ref<'_> {
+        #[allow(dead_code, reason = "Dev utils")]
         pub fn plot<P: AsRef<Path>>(&self, path: P) -> anyhow::Result<()> {
             use plotters::prelude::*;
 
@@ -141,29 +142,6 @@ impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
             self.frame_rate, signal.frame_rate
         );
         self.frames.extend(signal.frames.iter());
-    }
-
-    pub fn clone_sub_signal(
-        &self,
-        start: Duration,
-        end: Duration,
-    ) -> anyhow::Result<Owned<FRAME_SIZE>> {
-        ensure!(
-            start <= self.as_ref().duration(),
-            "start can't exceed signal duration"
-        );
-        ensure!(
-            end <= self.as_ref().duration(),
-            "end can't exceed signal duration"
-        );
-        ensure!(start <= end, "start must be less than end");
-        let (start_index, _) = self.as_ref().frame_index_from_duration(start);
-        let (end_index, _) = self.as_ref().frame_index_from_duration(end);
-        let sub_signal_frames = self.frames[start_index..end_index].to_owned();
-        Ok(Self {
-            frames: sub_signal_frames,
-            frame_rate: self.frame_rate,
-        })
     }
 
     pub fn sub_signal_mut(
@@ -390,59 +368,5 @@ mod test {
         let signal = get_signal();
         let frames_from_iter = signal.iter().cloned().collect_vec();
         assert_eq!(signal.frames, frames_from_iter)
-    }
-
-    #[test]
-    fn test_clone_sub_signal() {
-        let signal = get_signal();
-        let sub_signal = signal.clone_sub_signal(Duration::from_secs(1), Duration::from_secs(2));
-        assert!(sub_signal.is_ok());
-        let sub_signal = sub_signal.unwrap();
-        assert_eq!(Duration::from_secs(1), sub_signal.as_ref().duration());
-        let start_index = signal.frame_rate as usize;
-        let end_index = signal.frame_rate as usize * 2;
-
-        let sub_frames = &signal.frames[start_index..end_index];
-        assert_eq!(sub_frames.len(), sub_signal.frames.len());
-
-        for (real_frame, computed_frame) in sub_frames.iter().zip(sub_signal.iter()) {
-            assert_eq!(real_frame, computed_frame);
-        }
-    }
-
-    #[test]
-    fn test_sub_signal_start_gt_end() {
-        let signal = get_signal();
-        let sub_signal_err = signal
-            .clone_sub_signal(Duration::from_secs(2), Duration::from_secs(1))
-            .err()
-            .unwrap()
-            .to_string();
-
-        assert_eq!("start must be less than end", sub_signal_err);
-    }
-
-    #[test]
-    fn test_sub_signal_start_exceeds_sig_duration() {
-        let signal = get_signal();
-        let sub_signal_err = signal
-            .clone_sub_signal(Duration::from_secs(91), Duration::from_secs(92))
-            .err()
-            .unwrap()
-            .to_string();
-
-        assert_eq!("start can't exceed signal duration", sub_signal_err);
-    }
-
-    #[test]
-    fn test_sub_signal_end_exceeds_sig_duration() {
-        let signal = get_signal();
-        let sub_signal_err = signal
-            .clone_sub_signal(Duration::from_secs(1), Duration::from_secs(90))
-            .err()
-            .unwrap()
-            .to_string();
-
-        assert_eq!("end can't exceed signal duration", sub_signal_err);
     }
 }

@@ -1,6 +1,5 @@
 use std::{iter, time::Duration};
 
-use itertools::Itertools;
 use joy_vector::{vector, Vector};
 
 use crate::audio::{
@@ -114,6 +113,6 @@ impl Default for Instruments {
 
 impl Instruments {
     pub fn get(&self, index: u8) -> Option<&Instrument> {
-        self.slots.get(index as usize).map(Option::as_ref).flatten()
+        self.slots.get(index as usize).and_then(Option::as_ref)
     }
 }
