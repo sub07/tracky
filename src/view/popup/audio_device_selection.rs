@@ -223,7 +223,7 @@ impl SelectedHostState {
 
 impl Popup {
     const NO_HOST_LABEL: &str = "There is no availble host on this device";
-    const POPUP_TITLE: &str = " Device selection";
+    const POPUP_TITLE: &str = " Device selection ";
 
     fn render_simple_message(&self, area: Rect, buf: &mut Buffer, message: &str) {
         let message_len = message.len() as u16;

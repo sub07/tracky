@@ -17,6 +17,7 @@ use view::popup::{self, Popup};
 use view::render_root;
 use view::theme::THEME;
 use winit::application::ApplicationHandler;
+use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, KeyEvent, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy};
 use winit::keyboard::{Key, PhysicalKey};
@@ -45,7 +46,11 @@ impl ApplicationHandler<Event> for App<'_> {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         self.window = Some(Arc::new(
             event_loop
-                .create_window(WindowAttributes::default())
+                .create_window(
+                    WindowAttributes::default()
+                        .with_title("Tracky")
+                        .with_inner_size(PhysicalSize::new(1600, 900)),
+                )
                 .unwrap(),
         ));
 
