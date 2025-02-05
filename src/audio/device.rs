@@ -1,110 +1,181 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
-use anyhow::Context;
+use anyhow::{bail, ensure, Context};
 use cpal::{
     traits::{DeviceTrait, HostTrait},
-    SampleRate, SupportedStreamConfig, SupportedStreamConfigRange, ALL_HOSTS,
+    SampleRate, SupportedBufferSize, SupportedStreamConfig, SupportedStreamConfigRange, ALL_HOSTS,
 };
 use itertools::Itertools;
 use joy_error::ResultLogExt;
+use log::warn;
 
-#[derive(Debug)]
-pub struct Hosts(pub Vec<Host>);
+const BUFFER_SIZES: &[u32] = &[8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
 
-#[derive(Debug)]
-pub struct Host {
-    pub name: String,
-    pub devices: Vec<Device>,
+fn get_buffer_sizes(min: u32, max: u32) -> Option<&'static [u32]> {
+    let start = match BUFFER_SIZES.binary_search(&min) {
+        Ok(index) => index,
+        Err(index) if index == BUFFER_SIZES.len() - 1 => return None,
+        Err(index) => index,
+    };
+
+    let end = match BUFFER_SIZES.binary_search(&max) {
+        Ok(index) => index,
+        Err(0) => return None,
+        Err(index) => index,
+    };
+
+    if start >= end {
+        return None;
+    }
+    Some(&BUFFER_SIZES[start..end])
 }
+
+#[derive(Debug)]
+pub struct Devices(pub Vec<Device>);
 
 #[derive(Clone)]
 pub struct Device {
+    pub host_name: String,
     pub name: String,
     pub inner: cpal::Device,
-    pub config: SupportedStreamConfig,
+    pub configs: Vec<Config>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Config {
+    pub sample_rate: u32,
+    pub sample_format: cpal::SampleFormat,
+    pub buffer_sizes: Option<&'static [u32]>,
+}
+
+#[derive(Clone)]
+pub struct ConfiguredDevice {
+    pub host_name: String,
+    pub name: String,
+    pub inner: cpal::Device,
+    pub sample_format: cpal::SampleFormat,
+    pub config: cpal::StreamConfig,
+}
+
+impl Device {
+    pub fn configure(
+        &self,
+        buffer_size: cpal::BufferSize,
+        config_index: usize,
+    ) -> ConfiguredDevice {
+        let config = &self.configs[config_index];
+        ConfiguredDevice {
+            host_name: self.host_name.clone(),
+            name: self.name.clone(),
+            inner: self.inner.clone(),
+            sample_format: config.sample_format,
+            config: cpal::StreamConfig {
+                channels: 2,
+                sample_rate: SampleRate(config.sample_rate),
+                buffer_size,
+            },
+        }
+    }
+}
+
+pub fn sample_format_bit_count(sample_format: cpal::SampleFormat) -> usize {
+    match sample_format {
+        cpal::SampleFormat::I8 => 8,
+        cpal::SampleFormat::I16 => 16,
+        cpal::SampleFormat::I32 => 32,
+        cpal::SampleFormat::I64 => 64,
+        cpal::SampleFormat::U8 => 8,
+        cpal::SampleFormat::U16 => 16,
+        cpal::SampleFormat::U32 => 32,
+        cpal::SampleFormat::U64 => 64,
+        cpal::SampleFormat::F32 => 32,
+        cpal::SampleFormat::F64 => 64,
+        format => panic!("Unsupported sample format: {format}"),
+    }
 }
 
 impl std::fmt::Debug for Device {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Device")
+            .field("host_name", &self.host_name)
             .field("name", &self.name)
+            .field("configs", &self.configs)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for ConfiguredDevice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ConfiguredDevice")
+            .field("host_name", &self.host_name)
+            .field("name", &self.name)
+            .field("sample_format", &self.sample_format)
             .field("config", &self.config)
             .finish()
     }
 }
 
-impl Display for Device {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name)
+fn map_config(config: SupportedStreamConfigRange) -> Option<Config> {
+    if config.channels() != 2 {
+        return None;
     }
-}
-
-fn map_device(device: cpal::Device) -> Option<Device> {
-    find_first_valid_config(&device).map(|config| Device {
-        name: device.name().unwrap_or("Unknown device".into()),
-        inner: device,
-        config,
+    let buffer_sizes = match *config.buffer_size() {
+        SupportedBufferSize::Range { min, max } => {
+            if let Some(buffer_sizes) = get_buffer_sizes(min, max) {
+                Some(buffer_sizes)
+            } else {
+                return None;
+            }
+        }
+        SupportedBufferSize::Unknown => None,
+    };
+    if config.max_sample_rate() != config.min_sample_rate() {
+        warn!(
+            "min sample rate != max sample rate: min={} / max={}",
+            config.min_sample_rate().0,
+            config.max_sample_rate().0
+        );
+    }
+    Some(Config {
+        buffer_sizes,
+        sample_format: config.sample_format(),
+        sample_rate: config.max_sample_rate().0,
     })
 }
 
-pub fn default_output() -> anyhow::Result<Device> {
-    cpal::default_host()
-        .default_output_device()
-        .and_then(map_device)
-        .context("Could not get default output device")
-}
+fn map_device(host_name: String, device: cpal::Device) -> Option<Device> {
+    let configs = device
+        .supported_output_configs()
+        .log_ok()?
+        .filter_map(map_config)
+        .collect_vec();
 
-pub fn find_first_valid_config(device: &cpal::Device) -> Option<SupportedStreamConfig> {
-    fn is_sample_rate_valid(config: SupportedStreamConfigRange, sample_rate: u32) -> bool {
-        sample_rate >= config.min_sample_rate().0 && sample_rate <= config.max_sample_rate().0
+    if configs.is_empty() {
+        return None;
     }
 
-    device
-        .supported_output_configs()
-        .log_ok()
-        .and_then(|configs| {
-            configs
-                .filter(|config| config.channels() == 2)
-                .map(|config| {
-                    (
-                        config,
-                        if is_sample_rate_valid(config, 44100) {
-                            44100
-                        } else {
-                            0
-                        },
-                    )
-                })
-                .max_by_key(|(_, score)| *score)
-        })
-        .map(|(config, score)| {
-            if score == 44100 {
-                config.with_sample_rate(SampleRate(44100))
-            } else {
-                config.with_max_sample_rate()
-            }
-        })
+    Some(Device {
+        host_name,
+        name: device.name().unwrap_or("Unknown device".into()),
+        inner: device,
+        configs,
+    })
 }
 
-impl Hosts {
-    pub fn load() -> Hosts {
-        Hosts(
+impl Devices {
+    pub fn load() -> Devices {
+        Devices(
             ALL_HOSTS
                 .iter()
                 .filter_map(|host_id| {
-                    cpal::host_from_id(*host_id)
-                        .ok()
-                        .and_then(|host| {
-                            host.output_devices()
-                                .map(|devices| Host {
-                                    name: host.id().name().to_owned(),
-                                    devices: devices.filter_map(map_device).collect_vec(),
-                                })
-                                .ok()
+                    cpal::host_from_id(*host_id).log_ok().and_then(|host| {
+                        host.output_devices().log_ok().map(|devices| {
+                            devices.map(|device| (host_id.name().to_string(), device))
                         })
-                        // We filter out hosts with no device
-                        .filter(|host| !host.devices.is_empty())
+                    })
                 })
+                .flatten()
+                .filter_map(|(host_name, device)| map_device(host_name, device))
                 .collect(),
         )
     }

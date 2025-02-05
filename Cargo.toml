@@ -8,7 +8,9 @@ publish = false
 members = ["."]
 
 [dependencies]
-ratatui = { version = "0.29", default-features = false }
+ratatui = { version = "0.29", default-features = false, features = [
+    "unstable-widget-ref",
+] }
 joy-value-object = { git = "https://github.com/sub07/rust-utils", version = "0.4.5" }
 joy-collection-utils = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
 joy-macro = { git = "https://github.com/sub07/rust-utils", version = "0.2.4" }
@@ -19,7 +21,7 @@ joy-iter = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
 joy-error = { git = "https://github.com/sub07/rust-utils", version = "0.1.3" }
 anyhow = "1"
 itertools = "0"
-cpal = { version = "0.15" }
+cpal = { version = "0.15", features = ["asio"] }
 derivative = "2.2.0"
 audrey = "0.3"
 plotters = "0.3"

@@ -3,7 +3,6 @@ use std::path::Path;
 use anyhow::anyhow;
 use anyhow::Context;
 pub use device::Device;
-pub use device::Hosts;
 
 use joy_value_object::{mk_vo, mk_vo_consts};
 

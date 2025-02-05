@@ -1,6 +1,5 @@
-use super::HandleEvent;
 use crate::{
-    event::{self, Action, Event},
+    event::{self, Action, Event, EventAware},
     keybindings::InputContext,
     view::{margin, responsive_centered_rect, theme::THEME},
     EventSender,
@@ -53,7 +52,7 @@ pub enum PopupEvent {
     Input(event::Text),
 }
 
-impl HandleEvent<PopupEvent> for Popup {
+impl EventAware<PopupEvent> for Popup {
     fn map_event(&self, event: &crate::event::Event) -> Option<PopupEvent> {
         match event {
             Event::Action(Action::Cancel) => Some(PopupEvent::Close),
@@ -98,7 +97,7 @@ impl HandleEvent<PopupEvent> for Popup {
 }
 
 impl Popup {
-    pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
+    pub fn render(&self, area: Rect, buf: &mut Buffer) {
         let area = responsive_centered_rect(
             area,
             Constraint::Percentage(30),

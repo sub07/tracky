@@ -3,14 +3,15 @@ use std::sync::Arc;
 use std::{env, panic, thread};
 
 use ::log::{error, info, warn};
-use audio::{device, Hosts};
-use event::{Action, AsyncAction, Event, Text};
+use audio::device::{self, Devices};
+use event::{Action, AsyncAction, Event, EventAware, Text};
 use model::pattern::{HexDigit, NoteName};
 use ratatui::Terminal;
 use ratatui_wgpu::WgpuBackend;
 use tracky::Tracky;
 use view::popup::Popup;
 use view::render_root;
+use view::screen::Screen;
 use view::theme::THEME;
 use winit::application::ApplicationHandler;
 use winit::dpi::PhysicalSize;
@@ -130,6 +131,17 @@ impl ApplicationHandler<Event> for App<'_> {
             }
         }
 
+        match &mut self.tracky.current_screen {
+            Screen::DeviceSelection(state) => {
+                if let Some(unprocessed_event) = state.handle_event(event, self.event_tx.clone()) {
+                    event = unprocessed_event;
+                } else {
+                    return;
+                }
+            }
+            Screen::SongEditor => {}
+        }
+
         match event {
             Event::KeyPressed(key_event) => {
                 if let PhysicalKey::Code(key_code) = key_event.physical_key {
@@ -192,7 +204,7 @@ impl ApplicationHandler<Event> for App<'_> {
                     thread::spawn(move || {
                         event_tx_clone
                             .send_event(Event::LoadingDone(AsyncAction::OpenDeviceSelectionPopup(
-                                Hosts::load(),
+                                Devices::load(),
                             )))
                             .unwrap();
                     });
@@ -219,9 +231,8 @@ impl ApplicationHandler<Event> for App<'_> {
             }
             Event::Resize { width, height } => info!("{width}x{height}"),
             Event::AsyncAction(async_action) => match async_action {
-                event::AsyncAction::OpenDeviceSelectionPopup(hosts) => {
-                    self.tracky
-                        .open_popup(Popup::AudioDeviceSelection(hosts.into()));
+                event::AsyncAction::OpenDeviceSelectionPopup(devices) => {
+                    self.tracky.current_screen = Screen::DeviceSelection(devices.into())
                 }
             },
             Event::StartLoading => self.tracky.loader_count += 1,
@@ -279,10 +290,12 @@ fn main() -> anyhow::Result<()> {
     let event_loop = EventLoop::<Event>::with_user_event().build()?;
     let event_tx = event_loop.create_proxy();
 
-    event_tx
-        .send_event(Event::SetPlayingDevice(device::default_output().unwrap()))
-        .unwrap();
-    event_tx.send_event(Event::StartAudioPlayer).unwrap();
+    // event_tx
+    //     .send_event(Event::SetPlayingDevice(device::default_output().unwrap()))
+    //     .unwrap();
+    // event_tx.send_event(Event::StartAudioPlayer).unwrap();
+
+    // println!("{:#?}", device::Devices::load());
 
     let mut app = App {
         tracky,

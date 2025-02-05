@@ -9,14 +9,16 @@ use ratatui::{
 };
 use theme::THEME;
 
-use crate::tracky::Tracky;
+use crate::{event::Event, keybindings::InputContext, tracky::Tracky, EventSender};
 
 pub mod channel;
 pub mod header;
 pub mod line;
 pub mod pattern;
 pub mod popup;
+pub mod screen;
 pub mod theme;
+pub mod widget;
 
 fn centered_rect(area: Rect, width: Constraint, height: Constraint) -> Rect {
     let [_, center, _] =
@@ -78,16 +80,7 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
     let area = frame.area();
     let buf = frame.buffer_mut();
 
-    let pattern_view = PatternView::new(
-        app.state.patterns.current_pattern_channels(),
-        app.state.patterns.current_row,
-        app.state.patterns.current_channel,
-        app.state.patterns.current_field,
-        app.state.patterns.channel_len,
-        app.state.patterns.channel_count,
-    );
-
-    let [header_area, pattern_area] =
+    let [header_area, area] =
         Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
 
     let audio_state_text = Line::from_iter([
@@ -115,16 +108,30 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
 
     Header::new([audio_state_text, playback_state_text]).render(header_area, buf);
 
-    pattern_view.render(pattern_area, buf);
+    match &mut app.current_screen {
+        screen::Screen::DeviceSelection(device_selection_screen_state) => {
+            device_selection_screen_state.render(area, buf)
+        }
+        screen::Screen::SongEditor => {
+            let pattern_view = PatternView::new(
+                app.state.patterns.current_pattern_channels(),
+                app.state.patterns.current_row,
+                app.state.patterns.current_channel,
+                app.state.patterns.current_field,
+                app.state.patterns.channel_len,
+                app.state.patterns.channel_count,
+            );
+            pattern_view.render(area, buf);
+        }
+    }
 
     for popup in app.current_popup.iter_mut() {
         match popup {
-            popup::Popup::AudioDeviceSelection(popup) => popup.render(area, buf),
             popup::Popup::Input(popup) => popup.render(area, buf),
         }
     }
 
     if app.loader_count > 0 {
-        popup::loading::Popup.render(area, buf);
+        popup::loading::render(area, buf);
     }
 }

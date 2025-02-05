@@ -7,28 +7,24 @@ use ratatui::{
 
 use crate::view::{centered_line, responsive_centered_rect};
 
-pub struct Popup;
+pub fn render(area: Rect, buf: &mut Buffer) {
+    let area = responsive_centered_rect(
+        area,
+        Constraint::Percentage(30),
+        Constraint::Length(30),
+        Constraint::Length(50),
+        Constraint::Percentage(30),
+    );
 
-impl Popup {
-    pub fn render(&self, area: Rect, buf: &mut Buffer) {
-        let area = responsive_centered_rect(
-            area,
-            Constraint::Percentage(30),
-            Constraint::Length(30),
-            Constraint::Length(50),
-            Constraint::Percentage(30),
-        );
+    let block = Block::bordered();
 
-        let block = Block::bordered();
+    let area = {
+        let inner = block.inner(area);
+        Clear.render(area, buf);
+        block.render(area, buf);
+        inner
+    };
 
-        let area = {
-            let inner = block.inner(area);
-            Clear.render(area, buf);
-            block.render(area, buf);
-            inner
-        };
-
-        let area = centered_line(area);
-        "Loading...".to_line().centered().render(area, buf);
-    }
+    let area = centered_line(area);
+    "Loading...".to_line().centered().render(area, buf);
 }

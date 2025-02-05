@@ -1,10 +1,15 @@
 use winit::event::KeyEvent;
 
 use crate::{
-    audio::{Device, Hosts},
+    audio::{
+        device::{ConfiguredDevice, Devices},
+        Device,
+    },
+    keybindings::InputContext,
     model::{self},
     utils::Direction,
     view::popup::input::InputId,
+    EventSender,
 };
 
 #[derive(Debug)]
@@ -21,7 +26,7 @@ pub enum Event {
     StartLoading,
     LoadingDone(AsyncAction),
     ClosePopup,
-    SetPlayingDevice(Device),
+    SetPlayingDevice(ConfiguredDevice),
     StartAudioPlayer,
     StopAudioPlayer(Option<anyhow::Error>),
     RequestRedraw,
@@ -31,7 +36,7 @@ pub enum Event {
 
 #[derive(Debug)]
 pub enum AsyncAction {
-    OpenDeviceSelectionPopup(Hosts),
+    OpenDeviceSelectionPopup(Devices),
 }
 
 #[derive(Debug)]
@@ -52,4 +57,18 @@ pub enum Text {
     RemoveCharAtCursor,
     MoveCursorLeft,
     MoveCursorRight,
+}
+
+pub trait EventAware<InternalEvent> {
+    fn map_event(&self, event: &Event) -> Option<InternalEvent>;
+    fn update(&mut self, event: InternalEvent, event_tx: EventSender);
+    fn input_context(&self) -> InputContext;
+    fn handle_event(&mut self, event: Event, event_tx: EventSender) -> Option<Event> {
+        if let Some(popup_event) = self.map_event(&event) {
+            self.update(popup_event, event_tx);
+            None
+        } else {
+            Some(event)
+        }
+    }
 }

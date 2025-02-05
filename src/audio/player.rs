@@ -17,6 +17,8 @@ use crate::{
     EventSender,
 };
 
+use super::device::ConfiguredDevice;
+
 pub struct AudioPlayer {
     pub frame_rate: f32,
     _stream: Stream,
@@ -25,8 +27,7 @@ pub struct AudioPlayer {
 #[rustfmt::skip]
 #[derive(Builder)]
 pub struct AudioPlayerBuilder {
-    #[default(None)]
-    pub device: Option<crate::audio::Device>,
+    pub device: ConfiguredDevice,
     pub initial_state: model::State,
     pub state_event_rx: Receiver<model::Event>,
     pub event_tx: EventSender,
@@ -34,79 +35,73 @@ pub struct AudioPlayerBuilder {
 
 impl AudioPlayerBuilder {
     pub fn into_player(self) -> anyhow::Result<AudioPlayer> {
-        let device = self
-            .device
-            .unwrap_or_fallible(crate::audio::device::default_output)?;
-
-        let config = device.inner.default_output_config()?;
-
-        let (stream, sample_rate) = match config.sample_format() {
+        let (stream, sample_rate) = match self.device.sample_format {
             SampleFormat::I8 => create_stream::<i8>(
-                device.inner,
-                config.into(),
+                self.device.inner,
+                self.device.config,
                 self.initial_state,
                 self.state_event_rx,
                 self.event_tx,
             )?,
             SampleFormat::I16 => create_stream::<i16>(
-                device.inner,
-                config.into(),
+                self.device.inner,
+                self.device.config,
                 self.initial_state,
                 self.state_event_rx,
                 self.event_tx,
             )?,
             SampleFormat::I32 => create_stream::<i32>(
-                device.inner,
-                config.into(),
+                self.device.inner,
+                self.device.config,
                 self.initial_state,
                 self.state_event_rx,
                 self.event_tx,
             )?,
             SampleFormat::I64 => create_stream::<i64>(
-                device.inner,
-                config.into(),
+                self.device.inner,
+                self.device.config,
                 self.initial_state,
                 self.state_event_rx,
                 self.event_tx,
             )?,
             SampleFormat::U8 => create_stream::<u8>(
-                device.inner,
-                config.into(),
+                self.device.inner,
+                self.device.config,
                 self.initial_state,
                 self.state_event_rx,
                 self.event_tx,
             )?,
             SampleFormat::U16 => create_stream::<u16>(
-                device.inner,
-                config.into(),
+                self.device.inner,
+                self.device.config,
                 self.initial_state,
                 self.state_event_rx,
                 self.event_tx,
             )?,
             SampleFormat::U32 => create_stream::<u32>(
-                device.inner,
-                config.into(),
+                self.device.inner,
+                self.device.config,
                 self.initial_state,
                 self.state_event_rx,
                 self.event_tx,
             )?,
             SampleFormat::U64 => create_stream::<u64>(
-                device.inner,
-                config.into(),
+                self.device.inner,
+                self.device.config,
                 self.initial_state,
                 self.state_event_rx,
                 self.event_tx,
             )?,
             SampleFormat::F32 => create_stream::<f32>(
-                device.inner,
-                config.into(),
+                self.device.inner,
+                self.device.config,
                 self.initial_state,
                 self.state_event_rx,
                 self.event_tx,
             )?,
             SampleFormat::F64 => create_stream::<f64>(
-                device.inner,
-                config.into(),
+                self.device.inner,
+                self.device.config,
                 self.initial_state,
                 self.state_event_rx,
                 self.event_tx,
@@ -115,8 +110,8 @@ impl AudioPlayerBuilder {
         };
 
         info!(
-            "Audio player up and running on {} at {}Hz",
-            device.name, sample_rate,
+            "Audio player up and running on [{}] {} at {}Hz",
+            self.device.host_name, self.device.name, sample_rate,
         );
 
         Ok(AudioPlayer {
