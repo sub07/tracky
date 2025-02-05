@@ -290,12 +290,14 @@ fn main() -> anyhow::Result<()> {
     let event_loop = EventLoop::<Event>::with_user_event().build()?;
     let event_tx = event_loop.create_proxy();
 
-    // event_tx
-    //     .send_event(Event::SetPlayingDevice(device::default_output().unwrap()))
-    //     .unwrap();
-    // event_tx.send_event(Event::StartAudioPlayer).unwrap();
-
-    // println!("{:#?}", device::Devices::load());
+    if let Some(default_device) = device::default_output() {
+        event_tx
+            .send_event(Event::SetPlayingDevice(default_device))
+            .unwrap();
+        event_tx.send_event(Event::StartAudioPlayer).unwrap();
+    } else {
+        error!("Default device could not be found")
+    }
 
     let mut app = App {
         tracky,

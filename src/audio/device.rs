@@ -7,7 +7,7 @@ use cpal::{
 };
 use itertools::Itertools;
 use joy_error::ResultLogExt;
-use log::warn;
+use log::{info, warn};
 
 const BUFFER_SIZES: &[u32] = &[8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
 
@@ -159,6 +159,20 @@ fn map_device(host_name: String, device: cpal::Device) -> Option<Device> {
         name: device.name().unwrap_or("Unknown device".into()),
         inner: device,
         configs,
+    })
+}
+
+pub fn default_output() -> Option<ConfiguredDevice> {
+    let device = cpal::default_host()
+        .default_output_device()
+        .and_then(|device| map_device(cpal::default_host().id().name().to_string(), device))?;
+    let config = device.inner.default_output_config().log_ok()?;
+    Some(ConfiguredDevice {
+        host_name: device.host_name,
+        name: device.name,
+        inner: device.inner,
+        sample_format: config.sample_format(),
+        config: config.into(),
     })
 }
 
