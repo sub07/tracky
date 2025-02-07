@@ -7,7 +7,6 @@ use crate::{
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
-    style::Stylize,
     text::Line,
     widgets::{Block, Clear, Paragraph, Widget},
 };
@@ -106,7 +105,7 @@ impl Popup {
             Constraint::Percentage(30),
         );
 
-        let block = Block::new().bg(THEME.elevated_background);
+        let block = Block::new().style(THEME.elevated_1);
 
         let area = {
             let inner = block.inner(area);
@@ -125,16 +124,14 @@ impl Popup {
         Line::from(self.label.as_str()).render(label_area, buf);
         let input_scroll = self.input.visual_scroll(input_area.width as usize - 1);
         Paragraph::new(&self.input.value()[input_scroll..])
-            .bg(THEME.elevated_background_2)
-            .fg(THEME.on_elevated_background_2)
+            .style(THEME.elevated_2)
             .render(input_area, buf);
 
         if let Some(cursor_cell) = buf.cell_mut((
             input_area.x + (self.input.cursor() - input_scroll) as u16,
             input_area.y,
         )) {
-            cursor_cell.bg = THEME.cursor_background;
-            cursor_cell.fg = THEME.on_cursor;
+            cursor_cell.set_style(THEME.primary_cursor);
         }
     }
 }

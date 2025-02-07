@@ -7,7 +7,6 @@ use cpal::{
     Device, FromSample, Sample, SampleFormat, SizedSample, Stream, StreamConfig,
 };
 
-use joy_error::OptionToResultExt;
 use joy_vector::Vector;
 use log::{error, info, warn};
 

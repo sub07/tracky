@@ -1,13 +1,11 @@
-use std::{collections::HashMap, fmt::Display};
 
-use anyhow::{bail, ensure, Context};
 use cpal::{
     traits::{DeviceTrait, HostTrait},
-    SampleRate, SupportedBufferSize, SupportedStreamConfig, SupportedStreamConfigRange, ALL_HOSTS,
+    SampleRate, SupportedBufferSize, SupportedStreamConfigRange, ALL_HOSTS,
 };
 use itertools::Itertools;
 use joy_error::ResultLogExt;
-use log::{info, warn};
+use log::warn;
 
 const BUFFER_SIZES: &[u32] = &[8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
 

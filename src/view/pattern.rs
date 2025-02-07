@@ -4,11 +4,12 @@ use itertools::izip;
 use joy_macro::New;
 use ratatui::{
     layout::{Constraint, Layout},
+    style::{Style, Stylize},
     text::Line,
     widgets::Widget,
 };
 
-use crate::model::pattern::PatternLine;
+use crate::{model::pattern::PatternLine, view::theme::THEME};
 
 use super::channel::ChannelView;
 
@@ -23,6 +24,7 @@ where
     current_field: i32,
     channel_len: i32,
     channel_count: i32,
+    current_playing_row: Option<usize>,
 }
 
 fn compute_three_states_scrolling(
@@ -71,7 +73,18 @@ where
         );
 
         (vertical_offset..self.channel_len as usize)
-            .map(|line_number| Line::raw(format!("{}", line_number)).right_aligned())
+            .map(|line_number| {
+                Line::raw(format!("{}", line_number)).right_aligned().style(
+                    if self
+                        .current_playing_row
+                        .is_some_and(|current_playing_row| current_playing_row == line_number)
+                    {
+                        THEME.secondary_cursor
+                    } else {
+                        Style::reset()
+                    },
+                )
+            })
             .zip(line_numbers_area.rows())
             .for_each(|(line_widget, line_number_area)| line_widget.render(line_number_area, buf));
 
@@ -101,19 +114,21 @@ where
             .skip(channel_offset)
             .take(displayed_channel_count);
 
-        for (channel, channel_area, channel_index) in izip!(
+        for (channel_lines, channel_area, channel_index) in izip!(
             channels,
             channel_areas.iter(),
             channel_offset..self.channel_count as usize,
         ) {
-            let channel_view = ChannelView::new(
-                channel,
-                vertical_offset,
+            let channel_view = ChannelView {
+                lines: channel_lines,
+                row_offset: vertical_offset,
                 channel_index,
-                self.current_row,
-                (self.current_channel == channel_index as i32).then_some(self.current_field),
-                self.channel_len,
-            );
+                current_row: self.current_row,
+                current_field: (self.current_channel == channel_index as i32)
+                    .then_some(self.current_field),
+                channel_len: self.channel_len,
+                current_playing_row: self.current_playing_row,
+            };
 
             channel_view.render(*channel_area, buf);
         }

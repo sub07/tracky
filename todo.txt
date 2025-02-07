@@ -4,3 +4,4 @@
 - display and control global volume (with input popup?)
 - introduce instrument panel on display
 - Explore unsafe transmutation when loading signal from file to avoid converting f32s to Frame<2> (zerocopy)
+- doesn't work on mac

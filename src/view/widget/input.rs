@@ -1,7 +1,6 @@
 use ratatui::{
     layout::{Constraint, Layout},
     prelude::{Buffer, Rect},
-    style::Stylize,
     widgets::{Paragraph, Widget, WidgetRef},
 };
 use tui_input::InputRequest;
@@ -48,8 +47,7 @@ impl WidgetRef for State {
         self.label.render_ref(label_area, buf);
         let input_scroll = self.input.visual_scroll(input_area.width as usize - 1);
         Paragraph::new(&self.input.value()[input_scroll..])
-            .bg(THEME.elevated_background_2)
-            .fg(THEME.on_elevated_background_2)
+            .style(THEME.elevated_1)
             .render(input_area, buf);
     }
 }

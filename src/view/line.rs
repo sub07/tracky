@@ -1,6 +1,7 @@
 use joy_macro::New;
 use ratatui::{
     prelude::{Buffer, Rect},
+    style::Style,
     widgets::{Paragraph, Widget},
 };
 
@@ -13,6 +14,7 @@ pub struct PatternLineView<'a> {
     pub line: &'a PatternLine,
     pub is_line_selected: bool,
     pub current_field: Option<i32>,
+    pub is_line_played: bool,
 }
 
 impl PatternLineView<'_> {
@@ -99,6 +101,11 @@ impl Widget for PatternLineView<'_> {
             instr_char_1,
             instr_char_2,
         ))
+        .style(if self.is_line_played {
+            THEME.secondary_cursor
+        } else {
+            Style::reset()
+        })
         .render(area, buf);
 
         if let Some(current_field) = self.current_field.filter(|_| self.is_line_selected) {
@@ -106,8 +113,7 @@ impl Widget for PatternLineView<'_> {
             let cursor_cell = buf
                 .cell_mut((area.x + current_field as u16 + offset_x as u16, area.y))
                 .unwrap();
-            cursor_cell.bg = THEME.cursor_background;
-            cursor_cell.fg = THEME.on_cursor;
+            cursor_cell.set_style(THEME.primary_cursor);
         }
     }
 }

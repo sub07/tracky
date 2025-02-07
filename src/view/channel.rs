@@ -1,5 +1,4 @@
 use itertools::izip;
-use joy_macro::New;
 use ratatui::{
     layout::{Constraint, Flex, Layout},
     prelude::{Buffer, Rect},
@@ -11,7 +10,6 @@ use crate::model::pattern::PatternLine;
 
 use super::line::PatternLineView;
 
-#[derive(New)]
 pub struct ChannelView<'a> {
     pub lines: &'a [PatternLine],
     pub row_offset: usize,
@@ -19,6 +17,7 @@ pub struct ChannelView<'a> {
     pub current_row: i32,
     pub current_field: Option<i32>,
     pub channel_len: i32,
+    pub current_playing_row: Option<usize>,
 }
 
 impl ChannelView<'_> {
@@ -70,6 +69,9 @@ impl Widget for ChannelView<'_> {
                 line,
                 current_field: self.current_field,
                 is_line_selected: self.current_row == line_index,
+                is_line_played: self
+                    .current_playing_row
+                    .is_some_and(|current_playing_row| line_index as usize == current_playing_row),
             }
             .render(area, buf)
         }

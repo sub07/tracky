@@ -9,7 +9,6 @@ use model::pattern::{HexDigit, NoteName};
 use ratatui::Terminal;
 use ratatui_wgpu::WgpuBackend;
 use tracky::Tracky;
-use view::popup::Popup;
 use view::render_root;
 use view::screen::Screen;
 use view::theme::THEME;
@@ -62,8 +61,8 @@ impl ApplicationHandler<Event> for App<'_> {
                         .unwrap(),
                     )
                     .with_font_size_px(18)
-                    .with_bg_color(THEME.background)
-                    .with_fg_color(THEME.on_background)
+                    .with_bg_color(THEME.normal.bg.unwrap())
+                    .with_fg_color(THEME.normal.fg.unwrap())
                     .with_width_and_height(ratatui_wgpu::Dimensions {
                         width: NonZeroU32::new(size.width).unwrap(),
                         height: NonZeroU32::new(size.height).unwrap(),

@@ -9,7 +9,7 @@ use ratatui::{
 };
 use theme::THEME;
 
-use crate::{event::Event, keybindings::InputContext, tracky::Tracky, EventSender};
+use crate::tracky::Tracky;
 
 pub mod channel;
 pub mod header;
@@ -120,6 +120,10 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
                 app.state.patterns.current_field,
                 app.state.patterns.channel_len,
                 app.state.patterns.channel_count,
+                app.state
+                    .playback
+                    .as_ref()
+                    .map(|playback| playback.current_line),
             );
             pattern_view.render(area, buf);
         }

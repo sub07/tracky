@@ -1,31 +1,41 @@
-use ratatui::style::Color;
+use ratatui::style::{Color, Style};
 
 pub const THEME: Theme = Theme {
-    background: Color::Rgb(27, 25, 42), // Dark navy with slight variation
-    elevated_background: Color::Rgb(42, 45, 62), // Subtle blue-gray with a hint of green
-    elevated_background_2: Color::Rgb(62, 65, 85), // Slightly brighter blue-gray for contrast
-    cursor_background: Color::Rgb(0, 148, 198), // Vibrant cyan for cursor
+    normal: Style::new()
+        .bg(Color::Rgb(27, 25, 42))
+        .fg(Color::Rgb(201, 198, 219)),
 
-    on_background: Color::Rgb(201, 198, 219), // Light blue-gray for text
-    on_elevated_background: Color::Rgb(235, 205, 253), // Soft lavender with slight variation
-    on_elevated_background_2: Color::Rgb(242, 242, 238), // Slightly off-white for high contrast text
-    on_cursor: Color::Rgb(3, 3, 3),                      // Nearly black for contrast on the cursor
+    elevated_1: Style::new()
+        .bg(Color::Rgb(42, 45, 62))
+        .fg(Color::Rgb(235, 205, 253)),
 
-    success: Color::Rgb(3, 252, 124), // Bright sea green for success
-    danger: Color::Rgb(253, 68, 4),   // Vibrant orange-red for dangerbrant orange-red for danger
+    elevated_2: Style::new()
+        .bg(Color::Rgb(62, 65, 85))
+        .fg(Color::Rgb(242, 242, 238)),
+
+    primary_cursor: Style::new()
+        .bg(Color::Rgb(0, 148, 198))
+        .fg(Color::Rgb(3, 3, 3)),
+
+    secondary_cursor: Style::new()
+        .bg(Color::Rgb(100, 100, 100))
+        .fg(Color::Rgb(230, 230, 230)),
+
+    primary: Color::Rgb(0, 148, 198),
+    success: Color::Rgb(3, 252, 124),
+    secondary: Color::Rgb(100, 100, 100),
+    danger: Color::Rgb(253, 68, 4),
 };
 
 pub struct Theme {
-    pub background: Color,
-    pub elevated_background: Color,
-    pub elevated_background_2: Color,
-    pub cursor_background: Color,
+    pub normal: Style,
+    pub elevated_1: Style,
+    pub elevated_2: Style,
+    pub primary_cursor: Style,
+    pub secondary_cursor: Style,
 
-    pub on_background: Color,
-    pub on_elevated_background: Color,
-    pub on_elevated_background_2: Color,
-    pub on_cursor: Color,
-
+    pub primary: Color,
     pub success: Color,
+    pub secondary: Color,
     pub danger: Color,
 }

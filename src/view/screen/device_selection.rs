@@ -1,10 +1,8 @@
 use std::iter;
 
-use log::info;
 use ratatui::{
     buffer::Buffer,
-    layout::{Alignment, Constraint, Layout, Rect},
-    style::Style,
+    layout::{Constraint, Layout, Rect},
     text::Line,
     widgets::{Block, List, ListState, StatefulWidget, Widget},
 };
@@ -12,7 +10,7 @@ use ratatui::{
 use crate::{
     audio::{
         device::{sample_format_bit_count, Config, Devices},
-        Device, Pan,
+        Device,
     },
     event::{self, Action, EventAware},
     keybindings::InputContext,
@@ -154,12 +152,6 @@ impl EventAware<Event> for State {
 }
 
 impl State {
-    const SELECTED_PANEL_HIGHLIGHT: Style =
-        Style::new().bg(THEME.cursor_background).fg(THEME.on_cursor);
-    const UNSELECTED_PANEL_HIGHLIGHT: Style = Style::new()
-        .bg(THEME.elevated_background)
-        .fg(THEME.on_elevated_background);
-
     fn new(devices: Devices) -> Self {
         let mut state = Self {
             devices: dbg!(devices),
@@ -222,19 +214,19 @@ impl State {
             buffer_size_list_highlight_style,
         ) = match self.current_panel {
             Panel::Device => (
-                Self::SELECTED_PANEL_HIGHLIGHT,
-                Self::UNSELECTED_PANEL_HIGHLIGHT,
-                Self::UNSELECTED_PANEL_HIGHLIGHT,
+                THEME.primary_cursor,
+                THEME.secondary_cursor,
+                THEME.secondary_cursor,
             ),
             Panel::Config => (
-                Self::UNSELECTED_PANEL_HIGHLIGHT,
-                Self::SELECTED_PANEL_HIGHLIGHT,
-                Self::UNSELECTED_PANEL_HIGHLIGHT,
+                THEME.secondary_cursor,
+                THEME.primary_cursor,
+                THEME.secondary_cursor,
             ),
             Panel::BufferSize => (
-                Self::UNSELECTED_PANEL_HIGHLIGHT,
-                Self::UNSELECTED_PANEL_HIGHLIGHT,
-                Self::SELECTED_PANEL_HIGHLIGHT,
+                THEME.secondary_cursor,
+                THEME.secondary_cursor,
+                THEME.primary_cursor,
             ),
         };
 

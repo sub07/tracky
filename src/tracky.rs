@@ -1,12 +1,11 @@
 use std::sync::mpsc::{channel, Sender};
 
-use log::{error, warn};
+use log::error;
 
 use crate::{
     audio::{
         device::ConfiguredDevice,
         player::{AudioPlayer, AudioPlayerBuilder},
-        Device,
     },
     event::EventAware,
     keybindings::KeyBindings,

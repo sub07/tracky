@@ -1,10 +1,7 @@
 use winit::event::KeyEvent;
 
 use crate::{
-    audio::{
-        device::{ConfiguredDevice, Devices},
-        Device,
-    },
+    audio::device::{ConfiguredDevice, Devices},
     keybindings::InputContext,
     model::{self},
     utils::Direction,
