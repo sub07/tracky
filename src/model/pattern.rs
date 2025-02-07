@@ -208,6 +208,21 @@ pub struct Patterns {
     pub current_pattern: usize,
 }
 
+impl Debug for Patterns {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Patterns")
+            .field("patterns", &"...")
+            .field("channel_len", &self.channel_len)
+            .field("channel_count", &self.channel_count)
+            .field("pattern_count", &self.pattern_count)
+            .field("current_channel", &self.current_channel)
+            .field("current_field", &self.current_field)
+            .field("current_row", &self.current_row)
+            .field("current_pattern", &self.current_pattern)
+            .finish()
+    }
+}
+
 impl Default for Patterns {
     fn default() -> Self {
         let channel_count = 64;

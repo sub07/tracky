@@ -1,4 +1,4 @@
-use std::{iter, time::Duration};
+use std::{fmt::Debug, iter, time::Duration};
 
 use joy_vector::{vector, Vector};
 
@@ -15,6 +15,17 @@ pub enum Kind {
     Square,
     Sawtooth,
     Sample(signal::stereo::Owned),
+}
+
+impl Debug for Kind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Sine => write!(f, "Sine"),
+            Self::Square => write!(f, "Square"),
+            Self::Sawtooth => write!(f, "Sawtooth"),
+            Self::Sample(_) => write!(f, "Sample"),
+        }
+    }
 }
 
 impl Kind {
@@ -46,7 +57,7 @@ impl Kind {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Instrument {
     source: Kind, // TODO: Wrap in interpolator (for volume, and freq at least)
     pub volume: Volume,
@@ -93,7 +104,7 @@ impl Instrument {
 
 pub const MAX_SLOT: usize = 64;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Instruments {
     slots: [Option<Instrument>; MAX_SLOT],
 }

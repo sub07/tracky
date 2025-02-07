@@ -6,13 +6,13 @@ use super::{
     pattern::{NoteFieldValue, NoteName, OctaveValue, PatternLine},
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct PlayingInstrument {
     phase: f32,
     index: u8,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Channel {
     current_note: Option<(NoteName, OctaveValue)>,
     current_volume: Option<Volume>,

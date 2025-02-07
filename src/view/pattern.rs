@@ -38,7 +38,7 @@ fn compute_three_states_scrolling(
 
     if cursor_position < scroll_lower_bound {
         0
-    } else if cursor_position > scroll_upper_bound {
+    } else if cursor_position >= scroll_upper_bound {
         total_size - view_size
     } else {
         scroll_lower_bound.abs_diff(cursor_position) + 1

@@ -214,6 +214,9 @@ impl model::State {
             playback.current_line_duration += sub_step_duration;
             if playback.current_line_duration >= playback.line_duration {
                 playback.current_line += 1;
+                if self.follow_playing {
+                    self.patterns.current_row = playback.current_line as i32;
+                }
                 if playback.current_line as i32 >= self.patterns.channel_len {
                     break;
                 }

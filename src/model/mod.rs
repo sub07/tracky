@@ -10,10 +10,11 @@ pub mod midi;
 pub mod pattern;
 pub mod playback;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct State {
     pub patterns: Patterns,
     pub global_octave: OctaveValue,
+    pub follow_playing: bool,
     pub line_per_second: f32,
     pub global_volume: Volume,
     pub playback: Option<SongPlayback>,
@@ -29,6 +30,7 @@ impl Default for State {
             global_volume: Volume::new_unchecked(0.3),
             playback: None,
             instruments: Default::default(),
+            follow_playing: true,
         }
     }
 }
