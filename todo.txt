@@ -5,3 +5,4 @@
 - introduce instrument panel on display
 - Explore unsafe transmutation when loading signal from file to avoid converting f32s to Frame<2> (zerocopy)
 - doesn't work on mac
+- sound preview when putting a note in pattern
