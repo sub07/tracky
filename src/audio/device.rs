@@ -1,4 +1,3 @@
-
 use cpal::{
     traits::{DeviceTrait, HostTrait},
     SampleRate, SupportedBufferSize, SupportedStreamConfigRange, ALL_HOSTS,

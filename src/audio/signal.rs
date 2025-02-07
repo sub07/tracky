@@ -1,9 +1,11 @@
 use std::{
+    mem::ManuallyDrop,
     ops::{Deref, DerefMut, RangeTo},
     time::Duration,
 };
 
 use anyhow::ensure;
+use joy_vector::Vector;
 use log::error;
 
 use crate::audio::dsp;
@@ -33,7 +35,8 @@ pub mod stereo {
     use anyhow::bail;
     use itertools::Itertools;
     use joy_iter::zip_self::ZipSelf;
-    use joy_vector::{vector, Vector};
+    use joy_vector::Vector;
+    use log::info;
 
     use crate::audio::load_samples_from_file;
 
@@ -43,6 +46,7 @@ pub mod stereo {
 
     impl Owned {
         pub fn from_path<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+            info!("Loaded {:?}", path.as_ref());
             let audio_data = load_samples_from_file(path)?;
 
             let samples: &mut dyn Iterator<Item = f32> = match audio_data.channel_count {
@@ -51,14 +55,11 @@ pub mod stereo {
                 _ => bail!("Audio file must be mono or stereo"),
             };
 
-            Ok(Owned::from_frames(
-                samples
-                    .collect_vec()
-                    .chunks_exact(2)
-                    .map(|frame| vector!(frame[0], frame[1]))
-                    .collect(),
-                audio_data.frame_rate,
-            ))
+            let samples = samples.collect_vec();
+
+            debug_assert!(samples.len() % 2 == 0);
+
+            Owned::from_samples(samples, audio_data.frame_rate)
         }
     }
 
@@ -118,6 +119,16 @@ impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
 
     pub fn from_frames(frames: Vec<Frame<FRAME_SIZE>>, frame_rate: f32) -> Self {
         Owned { frames, frame_rate }
+    }
+
+    pub fn from_samples(samples: Vec<f32>, frame_rate: f32) -> anyhow::Result<Self> {
+        ensure!(samples.len() % FRAME_SIZE == 0);
+        let mut samples = ManuallyDrop::new(samples);
+        let len = samples.len() / FRAME_SIZE;
+        let cap = samples.capacity() / FRAME_SIZE;
+        let ptr = samples.as_mut_ptr() as *mut Vector<f32, FRAME_SIZE>;
+        let frames = unsafe { Vec::from_raw_parts(ptr, len, cap) };
+        Ok(Self { frames, frame_rate })
     }
 
     #[inline]
