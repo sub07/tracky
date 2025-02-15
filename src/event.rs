@@ -13,8 +13,8 @@ use crate::{
 pub enum Event {
     KeyPressed(KeyEvent),
     Text(Text),
-    State(model::Event),
-    AudioCallback(model::Event),
+    State(model::Command),
+    AudioCallback(model::Command),
     Panic(anyhow::Error),
     Action(Action),
     AsyncAction(AsyncAction),

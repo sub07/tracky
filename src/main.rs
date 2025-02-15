@@ -170,7 +170,7 @@ impl ApplicationHandler<Event> for App<'_> {
                                 "f" => HexDigit::HEX_F,
                                 _ => return,
                             };
-                            send!(Event::State(model::Event::SetHexField(hex_digit)));
+                            send!(Event::State(model::Command::SetHexField(hex_digit)));
                         }
                     }
                     keybindings::InputContext::Text => {
@@ -185,12 +185,10 @@ impl ApplicationHandler<Event> for App<'_> {
             }
             Event::Action(action) => match action {
                 Action::TogglePlay => {
-                    if self.tracky.state.is_playing() {
-                        send!(Event::State(model::Event::StopSongPlayback));
-                    } else if let Some(audio_state) = self.tracky.audio_state.as_ref() {
-                        send!(Event::State(model::Event::StartSongPlayback {
-                            frame_rate: audio_state.player.frame_rate,
-                        }));
+                    if self.tracky.state.is_song_playing() {
+                        send!(Event::State(model::Command::StopSongPlayback));
+                    } else if self.tracky.audio_state.is_some() {
+                        send!(Event::State(model::Command::StartSongPlaybackFromBeginning));
                     } else {
                         warn!("Select a device with F1 to play the song")
                     }
@@ -208,7 +206,9 @@ impl ApplicationHandler<Event> for App<'_> {
                             .unwrap();
                     });
                 }
-                Action::Move(direction) => send!(Event::State(model::Event::MoveCursor(direction))),
+                Action::Move(direction) => {
+                    send!(Event::State(model::Command::MoveCursor(direction)))
+                }
                 Action::Forward => todo!(),
                 Action::Backward => todo!(),
                 Action::ToggleFullscreen => {
@@ -242,10 +242,10 @@ impl ApplicationHandler<Event> for App<'_> {
             Event::ClosePopup => self.tracky.close_popup(),
             Event::SetPlayingDevice(device) => self.tracky.selected_output_device = Some(device),
             Event::State(event) => {
-                self.tracky.state.handle_event(event.clone());
+                self.tracky.state.handle_command(event.clone());
                 self.tracky.send_player_state_event(event);
             }
-            Event::AudioCallback(event) => self.tracky.state.handle_event(event),
+            Event::AudioCallback(event) => self.tracky.state.handle_command(event),
             Event::ExitApp => event_loop.exit(),
             Event::StartAudioPlayer => self.tracky.start_audio_player(self.event_tx.clone()),
             Event::RequestRedraw => {}
@@ -258,7 +258,7 @@ impl ApplicationHandler<Event> for App<'_> {
                 self.tracky.stop_audio_player();
                 self.tracky
                     .state
-                    .handle_event(model::Event::StopSongPlayback);
+                    .handle_command(model::Command::StopSongPlayback);
             }
             Event::Text(_) => unreachable!(), // For now
             Event::TextSubmitted(id, value) => {
@@ -281,7 +281,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut tracky = Tracky::new();
 
-    tracky.state.handle_event(model::Event::SetNoteField {
+    tracky.state.handle_command(model::Command::SetNoteField {
         note: NoteName::A,
         octave_modifier: 0,
     });

@@ -42,7 +42,7 @@ pub enum Event {
     PickDevice,
 }
 
-enum Panel {
+pub enum Panel {
     Device,
     Config,
     BufferSize,

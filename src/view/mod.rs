@@ -20,16 +20,6 @@ pub mod screen;
 pub mod theme;
 pub mod widget;
 
-fn centered_rect(area: Rect, width: Constraint, height: Constraint) -> Rect {
-    let [_, center, _] =
-        Layout::horizontal([Constraint::Fill(1), width, Constraint::Fill(1)]).areas(area);
-
-    let [_, center, _] =
-        Layout::vertical([Constraint::Fill(1), height, Constraint::Fill(1)]).areas(center);
-
-    center
-}
-
 fn responsive_centered_rect(
     area: Rect,
     prefered_width: Constraint,
@@ -100,7 +90,7 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
         },
     ]);
 
-    let playback_state_text = Line::from(if app.state.is_playing() {
+    let playback_state_text = Line::from(if app.state.is_song_playing() {
         "Playing"
     } else {
         "Not playing"
@@ -121,9 +111,8 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
                 app.state.patterns.channel_len,
                 app.state.patterns.channel_count,
                 app.state
-                    .playback
-                    .as_ref()
-                    .map(|playback| playback.current_line),
+                    .currently_played_line()
+                    .filter(|_| app.state.is_song_playing()),
             );
             pattern_view.render(area, buf);
         }

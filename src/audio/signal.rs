@@ -1,4 +1,5 @@
 use std::{
+    fmt,
     mem::ManuallyDrop,
     ops::{Deref, DerefMut, RangeTo},
     time::Duration,
@@ -6,7 +7,6 @@ use std::{
 
 use anyhow::ensure;
 use joy_vector::Vector;
-use log::error;
 
 use crate::audio::dsp;
 
@@ -16,6 +16,21 @@ use super::frame::Frame;
 pub struct Owned<const FRAME_SIZE: usize> {
     frames: Vec<Frame<FRAME_SIZE>>,
     pub frame_rate: f32,
+}
+
+impl<const FRAME_SIZE: usize> fmt::Debug for Owned<FRAME_SIZE> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Owned")
+            .field(
+                "frames",
+                &format!(
+                    "{} frame(s) of size {FRAME_SIZE} truncated...",
+                    self.frames.len()
+                ),
+            )
+            .field("frame_rate", &self.frame_rate)
+            .finish()
+    }
 }
 
 #[derive(Clone)]
@@ -147,15 +162,7 @@ impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
         }
     }
 
-    pub fn append_signal(&mut self, signal: &Owned<FRAME_SIZE>) {
-        error!(
-            "Trying to append signal with different frame_rates, self={}Hz / input={}Hz",
-            self.frame_rate, signal.frame_rate
-        );
-        self.frames.extend(signal.frames.iter());
-    }
-
-    pub fn sub_signal_mut(
+    pub fn sub_signal_from_duration_mut(
         &mut self,
         start: Duration,
         end: Duration,
@@ -171,14 +178,11 @@ impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
         ensure!(start <= end, "start must be less than end");
         let (start_index, _) = self.as_ref().frame_index_from_duration(start);
         let (end_index, _) = self.as_ref().frame_index_from_duration(end);
-        Ok(Mut {
-            frames: &mut self.frames[start_index..end_index],
-            frame_rate: self.frame_rate,
-        })
+        self.sub_signal_mut(start_index, end_index)
     }
 
-    pub fn sub_signal(
-        &mut self,
+    pub fn sub_signal_from_duration(
+        &self,
         start: Duration,
         end: Duration,
     ) -> anyhow::Result<Ref<FRAME_SIZE>> {
@@ -193,8 +197,31 @@ impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
         ensure!(start <= end, "start must be less than end");
         let (start_index, _) = self.as_ref().frame_index_from_duration(start);
         let (end_index, _) = self.as_ref().frame_index_from_duration(end);
+        self.sub_signal(start_index, end_index)
+    }
+
+    pub fn sub_signal(
+        &self,
+        start_index: usize,
+        end_index: usize,
+    ) -> anyhow::Result<Ref<FRAME_SIZE>> {
+        ensure!(start_index <= end_index);
+        ensure!(end_index <= self.frames.len());
         Ok(Ref {
             frames: &self.frames[start_index..end_index],
+            frame_rate: self.frame_rate,
+        })
+    }
+
+    pub fn sub_signal_mut(
+        &mut self,
+        start_index: usize,
+        end_index: usize,
+    ) -> anyhow::Result<Mut<FRAME_SIZE>> {
+        ensure!(start_index <= end_index);
+        ensure!(end_index <= self.frames.len());
+        Ok(Mut {
+            frames: &mut self.frames[start_index..end_index],
             frame_rate: self.frame_rate,
         })
     }

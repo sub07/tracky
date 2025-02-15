@@ -7,16 +7,16 @@ use crate::{
         device::ConfiguredDevice,
         player::{AudioPlayer, AudioPlayerBuilder},
     },
-    event::EventAware,
+    event::{Event, EventAware},
     keybindings::KeyBindings,
-    model::{self},
+    model::{self, Command},
     view::{popup::Popup, screen::Screen},
     EventSender,
 };
 
 pub struct AudioState {
-    pub player: AudioPlayer,
-    pub state_event_tx: Sender<model::Event>,
+    pub _player: AudioPlayer,
+    pub state_event_tx: Sender<model::Command>,
 }
 
 #[derive(Default)]
@@ -54,7 +54,7 @@ impl Tracky {
         self.current_popup = None;
     }
 
-    pub fn send_player_state_event(&self, event: model::Event) {
+    pub fn send_player_state_event(&self, event: model::Command) {
         if let Some(audio_state) = self.audio_state.as_ref() {
             audio_state.state_event_tx.send(event).unwrap();
         }
@@ -65,17 +65,22 @@ impl Tracky {
             let (state_event_tx, state_event_rx) = channel();
             match AudioPlayerBuilder::new()
                 .device(selected_output_device)
-                .event_tx(event_tx)
+                .event_tx(event_tx.clone())
                 .initial_state(self.state.clone())
                 .state_event_rx(state_event_rx)
                 .build()
                 .into_player()
             {
                 Ok(player) => {
+                    event_tx
+                        .send_event(Event::State(Command::InitializeAudio {
+                            frame_rate: player.frame_rate,
+                        }))
+                        .unwrap();
                     self.audio_state = Some(AudioState {
-                        player,
+                        _player: player,
                         state_event_tx,
-                    })
+                    });
                 }
                 Err(error) => error!("{error}"),
             }

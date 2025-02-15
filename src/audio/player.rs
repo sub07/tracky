@@ -7,10 +7,10 @@ use cpal::{
     Device, FromSample, Sample, SampleFormat, SizedSample, Stream, StreamConfig,
 };
 
-use joy_vector::Vector;
 use log::{error, info, warn};
 
 use crate::{
+    assert_log_fail,
     event::Event,
     model::{self},
     EventSender,
@@ -28,7 +28,7 @@ pub struct AudioPlayer {
 pub struct AudioPlayerBuilder {
     pub device: ConfiguredDevice,
     pub initial_state: model::State,
-    pub state_event_rx: Receiver<model::Event>,
+    pub state_event_rx: Receiver<model::Command>,
     pub event_tx: EventSender,
 }
 
@@ -124,13 +124,13 @@ fn create_stream<SampleType>(
     device: Device,
     config: StreamConfig,
     mut state: model::State,
-    state_event_rx: Receiver<model::Event>,
+    state_event_rx: Receiver<model::Command>,
     event_tx: EventSender,
 ) -> anyhow::Result<(Stream, f32)>
 where
     SampleType: SizedSample + FromSample<f32>,
 {
-    let sample_rate = config.sample_rate.0 as f32;
+    let frame_rate = config.sample_rate.0 as f32;
 
     assert!(config.channels == 2);
 
@@ -151,66 +151,56 @@ where
 
     stream.play()?;
 
-    Ok((stream, sample_rate))
+    Ok((stream, frame_rate))
 }
 
 fn audio_callback<SampleType>(
     out: &mut [SampleType],
     state: &mut model::State,
-    state_event_rx: &Receiver<model::Event>,
+    state_command_rx: &Receiver<model::Command>,
     event_tx: EventSender,
 ) where
     SampleType: Sample + FromSample<f32>,
 {
     macro_rules! update_state {
-        ($event:expr) => {
-            state.handle_event($event);
-            if let Err(e) = event_tx.send_event(Event::AudioCallback($event)) {
-                error!("Event channel broken: {e}");
+        ($command:expr) => {
+            state.handle_command($command);
+            if let Err(e) = event_tx.send_event(Event::AudioCallback($command)) {
+                error!("Event channel broken while sending {:?}: {e}", $command);
             }
         };
     }
 
     out.fill(SampleType::from_sample(0.0));
 
-    for event in state_event_rx.try_iter() {
-        state.handle_event(event);
+    for command in state_command_rx.try_iter() {
+        state.handle_command(command);
     }
 
     if let Some(old_sample_count) = state
-        .playback
+        .step_output
         .as_ref()
-        .filter(|playback| playback.step_signal.as_ref().sample_count() != out.len())
-        .map(|playback| playback.step_signal.as_ref().sample_count())
+        .filter(|signal| signal.as_ref().sample_count() != out.len())
+        .map(|signal| signal.as_ref().sample_count())
     {
         warn!(
             "Heap allocations triggered in audio thread: playback sample count changed from {} to {}",
             old_sample_count,
             out.len(),
         );
-        update_state!(model::Event::UpdatePlaybackSampleCount(out.len()));
+        update_state!(model::Command::UpdatePlaybackSampleCount(out.len()));
     }
 
-    if state.is_playing() {
-        update_state!(model::Event::PerformStepPlayback);
+    update_state!(model::Command::PerformPlaybacksStep);
 
-        if let Some(playback) = state.playback.as_ref() {
-            for (out, Vector([left, right])) in out[..playback.last_step_computed_sample_count]
-                .chunks_mut(2)
-                .zip(
-                    playback
-                        .step_signal
-                        .iter()
-                        .take(playback.last_step_computed_sample_count / 2),
-                )
-            {
-                out[0] = SampleType::from_sample(*left);
-                out[1] = SampleType::from_sample(*right);
+    match state.output_samples() {
+        Ok(frames) => {
+            for (out, produced_sample) in out.iter_mut().zip(frames.samples()) {
+                *out = Sample::from_sample(produced_sample);
             }
         }
-
-        if state.is_playback_done() {
-            update_state!(model::Event::StopSongPlayback);
+        Err(err) => {
+            assert_log_fail!("Error while reading produced sample from audio callback: {err:?}")
         }
     }
 }

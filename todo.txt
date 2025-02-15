@@ -1,7 +1,6 @@
-- explore simd for audio callback mixing add operation
-- avoid SongPlayback.step_signal by wrapping audio_callback slice directly
 - display and control global volume (with input popup?)
 - display global octave
-- introduce instrument panel on display
-- doesn't work on mac
+- display instrument panel
+- explore simd for audio callback mixing add operation
+- ratatui_wgpu doesn't work on mac
 - sound preview when putting a note in pattern

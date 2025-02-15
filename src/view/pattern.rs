@@ -4,7 +4,7 @@ use itertools::izip;
 use joy_macro::New;
 use ratatui::{
     layout::{Constraint, Layout},
-    style::{Style, Stylize},
+    style::Style,
     text::Line,
     widgets::Widget,
 };
