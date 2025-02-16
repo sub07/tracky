@@ -46,6 +46,8 @@ pub enum Action {
     Confirm,
     Cancel,
     RequestOpenDeviceSelectionPopup,
+    KillNotes,
+    ChangeSelectedInstrument { increment: i32 },
 }
 
 #[derive(Debug, Clone)]

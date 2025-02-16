@@ -13,7 +13,11 @@ use crate::{
     },
     model::{
         self,
-        pattern::{HexDigit, NoteFieldValue, NoteName, OctaveValue, PatternLineDescriptor},
+        channel::Channel,
+        pattern::{
+            u8_to_hex_digit_pair, HexDigit, NoteFieldValue, NoteName, OctaveValue,
+            PatternLineDescriptor,
+        },
     },
     utils::Direction,
 };
@@ -24,8 +28,8 @@ use crate::{
 impl model::State {
     pub fn handle_command(&mut self, event: model::Command) {
         match event {
-            model::Command::MutateGlobalOctave { increment } => {
-                self.mutate_global_octave(increment)
+            model::Command::ChangeGlobalOctave { increment } => {
+                self.change_global_octave(increment)
             }
             model::Command::SetNoteField {
                 note,
@@ -46,23 +50,28 @@ impl model::State {
             model::Command::UpdatePlaybackSampleCount(sample_count) => {
                 self.audio_stream_sample_count_changed(sample_count)
             }
-            model::Command::PerformPlaybacksStep => self.perform_playback_step(),
+            model::Command::PerformPlaybacksStep => self.perform_playbacks_step(),
             model::Command::InitializeAudio { frame_rate } => self.initialize_audio(frame_rate),
+            model::Command::ClearChannels => self.clear_channels(),
+            model::Command::ChangeSelectedInstrument { increment } => {
+                self.change_selected_instrument(increment)
+            }
         }
     }
 
-    fn mutate_global_octave(&mut self, increment: i32) {
+    fn change_global_octave(&mut self, increment: i32) {
         // TODO: clarify saturating add
         self.global_octave = self.global_octave + increment;
     }
 
     fn set_note_field(&mut self, note: NoteName, octave_modifier: i32) {
+        let current_channel = self.patterns.current_channel as usize;
         let line = self.patterns.current_line_mut();
         line.note
             .set_note_name(note, self.global_octave + octave_modifier);
-        if line.instrument.value().is_none() {
-            line.instrument.set((HexDigit::HEX_0, HexDigit::HEX_0));
-        }
+        line.instrument
+            .set(u8_to_hex_digit_pair(self.instruments.selected_index()));
+        self.channels[current_channel].setup_line(line);
     }
 
     fn move_cursor(&mut self, direction: Direction) {
@@ -165,6 +174,7 @@ impl model::State {
         };
         song_playback.is_playing = false;
         song_playback.current_line_duration = Duration::ZERO;
+        self.clear_channels();
     }
 
     fn audio_stream_sample_count_changed(&mut self, sample_count: usize) {
@@ -200,96 +210,91 @@ impl model::State {
         self.step_output = Some(signal::Owned::new(frame_rate));
     }
 
-    fn perform_playback_step(&mut self) {
-        assert_log!(self.song_playback.is_some());
-        let Some(song_playback) = self.song_playback.as_mut() else {
-            return;
-        };
+    fn perform_playbacks_step(&mut self) {
+        self.computed_frame_count = 0;
 
         assert_log!(self.step_output.is_some());
         let Some(step_output) = self.step_output.as_mut() else {
             return;
         };
 
-        self.computed_frame_count = 0;
-
-        if !song_playback.is_playing {
-            return;
-        }
-
-        if song_playback.current_line as i32 >= self.patterns.channel_len {
-            song_playback.is_playing = false;
-            return;
-        }
-
         step_output.fill(Frame::default());
 
-        let step_duration = step_output.as_ref().duration();
-        let mut sub_step_start_duration = Duration::ZERO;
+        assert_log!(self.song_playback.is_some());
+        let Some(song_playback) = self.song_playback.as_mut() else {
+            return;
+        };
 
-        while sub_step_start_duration < step_duration {
-            let sub_step_duration = (song_playback.line_duration
-                - song_playback.current_line_duration)
-                .min(step_duration - sub_step_start_duration);
-
-            let sub_step_end_duration = sub_step_start_duration + sub_step_duration;
-
-            // TODO: Optimize nested loop
+        if !song_playback.is_playing {
             for channel in self.channels.iter_mut() {
-                channel.collect_signal(
-                    song_playback
-                        .line_signal
-                        .sub_signal_from_duration_mut(
-                            sub_step_start_duration,
-                            sub_step_end_duration,
-                        )
-                        .unwrap(),
-                    &self.instruments,
-                );
-                for (mut out, input) in step_output
-                    .sub_signal_from_duration_mut(sub_step_start_duration, sub_step_end_duration)
-                    .unwrap()
-                    .iter_mut()
-                    .zip_eq(
-                        song_playback
-                            .line_signal
-                            .sub_signal_from_duration(
+                channel.collect_mix_in(step_output.as_mut(), &self.instruments, self.global_volume);
+            }
+            self.computed_frame_count = step_output.as_ref().frame_count();
+        } else {
+            if song_playback.current_line as i32 >= self.patterns.channel_len {
+                song_playback.is_playing = false;
+                return;
+            }
+
+            let step_duration = step_output.as_ref().duration();
+            let mut sub_step_start_duration = Duration::ZERO;
+
+            while sub_step_start_duration < step_duration {
+                let sub_step_duration = (song_playback.line_duration
+                    - song_playback.current_line_duration)
+                    .min(step_duration - sub_step_start_duration);
+
+                let sub_step_end_duration = sub_step_start_duration + sub_step_duration;
+
+                for channel in self.channels.iter_mut() {
+                    channel.collect_mix_in(
+                        step_output
+                            .sub_signal_from_duration_mut(
                                 sub_step_start_duration,
                                 sub_step_end_duration,
                             )
-                            .unwrap()
-                            .iter(),
-                    )
-                {
-                    out += input * self.global_volume.value();
+                            .unwrap(),
+                        &self.instruments,
+                        self.global_volume,
+                    );
+                }
+
+                sub_step_start_duration = sub_step_end_duration;
+
+                song_playback.current_line_duration += sub_step_duration;
+                if song_playback.current_line_duration >= song_playback.line_duration {
+                    song_playback.current_line += 1;
+                    if song_playback.current_line as i32 >= self.patterns.channel_len {
+                        break;
+                    }
+
+                    song_playback.current_line_duration -= song_playback.line_duration;
+                    for (line, channel) in self
+                        .patterns
+                        .current_pattern_row(song_playback.current_line)
+                        .zip(&mut self.channels)
+                    {
+                        channel.setup_line(line);
+                    }
                 }
             }
 
-            sub_step_start_duration = sub_step_end_duration;
-
-            song_playback.current_line_duration += sub_step_duration;
-            if song_playback.current_line_duration >= song_playback.line_duration {
-                song_playback.current_line += 1;
-                if song_playback.current_line as i32 >= self.patterns.channel_len {
-                    break;
-                }
-
-                song_playback.current_line_duration -= song_playback.line_duration;
-                for (line, channel) in self
-                    .patterns
-                    .current_pattern_row(song_playback.current_line)
-                    .zip(&mut self.channels)
-                {
-                    channel.setup_line(line);
-                }
+            if self.follow_playing {
+                self.patterns.current_row = song_playback.current_line as i32;
             }
-        }
 
-        if self.follow_playing {
-            self.patterns.current_row = song_playback.current_line as i32;
+            self.computed_frame_count =
+                (sub_step_start_duration.as_secs_f32() * step_output.frame_rate) as usize;
         }
+    }
 
-        self.computed_frame_count =
-            (sub_step_start_duration.as_secs_f32() * step_output.frame_rate) as usize;
+    fn clear_channels(&mut self) {
+        for channel in self.channels.iter_mut() {
+            *channel = Channel::new();
+        }
+    }
+
+    fn change_selected_instrument(&mut self, increment: i32) {
+        self.instruments.increment_selected(increment);
     }
 }

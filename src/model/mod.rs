@@ -30,7 +30,7 @@ pub struct State {
     pub computed_frame_count: usize,
 
     pub song_playback: Option<song::Playback>,
-    // pub preview_playback: preview::Playback,
+    
     pub instruments: Instruments,
 }
 
@@ -45,7 +45,7 @@ impl Default for State {
             global_volume: Volume::new_unchecked(0.3),
             song_playback: None,
             instruments: Default::default(),
-            follow_playing: true,
+            follow_playing: false,
             patterns,
             computed_frame_count: 0,
         }
@@ -75,7 +75,10 @@ impl State {
 
 #[derive(Debug, Clone)]
 pub enum Command {
-    MutateGlobalOctave {
+    ChangeGlobalOctave {
+        increment: i32,
+    },
+    ChangeSelectedInstrument {
         increment: i32,
     },
     SetNoteField {
@@ -97,4 +100,5 @@ pub enum Command {
     },
     UpdatePlaybackSampleCount(usize),
     PerformPlaybacksStep,
+    ClearChannels,
 }

@@ -83,47 +83,52 @@ impl Instrument {
     ) -> StereoFrame {
         self.source.next_frame(freq, volume, pan, phase, frame_rate) * self.volume
     }
-
-    pub fn collect_frame_in(
-        &self,
-        mut signal: signal::stereo::Mut,
-        freq: f32,
-        volume: Volume,
-        pan: Pan,
-        phase: &mut f32,
-    ) {
-        signal.fill(Frame::default());
-        let frame_rate = signal.frame_rate;
-        for (output, generated) in signal.iter_mut().zip(iter::repeat_with(|| {
-            self.next_frame(freq, volume, pan, phase, frame_rate)
-        })) {
-            *output = generated;
-        }
-    }
 }
 
-pub const MAX_SLOT: usize = 64;
+// Should be a u8 because an instrument index is represented by a a 2-digits hex number
+pub const MAX_SLOT_COUNT: u8 = 64;
 
 #[derive(Clone, Debug)]
 pub struct Instruments {
-    slots: [Option<Instrument>; MAX_SLOT],
+    slots: [Option<Instrument>; MAX_SLOT_COUNT as usize],
+    selected_index: u8,
 }
 
 impl Default for Instruments {
     fn default() -> Self {
-        let mut slots = [const { None }; MAX_SLOT];
+        let mut slots = [const { None }; MAX_SLOT_COUNT as usize];
         slots[0] = Some(Instrument::from(Kind::Sine));
         slots[1] = Some(Instrument::from(Kind::Square));
         slots[2] = Some(Instrument::from(Kind::Sawtooth));
         slots[3] = Some(Instrument::from(Kind::Sample(
             signal::stereo::Owned::from_path("assets/stereo.wav").unwrap(),
         )));
-        Self { slots }
+        Self {
+            slots,
+            selected_index: 0,
+        }
     }
 }
 
 impl Instruments {
     pub fn get(&self, index: u8) -> Option<&Instrument> {
         self.slots.get(index as usize).and_then(Option::as_ref)
+    }
+
+    pub fn get_selected(&self) -> Option<&Instrument> {
+        self.slots
+            .get(self.selected_index as usize)
+            .and_then(Option::as_ref)
+    }
+
+    pub fn selected_index(&self) -> u8 {
+        self.selected_index
+    }
+
+    pub fn increment_selected(&mut self, increment: i32) {
+        let mut selected_index = self.selected_index as i32;
+        selected_index += increment;
+        selected_index = selected_index.rem_euclid(const { MAX_SLOT_COUNT as i32 });
+        self.selected_index = selected_index as u8;
     }
 }

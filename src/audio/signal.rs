@@ -236,6 +236,10 @@ impl<const FRAME_SIZE: usize> Ref<'_, FRAME_SIZE> {
         self.frames.len() * FRAME_SIZE
     }
 
+    pub fn frame_count(&self) -> usize {
+        self.frames.len()
+    }
+
     fn frame_index_from_duration(&self, duration: Duration) -> (usize, f32) {
         let index = duration.as_secs_f32() * self.frame_rate;
         (index as usize, index.fract())

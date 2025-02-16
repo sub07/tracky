@@ -1,3 +1,5 @@
+use std::iter;
+
 use crate::audio::{signal, Pan, Volume};
 
 use super::{
@@ -56,10 +58,11 @@ impl Channel {
         };
     }
 
-    pub fn collect_signal(
+    pub fn collect_mix_in(
         &mut self,
         mut output_signal: signal::stereo::Mut,
         instruments: &Instruments,
+        global_volume: Volume,
     ) {
         if let (Some((note, octave)), volume, Some(PlayingInstrument { index, phase })) = (
             self.current_note,
@@ -67,18 +70,21 @@ impl Channel {
             &mut self.current_instrument,
         ) {
             let freq = note_to_freq(note, octave);
+            let frame_rate = output_signal.frame_rate;
 
             if let Some(instrument) = instruments.get(*index) {
-                instrument.collect_frame_in(
-                    output_signal,
-                    freq,
-                    volume.unwrap_or_default(),
-                    Pan::DEFAULT,
-                    phase,
-                );
+                for (output, generated) in output_signal.iter_mut().zip(iter::repeat_with(|| {
+                    instrument.next_frame(
+                        freq,
+                        volume.unwrap_or_default() * global_volume,
+                        Pan::DEFAULT,
+                        phase,
+                        frame_rate,
+                    )
+                })) {
+                    *output += generated;
+                }
             }
-        } else {
-            output_signal.fill(Default::default());
         }
     }
 }

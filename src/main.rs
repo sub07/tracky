@@ -219,6 +219,12 @@ impl ApplicationHandler<Event> for App<'_> {
                         window.set_fullscreen(Some(Fullscreen::Borderless(None)));
                     }
                 }
+                Action::KillNotes => send!(Event::State(model::Command::ClearChannels)),
+                Action::ChangeSelectedInstrument { increment } => {
+                    send!(Event::State(model::Command::ChangeSelectedInstrument {
+                        increment
+                    }))
+                }
             },
             Event::Panic(error) => {
                 panic!("{error:?}");
@@ -285,6 +291,7 @@ fn main() -> anyhow::Result<()> {
         note: NoteName::A,
         octave_modifier: 0,
     });
+    tracky.state.handle_command(model::Command::ClearChannels);
 
     let event_loop = EventLoop::<Event>::with_user_event().build()?;
     let event_tx = event_loop.create_proxy();

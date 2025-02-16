@@ -14,6 +14,12 @@ mk_vo! {
     max: 0xF,
 }
 
+pub fn u8_to_hex_digit_pair(value: u8) -> (HexDigit, HexDigit) {
+    let first_digit = HexDigit::new_unchecked(value >> 4);
+    let second_digit = HexDigit::new_unchecked(value & 0x0F);
+    (first_digit, second_digit)
+}
+
 mk_vo! {
     pub OctaveValue: i32,
     default: 5,
@@ -306,5 +312,35 @@ impl Patterns {
         (0..self.channel_count as usize).map(move |channel_index| {
             &self.current_pattern().lines[channel_index * self.channel_len as usize + index]
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn assert_u8_to_hex_digit_pair(value: u8, expected: (HexDigit, HexDigit)) {
+        let actual = u8_to_hex_digit_pair(value);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_that_u8_to_hex_digit_pair_works_when_value_is_0() {
+        assert_u8_to_hex_digit_pair(0, (HexDigit::HEX_0, HexDigit::HEX_0));
+    }
+
+    #[test]
+    fn test_that_u8_to_hex_digit_pair_works_when_value_is_255() {
+        assert_u8_to_hex_digit_pair(255, (HexDigit::HEX_F, HexDigit::HEX_F));
+    }
+
+    #[test]
+    fn test_that_u8_to_hex_digit_pair_works_when_value_is_15() {
+        assert_u8_to_hex_digit_pair(15, (HexDigit::HEX_0, HexDigit::HEX_F));
+    }
+
+    #[test]
+    fn test_that_u8_to_hex_digit_pair_works_when_value_is_16() {
+        assert_u8_to_hex_digit_pair(16, (HexDigit::HEX_1, HexDigit::HEX_0));
     }
 }

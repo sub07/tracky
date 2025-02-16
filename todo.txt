@@ -3,4 +3,4 @@
 - display instrument panel
 - explore simd for audio callback mixing add operation
 - ratatui_wgpu doesn't work on mac
-- sound preview when putting a note in pattern
+- diverging synthesis generation (sound become weird over time)
