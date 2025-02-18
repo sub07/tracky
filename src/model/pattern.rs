@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{self, Debug};
 
 use anyhow::anyhow;
 
@@ -106,6 +106,25 @@ pub enum NoteName {
     A,
     ASharp,
     B,
+}
+
+impl fmt::Display for NoteName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            NoteName::C => write!(f, "C"),
+            NoteName::CSharp => write!(f, "C#"),
+            NoteName::D => write!(f, "D"),
+            NoteName::DSharp => write!(f, "D#"),
+            NoteName::E => write!(f, "E"),
+            NoteName::F => write!(f, "F"),
+            NoteName::FSharp => write!(f, "F#"),
+            NoteName::G => write!(f, "G"),
+            NoteName::GSharp => write!(f, "G#"),
+            NoteName::A => write!(f, "A"),
+            NoteName::ASharp => write!(f, "A#"),
+            NoteName::B => write!(f, "B"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

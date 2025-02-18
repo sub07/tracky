@@ -4,12 +4,13 @@ use itertools::izip;
 use ratatui::{
     layout::{Constraint, Flex, Layout, Rect},
     style::Style,
-    text::Line,
+    text::{Line, Text},
+    widgets::Paragraph,
     Frame,
 };
 
 use crate::{
-    model,
+    assert_log, model,
     view::{theme::THEME, widget::pattern_line::PatternLineView},
 };
 
@@ -18,6 +19,15 @@ const CHANNEL_HORIZONTAL_PADDING: u16 = 1;
 const CHANNEL_TOTAL_HORIZONTAL_PADDING: u16 = CHANNEL_HORIZONTAL_PADDING * 2; // Left + Right
 const CHANNEL_CONTENT_WIDTH: u16 = PatternLineView::LINE_WIDTH;
 const CHANNEL_TOTAL_WIDTH: u16 = CHANNEL_CONTENT_WIDTH + CHANNEL_TOTAL_HORIZONTAL_PADDING;
+
+fn channel_layout() -> Layout {
+    Layout::vertical([
+        Constraint::Length(CHANNEL_HEADER_HEIGHT),
+        Constraint::Length(3),
+        Constraint::Fill(1),
+    ])
+    .spacing(1)
+}
 
 fn compute_three_states_scrolling(
     view_size: usize,
@@ -38,23 +48,15 @@ fn compute_three_states_scrolling(
 }
 
 pub fn render(frame: &mut Frame, area: Rect, state: &model::State) {
-    // TODO: compute line numbers area from state instead of 3
-    let [line_numbers_area, pattern_area] =
-        Layout::horizontal([Constraint::Length(3), Constraint::Fill(1)])
-            .spacing(1)
-            .areas(area);
-
-    let [_, line_numbers_area] = Layout::vertical([
-        Constraint::Length(CHANNEL_HEADER_HEIGHT),
+    let [line_numbers_area, pattern_area] = Layout::horizontal([
+        Constraint::Length(state.patterns.channel_len.to_string().len() as u16),
         Constraint::Fill(1),
     ])
-    .areas(line_numbers_area);
-
-    let [_, pattern_scroll_area] = Layout::vertical([
-        Constraint::Length(CHANNEL_HEADER_HEIGHT),
-        Constraint::Fill(1),
-    ])
-    .areas(pattern_area);
+    .spacing(1)
+    .areas(area);
+    let channel_layout = channel_layout();
+    let [_, _, line_numbers_area] = channel_layout.areas(line_numbers_area);
+    let [_, _, pattern_scroll_area] = channel_layout.areas(pattern_area);
 
     let channel_len = state.patterns.channel_len as usize;
 
@@ -114,16 +116,42 @@ pub fn render(frame: &mut Frame, area: Rect, state: &model::State) {
         channels_areas.iter(),
         channel_offset..state.patterns.channel_count as usize,
     ) {
-        debug_assert_eq!(state.patterns.channel_len as usize, channel_lines.len());
-        let [header_area, lines_area] = Layout::vertical([
-            Constraint::Length(CHANNEL_HEADER_HEIGHT),
-            Constraint::Fill(1),
-        ])
-        .areas(*channel_area);
+        assert_log!(state.patterns.channel_len as usize == channel_lines.len());
+
+        let [header_area, debug_area, lines_area] = channel_layout.areas(*channel_area);
 
         frame.render_widget(
             Line::raw(format!("Track {}", channel_index + 1)).centered(),
             header_area,
+        );
+
+        let channel = &state.channels[channel_index];
+
+        frame.render_widget(
+            Paragraph::new(Text::from(vec![
+                Line::from(format!(
+                    "Instr:{}",
+                    match channel.current_instrument {
+                        Some(ref instrument) => instrument.index.to_string(),
+                        None => "-".to_string(),
+                    }
+                )),
+                Line::from(
+                    (match channel.current_instrument {
+                        Some(ref instrument) => instrument.phase.to_string(),
+                        None => "-".to_string(),
+                    })
+                    .to_string(),
+                ),
+                Line::from(format!(
+                    "Note :{}",
+                    match channel.current_note {
+                        Some((note, octave)) => format!("{note}{}", octave.value()),
+                        None => "-".to_string(),
+                    }
+                )),
+            ])),
+            debug_area,
         );
 
         let displayed_line_count = channel_lines

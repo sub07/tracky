@@ -9,16 +9,16 @@ use super::{
 };
 
 #[derive(Clone, Debug)]
-struct PlayingInstrument {
-    phase: f32,
-    index: u8,
+pub struct PlayingInstrument {
+    pub phase: f32,
+    pub index: u8,
 }
 
 #[derive(Clone, Debug)]
 pub struct Channel {
-    current_note: Option<(NoteName, OctaveValue)>,
-    current_volume: Option<Volume>,
-    current_instrument: Option<PlayingInstrument>,
+    pub current_note: Option<(NoteName, OctaveValue)>,
+    pub current_volume: Option<Volume>,
+    pub current_instrument: Option<PlayingInstrument>,
 }
 
 impl Channel {
@@ -33,7 +33,14 @@ impl Channel {
     pub fn setup_line(&mut self, line: &PatternLine) {
         if let Some(note) = line.note.value().cloned() {
             self.current_note = match note {
-                NoteFieldValue::Note(note, octave) => Some((note, octave)),
+                NoteFieldValue::Note(note, octave) => {
+                    if let Some((_, playing_instrument)) =
+                        self.current_note.zip(self.current_instrument.as_mut())
+                    {
+                        playing_instrument.phase = 0.0;
+                    }
+                    Some((note, octave))
+                }
                 NoteFieldValue::Cut => {
                     self.current_volume = None;
                     self.current_instrument = None;

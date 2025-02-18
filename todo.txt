@@ -3,5 +3,5 @@
 - display instrument panel
 - explore simd for audio callback mixing add operation
 - ratatui_wgpu doesn't work on mac
-- diverging synthesis generation (sound become weird over time)
 - Rendering all the time, cap rendering and / or avoid firing event all the time
+- center whole terminal view when black band on right or bottom + color background instead of black band (ratatui_wgpu)

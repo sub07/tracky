@@ -21,6 +21,9 @@ impl Direction {
 
 // Took the code from near_o11y crate: https://github.com/near/nearcore
 pub mod invariants {
+    ///
+    /// If assert fails, panic on debug, and log error on release
+    ///
     #[macro_export]
     macro_rules! assert_log {
         ($cond:expr) => {
