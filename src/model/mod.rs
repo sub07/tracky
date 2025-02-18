@@ -30,7 +30,7 @@ pub struct State {
     pub computed_frame_count: usize,
 
     pub song_playback: Option<song::Playback>,
-    
+
     pub instruments: Instruments,
 }
 

@@ -1,11 +1,8 @@
-use std::{fmt::Debug, iter, time::Duration};
+use std::{fmt::Debug, time::Duration};
 
 use joy_vector::{vector, Vector};
 
-use crate::audio::{
-    frame::{Frame, StereoFrame},
-    signal, synthesis, Pan, Volume,
-};
+use crate::audio::{frame::StereoFrame, signal, synthesis, Pan, Volume};
 
 use super::midi::C5_FREQ;
 

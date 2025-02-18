@@ -5,9 +5,10 @@ use ratatui::{
     widgets::{Paragraph, Widget},
 };
 
-use crate::model::pattern::{NoteFieldValue, NoteName, PatternLine, PatternLineDescriptor};
-
-use super::theme::THEME;
+use crate::{
+    model::pattern::{NoteFieldValue, NoteName, PatternLine, PatternLineDescriptor},
+    view::theme::THEME,
+};
 
 #[derive(New)]
 pub struct PatternLineView<'a> {

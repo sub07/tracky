@@ -1,20 +1,15 @@
-use header::Header;
-use pattern::PatternView;
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::Stylize,
+    style::{Color, Stylize},
     text::Line,
     widgets::Widget,
     Frame,
 };
 use theme::THEME;
+use widget::header::Header;
 
 use crate::tracky::Tracky;
 
-pub mod channel;
-pub mod header;
-pub mod line;
-pub mod pattern;
 pub mod popup;
 pub mod screen;
 pub mod theme;
@@ -33,6 +28,16 @@ fn responsive_centered_rect(
 
 fn centered_line(area: Rect) -> Rect {
     centered_rows(area, Constraint::Length(1))
+}
+
+pub fn debug_area(frame: &mut Frame, area: Rect, color: Color) {
+    let buffer = frame.buffer_mut();
+
+    for y in area.top()..area.bottom() {
+        for x in area.left()..area.right() {
+            buffer.cell_mut((x, y)).unwrap().set_bg(color);
+        }
+    }
 }
 
 fn centered_rows(area: Rect, height: Constraint) -> Rect {
@@ -67,11 +72,8 @@ fn clamp_layout_width(area: Rect, value: Constraint, min: Constraint, max: Const
 }
 
 pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
-    let area = frame.area();
-    let buf = frame.buffer_mut();
-
     let [header_area, area] =
-        Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
+        Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(frame.area());
 
     let audio_state_text = Line::from_iter([
         "• ".fg(if app.audio_state.is_some() {
@@ -96,35 +98,28 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
         "Not playing"
     });
 
-    Header::new([audio_state_text, playback_state_text]).render(header_area, buf);
+    frame.render_widget(
+        Header::new([audio_state_text, playback_state_text]),
+        header_area,
+    );
 
     match &mut app.current_screen {
         screen::Screen::DeviceSelection(device_selection_screen_state) => {
-            device_selection_screen_state.render(area, buf)
+            device_selection_screen_state.render(area, &mut frame.buffer_mut())
         }
         screen::Screen::SongEditor => {
-            let pattern_view = PatternView::new(
-                app.state.patterns.current_pattern_channels(),
-                app.state.patterns.current_row,
-                app.state.patterns.current_channel,
-                app.state.patterns.current_field,
-                app.state.patterns.channel_len,
-                app.state.patterns.channel_count,
-                app.state
-                    .currently_played_line()
-                    .filter(|_| app.state.is_song_playing()),
-            );
-            pattern_view.render(area, buf);
+            screen::song_editor::render(frame, area, &app.state);
         }
     }
 
     for popup in app.current_popup.iter_mut() {
         match popup {
-            popup::Popup::Input(popup) => popup.render(area, buf),
+            popup::Popup::Input(popup) => popup.render(area, frame.buffer_mut()),
         }
     }
 
     if app.loader_count > 0 {
-        popup::loading::render(area, buf);
+        // TODO remove buffer usage, use Frame for consistency
+        popup::loading::render(area, frame.buffer_mut());
     }
 }

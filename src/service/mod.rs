@@ -2,7 +2,6 @@ pub mod field;
 
 use std::time::Duration;
 
-use itertools::Itertools;
 use joy_vector::Vector;
 
 use crate::{
