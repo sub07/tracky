@@ -31,9 +31,7 @@ tui-input = { version = "0", default-features = false }
 uid = "0"
 pretty_env_logger = "0.5"
 winit = "0.30"
-ratatui-wgpu = { git = "https://github.com/Jesterhearts/ratatui-wgpu", branch = "preserve-aspect"}
-# ratatui-wgpu = { git = "https://github.com/sub07/ratatui-wgpu", rev = "021364c1506f22f8a672d9bc31daa27a1ce0d889" }
-# ratatui-wgpu = { path = "../ratatui-wgpu" }
+ratatui-wgpu = "0.2"
 futures-lite = "2.6"
 
 [dev-dependencies]
