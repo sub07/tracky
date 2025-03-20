@@ -7,6 +7,7 @@ use audio::device::{self, Devices};
 use event::{Action, AsyncAction, Event, EventAware, Text};
 use model::pattern::{HexDigit, NoteName};
 use ratatui::Terminal;
+use ratatui_wgpu::shaders::AspectPreservingDefaultPostProcessor;
 use ratatui_wgpu::WgpuBackend;
 use tracky::Tracky;
 use view::render_root;
@@ -32,14 +33,14 @@ pub type EventSender = EventLoopProxy<Event>;
 
 struct App<'d> {
     window: Option<Arc<Window>>,
-    backend: Option<Terminal<WgpuBackend<'d, 'static>>>,
+    backend: Option<Terminal<WgpuBackend<'d, 'static, AspectPreservingDefaultPostProcessor>>>,
     tracky: Tracky,
     event_tx: EventSender,
 }
 
 impl ApplicationHandler<Event> for App<'_> {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        self.window = Some(Arc::new(
+        let window = Arc::new(
             event_loop
                 .create_window(
                     WindowAttributes::default()
@@ -47,9 +48,10 @@ impl ApplicationHandler<Event> for App<'_> {
                         .with_inner_size(PhysicalSize::new(1600, 900)),
                 )
                 .unwrap(),
-        ));
-
-        let size = self.window.as_ref().unwrap().inner_size();
+        );
+        self.window = Some(window.clone());
+        let window_size = window.inner_size();
+        let font_size = 18.0 * window.scale_factor();
         self.backend = Some(
             Terminal::new(
                 futures_lite::future::block_on(
@@ -60,14 +62,14 @@ impl ApplicationHandler<Event> for App<'_> {
                         )))
                         .unwrap(),
                     )
-                    .with_font_size_px(18)
+                    .with_font_size_px(font_size as u32)
                     .with_bg_color(THEME.normal.bg.unwrap())
                     .with_fg_color(THEME.normal.fg.unwrap())
                     .with_width_and_height(ratatui_wgpu::Dimensions {
-                        width: NonZeroU32::new(size.width).unwrap(),
-                        height: NonZeroU32::new(size.height).unwrap(),
+                        width: NonZeroU32::new(window_size.width).unwrap(),
+                        height: NonZeroU32::new(window_size.height).unwrap(),
                     })
-                    .build_with_target(self.window.as_ref().unwrap().clone()),
+                    .build_with_target(window),
                 )
                 .unwrap(),
             )
@@ -103,6 +105,7 @@ impl ApplicationHandler<Event> for App<'_> {
                     .backend_mut()
                     .resize(new_size.width, new_size.height);
             }
+            // WindowEvent::ScaleFactorChanged { scale_factor, inner_size_writer }
             WindowEvent::RedrawRequested => {
                 terminal
                     .draw(|f| {
