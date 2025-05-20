@@ -255,7 +255,10 @@ impl ApplicationHandler<Event> for App<'_> {
                 self.tracky.send_player_state_event(event);
             }
             Event::AudioCallback(event) => self.tracky.state.handle_command(event),
-            Event::ExitApp => event_loop.exit(),
+            Event::ExitApp => {
+                self.tracky.teardown();
+                event_loop.exit();
+            }
             Event::StartAudioPlayer => self.tracky.start_audio_player(self.event_tx.clone()),
             Event::RequestRedraw => {}
             Event::StopAudioPlayer(error) => {
@@ -278,9 +281,6 @@ impl ApplicationHandler<Event> for App<'_> {
 }
 
 fn main() -> anyhow::Result<()> {
-    #[cfg(debug_assertions)]
-    env::set_var("RUST_BACKTRACE", "1");
-
     pretty_env_logger::formatted_timed_builder()
         .filter_level(log::LevelFilter::Trace)
         .filter_module("wgpu", log::LevelFilter::Off)

@@ -90,4 +90,8 @@ impl Tracky {
     pub fn stop_audio_player(&mut self) {
         self.audio_state = None;
     }
+
+    pub fn teardown(&mut self) {
+        self.stop_audio_player();
+    }
 }

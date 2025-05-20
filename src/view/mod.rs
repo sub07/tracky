@@ -30,6 +30,7 @@ fn centered_line(area: Rect) -> Rect {
     centered_rows(area, Constraint::Length(1))
 }
 
+#[allow(dead_code)]
 pub fn debug_area(frame: &mut Frame, area: Rect, color: Color) {
     let buffer = frame.buffer_mut();
 

@@ -20,7 +20,7 @@ pub struct Owned<const FRAME_SIZE: usize> {
 
 impl<const FRAME_SIZE: usize> fmt::Debug for Owned<FRAME_SIZE> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Owned")
+        f.debug_struct("signal::Owned")
             .field(
                 "frames",
                 &format!(

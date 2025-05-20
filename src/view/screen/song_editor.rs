@@ -98,9 +98,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &model::State) {
     );
 
     let channels_areas = Layout::horizontal(
-        iter::repeat(CHANNEL_CONTENT_WIDTH)
-            .take(displayed_channel_count)
-            .map(Constraint::Length),
+        std::iter::repeat_n(CHANNEL_CONTENT_WIDTH, displayed_channel_count).map(Constraint::Length),
     )
     .spacing(CHANNEL_TOTAL_HORIZONTAL_PADDING)
     .split(pattern_area);
@@ -127,32 +125,35 @@ pub fn render(frame: &mut Frame, area: Rect, state: &model::State) {
 
         let channel = &state.channels[channel_index];
 
-        frame.render_widget(
-            Paragraph::new(Text::from(vec![
-                Line::from(format!(
-                    "Instr:{}",
-                    match channel.current_instrument {
-                        Some(ref instrument) => instrument.index.to_string(),
-                        None => "-".to_string(),
-                    }
-                )),
-                Line::from(
-                    (match channel.current_instrument {
-                        Some(ref instrument) => instrument.phase.to_string(),
-                        None => "-".to_string(),
-                    })
-                    .to_string(),
-                ),
-                Line::from(format!(
-                    "Note :{}",
-                    match channel.current_note {
-                        Some((note, octave)) => format!("{note}{}", octave.value()),
-                        None => "-".to_string(),
-                    }
-                )),
-            ])),
-            debug_area,
-        );
+        // If debug build then debug info
+        if cfg!(debug_assertions) {
+            frame.render_widget(
+                Paragraph::new(Text::from(vec![
+                    Line::from(format!(
+                        "Instr:{}",
+                        match channel.current_instrument {
+                            Some(ref instrument) => instrument.index.to_string(),
+                            None => "-".to_string(),
+                        }
+                    )),
+                    Line::from(
+                        (match channel.current_instrument {
+                            Some(ref instrument) => instrument.phase.to_string(),
+                            None => "-".to_string(),
+                        })
+                        .to_string(),
+                    ),
+                    Line::from(format!(
+                        "Note :{}",
+                        match channel.current_note {
+                            Some((note, octave)) => format!("{note}{}", octave.value()),
+                            None => "-".to_string(),
+                        }
+                    )),
+                ])),
+                debug_area,
+            );
+        }
 
         let displayed_line_count = channel_lines
             .len()

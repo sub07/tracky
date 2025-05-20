@@ -1,4 +1,7 @@
-use std::{fmt::Debug, time::Duration};
+use std::{
+    fmt::{Debug, Display},
+    time::Duration,
+};
 
 use joy_vector::{vector, Vector};
 
@@ -6,21 +9,24 @@ use crate::audio::{frame::StereoFrame, signal, synthesis, Pan, Volume};
 
 use super::midi::C5_FREQ;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Kind {
     Sine,
     Square,
     Sawtooth,
-    Sample(signal::stereo::Owned),
+    Sample {
+        name: String,
+        signal: signal::stereo::Owned,
+    },
 }
 
-impl Debug for Kind {
+impl Display for Kind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Sine => write!(f, "Sine"),
             Self::Square => write!(f, "Square"),
             Self::Sawtooth => write!(f, "Sawtooth"),
-            Self::Sample(_) => write!(f, "Sample"),
+            Self::Sample { name, .. } => write!(f, "{name}"),
         }
     }
 }
@@ -38,7 +44,7 @@ impl Kind {
             Kind::Sine => synthesis::sine_wave(freq, volume, pan, phase, frame_rate),
             Kind::Square => synthesis::square_wave(freq, volume, pan, phase, frame_rate),
             Kind::Sawtooth => synthesis::sawtooth_wave(freq, volume, pan, phase, frame_rate),
-            Kind::Sample(signal) => {
+            Kind::Sample { signal, .. } => {
                 let Vector([l, r]) = signal
                     .as_ref()
                     .lerp_frame_at_duration(Duration::from_secs_f32(*phase / frame_rate))
@@ -97,9 +103,10 @@ impl Default for Instruments {
         slots[0] = Some(Instrument::from(Kind::Sine));
         slots[1] = Some(Instrument::from(Kind::Square));
         slots[2] = Some(Instrument::from(Kind::Sawtooth));
-        slots[3] = Some(Instrument::from(Kind::Sample(
-            signal::stereo::Owned::from_path("assets/stereo.wav").unwrap(),
-        )));
+        slots[3] = Some(Instrument::from(Kind::Sample {
+            name: "Piano".into(),
+            signal: signal::stereo::Owned::from_path("assets/stereo.wav").unwrap(),
+        }));
         Self {
             slots,
             selected_index: 0,

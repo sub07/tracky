@@ -184,7 +184,7 @@ fn audio_callback<SampleType>(
         .map(|signal| signal.as_ref().sample_count())
     {
         warn!(
-            "Heap allocations triggered in audio thread: playback sample count changed from {} to {}",
+            "Heap allocations triggered in audio thread (too much is bad): playback sample count changed from {} to {}",
             old_sample_count,
             out.len(),
         );
