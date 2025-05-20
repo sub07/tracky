@@ -10,6 +10,7 @@ use crate::{
     event::{Event, EventAware},
     keybindings::KeyBindings,
     model::{self, Command},
+    stats::Statistics,
     view::{popup::Popup, screen::Screen},
     EventSender,
 };
@@ -28,6 +29,7 @@ pub struct Tracky {
     pub current_screen: Screen,
     pub loader_count: usize,
     pub audio_state: Option<AudioState>,
+    pub stats: Statistics,
 }
 
 impl Tracky {

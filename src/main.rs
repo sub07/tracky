@@ -1,10 +1,13 @@
+use std::collections::HashMap;
 use std::num::NonZeroU32;
 use std::sync::Arc;
+use std::time::Duration;
 use std::{env, panic, thread};
 
 use ::log::{error, info, warn};
 use audio::device::{self, Devices};
 use event::{Action, AsyncAction, Event, EventAware, Text};
+use itertools::Itertools;
 use model::pattern::{HexDigit, NoteName};
 use ratatui::Terminal;
 use ratatui_wgpu::shaders::AspectPreservingDefaultPostProcessor;
@@ -25,6 +28,7 @@ mod event;
 mod keybindings;
 mod model;
 mod service;
+mod stats;
 mod tracky;
 mod utils;
 mod view;
@@ -118,6 +122,7 @@ impl ApplicationHandler<Event> for App<'_> {
     }
 
     fn user_event(&mut self, event_loop: &ActiveEventLoop, mut event: Event) {
+        self.tracky.stats.start_frame_with_event(&event);
         self.window.as_ref().unwrap().request_redraw();
 
         macro_rules! send {
@@ -256,6 +261,9 @@ impl ApplicationHandler<Event> for App<'_> {
             }
             Event::AudioCallback(event) => self.tracky.state.handle_command(event),
             Event::ExitApp => {
+                for (event, count) in self.tracky.stats.update_event_histogram().collect_vec() {
+                    println!("{}: {}", event, count);
+                }
                 self.tracky.teardown();
                 event_loop.exit();
             }

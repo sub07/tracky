@@ -1,3 +1,4 @@
+use joy_macro::EnumStr;
 use winit::event::KeyEvent;
 
 use crate::{

@@ -1,7 +1,7 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Stylize},
-    text::Line,
+    text::{Line, ToSpan},
     widgets::Widget,
     Frame,
 };
@@ -100,13 +100,20 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
     });
 
     frame.render_widget(
-        Header::new([audio_state_text, playback_state_text]),
+        Header::new([
+            audio_state_text,
+            playback_state_text,
+            Line::from_iter([
+                "Update per second: ".to_span(),
+                app.stats.update_per_second().to_span(),
+            ]),
+        ]),
         header_area,
     );
 
     match &mut app.current_screen {
         screen::Screen::DeviceSelection(device_selection_screen_state) => {
-            device_selection_screen_state.render(area, &mut frame.buffer_mut())
+            device_selection_screen_state.render(area, frame.buffer_mut())
         }
         screen::Screen::SongEditor => {
             screen::song_editor::render(frame, area, &app.state);
