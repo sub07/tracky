@@ -2,7 +2,6 @@
 - display global octave
 - display instrument panel
 - explore simd for audio callback mixing add operation
-- AudioCallback::PerformPlaybacksStep called continuously. Implement idle detection
-    - Implement event or render capping mechanism
+- Find strategy to reduce render rate during huge event flow
 - center whole terminal (ratatui_wgpu)
 - save / load

@@ -59,7 +59,7 @@ impl model::State {
     }
 
     fn change_global_octave(&mut self, increment: i32) {
-        // TODO: clarify saturating add
+        // TODO: clarify implicit saturating add
         self.global_octave = self.global_octave + increment;
     }
 

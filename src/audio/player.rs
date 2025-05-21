@@ -191,16 +191,19 @@ fn audio_callback<SampleType>(
         update_state!(model::Command::UpdatePlaybackSampleCount(out.len()));
     }
 
-    update_state!(model::Command::PerformPlaybacksStep);
+    if state.should_perform_step() {
+        update_state!(model::Command::PerformPlaybacksStep);
 
-    match state.output_samples() {
-        Ok(frames) => {
-            for (out, produced_sample) in out.iter_mut().zip(frames.samples()) {
-                *out = Sample::from_sample(produced_sample);
+        let output_samples = state.output_samples();
+        match output_samples {
+            Ok(frames) => {
+                for (out, produced_sample) in out.iter_mut().zip(frames.samples()) {
+                    *out = Sample::from_sample(produced_sample);
+                }
             }
-        }
-        Err(err) => {
-            assert_log_fail!("Error while reading produced sample from audio callback: {err:?}")
+            Err(err) => {
+                assert_log_fail!("Error while reading produced sample from audio callback: {err:?}")
+            }
         }
     }
 }

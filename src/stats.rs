@@ -1,15 +1,61 @@
-use std::collections::{hash_map, HashMap};
+use std::{
+    collections::{hash_map, HashMap},
+    time::Instant,
+};
 
 use itertools::Itertools;
 
 use crate::{event::Event, model};
 
+pub struct Rate {
+    rate: f32,
+    acc: u64,
+    last_time: Instant,
+    global_rate_acc: f32,
+    global_rate_count: u64,
+    rate_smoothing_len: u64,
+}
+
+impl Rate {
+    fn new(rate_smoothing_len: u64) -> Rate {
+        Rate {
+            rate: 0.0,
+            acc: 0,
+            last_time: Instant::now(),
+            global_rate_acc: 0.0,
+            global_rate_count: 0,
+            rate_smoothing_len,
+        }
+    }
+
+    fn update(&mut self) {
+        self.acc += 1;
+        if self.acc == self.rate_smoothing_len {
+            let now = Instant::now();
+            let since_last = now - self.last_time;
+            self.rate = 1.0 / (since_last.as_secs_f32() / self.acc as f32);
+            self.global_rate_acc += self.rate;
+            self.global_rate_count += 1;
+            self.acc = 0;
+            self.last_time = now;
+        }
+    }
+
+    /// Smoothed rate over the last `rate_smoothing_len` frames.
+    pub fn rate(&self) -> f32 {
+        self.rate
+    }
+
+    /// Smoothed rate over the whole app run time.
+    pub fn global_rate(&self) -> f32 {
+        self.global_rate_acc / self.global_rate_count as f32
+    }
+}
+
+// TODO: Add heap allocation count from audio callback counter (need channel to send message to stats)
 pub struct Statistics {
-    update_per_second: f32,
-    frame_acc: u64,
-    dt_acc: chrono::Duration,
-    last_time: chrono::NaiveDateTime,
-    frame_agreggator_len: u64,
+    pub update_rate: Rate,
+    pub render_rate: Rate,
     update_event_histogram: HashMap<String, u64>,
 }
 
@@ -20,18 +66,15 @@ impl Default for Statistics {
 }
 
 impl Statistics {
-    pub fn new(frame_agreggator_len: u64) -> Statistics {
+    pub fn new(rate_smoothing_len: u64) -> Statistics {
         Statistics {
-            update_per_second: 0.0,
-            frame_acc: 0,
-            dt_acc: chrono::Duration::zero(),
-            last_time: chrono::Utc::now().naive_utc(),
-            frame_agreggator_len,
+            update_rate: Rate::new(rate_smoothing_len),
+            render_rate: Rate::new(rate_smoothing_len),
             update_event_histogram: HashMap::new(),
         }
     }
 
-    pub fn start_frame_with_event(&mut self, event: &Event) {
+    pub fn record_event(&mut self, event: &Event) {
         let command_str_mapper = |command: &model::Command| match command {
             model::Command::ChangeGlobalOctave { increment: _ } => {
                 String::from("ChangeGlobalOctave")
@@ -90,19 +133,11 @@ impl Statistics {
                 vacant_entry.insert(1);
             }
         }
-        let now = chrono::Utc::now().naive_utc();
-        self.dt_acc += now - self.last_time;
-        self.frame_acc += 1;
-        if self.frame_acc == self.frame_agreggator_len {
-            self.update_per_second = 1.0 / (self.dt_acc.as_seconds_f32() / self.frame_acc as f32);
-            self.dt_acc = chrono::Duration::zero();
-            self.frame_acc = 0;
-        }
-        self.last_time = now;
+        self.update_rate.update();
     }
 
-    pub fn update_per_second(&self) -> f32 {
-        self.update_per_second
+    pub fn record_render(&mut self) {
+        self.render_rate.update();
     }
 
     pub fn update_event_histogram(&self) -> impl Iterator<Item = (&str, u64)> {
@@ -111,5 +146,22 @@ impl Statistics {
             .sorted_by_key(|(_, count)| *count)
             .map(|(event, count)| (event.as_str(), *count))
             .rev()
+    }
+
+    pub fn print_stats(&self) {
+        println!("================ Tracky stats ================");
+        println!(
+            "Average render per second: {}",
+            self.render_rate.global_rate()
+        );
+        println!(
+            "Average update per second: {}",
+            self.update_rate.global_rate()
+        );
+        let total_event_count = self.update_event_histogram.values().sum::<u64>();
+        println!("{total_event_count} events fired:");
+        for (event, count) in self.update_event_histogram().collect_vec() {
+            println!("\t{}: {}", event, count);
+        }
     }
 }

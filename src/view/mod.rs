@@ -105,7 +105,11 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
             playback_state_text,
             Line::from_iter([
                 "Update per second: ".to_span(),
-                app.stats.update_per_second().to_span(),
+                app.stats.update_rate.rate().to_span(),
+            ]),
+            Line::from_iter([
+                "Render per second: ".to_span(),
+                app.stats.render_rate.rate().to_span(),
             ]),
         ]),
         header_area,

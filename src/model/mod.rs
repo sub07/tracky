@@ -71,6 +71,13 @@ impl State {
             .ok_or_else(|| anyhow!("Uninitialized state"))
             .and_then(|output| output.sub_signal(0, self.computed_frame_count))
     }
+
+    pub fn should_perform_step(&self) -> bool {
+        self.song_playback
+            .as_ref()
+            .is_some_and(|playback| playback.is_playing) // Channel playing should be sufficent but this is needed to play empty patterns
+            || self.channels.iter().any(Channel::is_playing)
+    }
 }
 
 #[derive(Debug, Clone)]

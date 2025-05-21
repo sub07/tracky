@@ -22,7 +22,6 @@ joy-error = { git = "https://github.com/sub07/rust-utils", version = "0.1.3" }
 anyhow = "1"
 itertools = "0"
 cpal = { git = "https://github.com/rustaudio/cpal", rev = "df14a26a9a7c60b28826b921b3e7192f77ed3845" }
-derivative = "2.2.0"
 audrey = "0.3"
 plotters = "0.3"
 builder-pattern = { version = "0", default-features = false }
@@ -33,7 +32,6 @@ pretty_env_logger = "0.5"
 winit = "0.30"
 ratatui-wgpu = "0.2"
 futures-lite = "2.6"
-chrono = "0"
 
 [dev-dependencies]
 approx = "0.5"

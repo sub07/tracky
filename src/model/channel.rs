@@ -30,6 +30,10 @@ impl Channel {
         }
     }
 
+    pub fn is_playing(&self) -> bool {
+        self.current_note.is_some() && self.current_instrument.is_some()
+    }
+
     pub fn setup_line(&mut self, line: &PatternLine) {
         if let Some(note) = line.note.value().cloned() {
             self.current_note = match note {
