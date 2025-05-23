@@ -1,6 +1,6 @@
-use std::f32::consts::PI;
-
 use joy_vector::vector;
+
+use crate::utils::math::TWO_PI;
 
 use super::{frame::StereoFrame, Pan, Volume};
 
@@ -12,7 +12,11 @@ pub fn sine_wave(
     frame_rate: f32,
 ) -> StereoFrame {
     let sample = phase.sin();
-    *phase += 2.0 * PI * freq / frame_rate;
+    *phase += TWO_PI * freq / frame_rate;
+
+    if *phase >= TWO_PI {
+        *phase -= TWO_PI;
+    }
 
     let left_volume = pan.left_volume() * volume;
     let right_volume = pan.right_volume() * volume;
