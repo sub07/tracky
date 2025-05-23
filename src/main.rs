@@ -11,7 +11,7 @@ use ratatui_wgpu::shaders::AspectPreservingDefaultPostProcessor;
 use ratatui_wgpu::WgpuBackend;
 use tracky::Tracky;
 use view::render_root;
-use view::screen::Screen;
+use view::screen::{device_selection, Screen};
 use view::theme::THEME;
 use winit::application::ApplicationHandler;
 use winit::dpi::PhysicalSize;
@@ -201,14 +201,14 @@ impl ApplicationHandler<Event> for App<'_> {
                 }
                 Action::Cancel => {}
                 Action::Confirm => {}
-                Action::RequestOpenDeviceSelectionPopup => {
+                Action::RequestChangeScreenToDeviceSelection => {
                     send!(Event::StartLoading);
                     let event_tx_clone = self.event_tx.clone();
                     thread::spawn(move || {
                         event_tx_clone
-                            .send_event(Event::LoadingDone(AsyncAction::OpenDeviceSelectionPopup(
-                                Devices::load(),
-                            )))
+                            .send_event(Event::LoadingDone(
+                                AsyncAction::GetDevices(Devices::load()),
+                            ))
                             .unwrap();
                     });
                 }
@@ -242,8 +242,10 @@ impl ApplicationHandler<Event> for App<'_> {
             }
             Event::Resize { width, height } => info!("{width}x{height}"),
             Event::AsyncAction(async_action) => match async_action {
-                event::AsyncAction::OpenDeviceSelectionPopup(devices) => {
-                    self.tracky.current_screen = Screen::DeviceSelection(devices.into())
+                event::AsyncAction::GetDevices(devices) => {
+                    send!(Event::ChangeScreen(Screen::DeviceSelection(
+                        device_selection::State::from(devices)
+                    )))
                 }
             },
             Event::StartLoading => self.tracky.loader_count += 1,
@@ -276,10 +278,13 @@ impl ApplicationHandler<Event> for App<'_> {
                     .state
                     .handle_command(model::Command::StopSongPlayback);
             }
-            Event::Text(_) => unreachable!(), // For now
+            Event::Text(_) => unreachable!(),
             Event::TextSubmitted(id, value) => {
                 info!("Text submitted: {value} with id: {id}");
-            } // For now
+            }
+            Event::ChangeScreen(screen) => {
+                self.tracky.change_screen(screen);
+            }
         }
     }
 }

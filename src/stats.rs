@@ -57,11 +57,12 @@ pub struct Statistics {
     pub update_rate: Rate,
     pub render_rate: Rate,
     update_event_histogram: HashMap<String, u64>,
+    state_time: Instant,
 }
 
 impl Default for Statistics {
     fn default() -> Self {
-        Self::new(50)
+        Self::new(10)
     }
 }
 
@@ -71,6 +72,7 @@ impl Statistics {
             update_rate: Rate::new(rate_smoothing_len),
             render_rate: Rate::new(rate_smoothing_len),
             update_event_histogram: HashMap::new(),
+            state_time: Instant::now(),
         }
     }
 
@@ -124,6 +126,15 @@ impl Statistics {
             Event::RequestRedraw => String::from("RequestRedraw"),
             Event::TextSubmitted(_, _) => String::from("TextSubmitted"),
             Event::ExitApp => String::from("ExitApp"),
+            Event::ChangeScreen(screen) => format!(
+                "ChangeScreen({})",
+                match screen {
+                    crate::view::screen::Screen::DeviceSelection(_) => {
+                        "DeviceSelection"
+                    }
+                    crate::view::screen::Screen::SongEditor => "SongEditor",
+                }
+            ),
         };
         match self.update_event_histogram.entry(event_str) {
             hash_map::Entry::Occupied(mut occupied_entry) => {
@@ -149,7 +160,9 @@ impl Statistics {
     }
 
     pub fn print_stats(&self) {
+        let now = Instant::now();
         println!("================ Tracky stats ================");
+        println!("App ran for {:?}", now - self.state_time);
         println!(
             "Average render per second: {}",
             self.render_rate.global_rate()

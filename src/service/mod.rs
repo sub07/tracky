@@ -167,6 +167,7 @@ impl model::State {
     }
 
     fn stop_song_playback(&mut self) {
+        // TODO find a better way to panic on debug and log on release
         assert_log!(self.song_playback.is_some());
         let Some(song_playback) = self.song_playback.as_mut() else {
             return;
@@ -231,7 +232,7 @@ impl model::State {
             self.computed_frame_count = step_output.as_ref().frame_count();
         } else {
             if song_playback.current_line as i32 >= self.patterns.channel_len {
-                song_playback.is_playing = false;
+                self.stop_song_playback();
                 return;
             }
 

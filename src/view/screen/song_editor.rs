@@ -1,5 +1,3 @@
-use std::iter;
-
 use itertools::izip;
 use ratatui::{
     layout::{Constraint, Flex, Layout, Rect},

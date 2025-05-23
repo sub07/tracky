@@ -19,6 +19,7 @@ use crate::{
     EventSender,
 };
 
+#[derive(Debug)]
 pub struct State {
     devices: Devices,
     device_list_state: ListState,
@@ -42,6 +43,7 @@ pub enum Event {
     PickDevice,
 }
 
+#[derive(Debug)]
 pub enum Panel {
     Device,
     Config,
@@ -94,6 +96,7 @@ impl EventAware<Event> for State {
             }
 
             (Panel::BufferSize, event::Event::Action(Action::Confirm)) => Some(Event::PickDevice),
+
             _ => None,
         }
     }

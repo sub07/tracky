@@ -10,6 +10,7 @@ use crate::{
         pattern::{HexDigit, NoteName, OctaveValue},
     },
     utils::Direction,
+    view::screen::Screen,
 };
 
 #[derive(PartialEq, Eq, Debug, Hash, Clone, Copy)]
@@ -122,7 +123,8 @@ impl Default for KeyBindings {
                 KeyCode::NumpadDivide => b!(Event::State(model::Command::ChangeGlobalOctave { increment: -1 })),
                 KeyCode::Escape => b!(Event::Action(event::Action::Cancel)),
                 KeyCode::Enter => b!(Event::Action(event::Action::Confirm)),
-                KeyCode::F1 => b!(Event::Action(event::Action::RequestOpenDeviceSelectionPopup)),
+                KeyCode::F1 => b!(Event::Action(event::Action::RequestChangeScreenToDeviceSelection)),
+                KeyCode::F2 => b!(Event::ChangeScreen(Screen::SongEditor)),
                 KeyCode::F11 => b!(Event::Action(event::Action::ToggleFullscreen)),
                 KeyCode::F8 => b!(Event::Action(event::Action::KillNotes)),
                 KeyCode::PageDown => b!(Event::Action(event::Action::ChangeSelectedInstrument { increment: 1 })),

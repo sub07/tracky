@@ -56,6 +56,10 @@ impl Tracky {
         self.current_popup = None;
     }
 
+    pub fn change_screen(&mut self, screen: Screen) {
+        self.current_screen = screen;
+    }
+
     pub fn send_player_state_event(&self, event: model::Command) {
         if let Some(audio_state) = self.audio_state.as_ref() {
             audio_state.state_event_tx.send(event).unwrap();

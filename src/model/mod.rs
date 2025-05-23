@@ -42,7 +42,7 @@ impl Default for State {
             step_output: None,
             global_octave: Default::default(),
             line_per_second: 16.0,
-            global_volume: Volume::new_unchecked(0.3),
+            global_volume: Volume::new_unchecked(0.1),
             song_playback: None,
             instruments: Default::default(),
             follow_playing: false,

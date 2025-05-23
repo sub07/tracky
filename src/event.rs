@@ -5,7 +5,7 @@ use crate::{
     keybindings::InputContext,
     model::{self},
     utils::Direction,
-    view::popup::input::InputId,
+    view::{popup::input::InputId, screen::Screen},
     EventSender,
 };
 
@@ -28,12 +28,13 @@ pub enum Event {
     StopAudioPlayer(Option<anyhow::Error>),
     RequestRedraw,
     TextSubmitted(InputId, String),
+    ChangeScreen(Screen),
     ExitApp,
 }
 
 #[derive(Debug)]
 pub enum AsyncAction {
-    OpenDeviceSelectionPopup(Devices),
+    GetDevices(Devices),
 }
 
 #[derive(Debug)]
@@ -45,7 +46,7 @@ pub enum Action {
     ToggleFullscreen,
     Confirm,
     Cancel,
-    RequestOpenDeviceSelectionPopup,
+    RequestChangeScreenToDeviceSelection,
     KillNotes,
     ChangeSelectedInstrument { increment: i32 },
 }
