@@ -47,10 +47,10 @@ impl Kind {
             Kind::Sample { signal, .. } => {
                 let Vector([l, r]) = signal
                     .as_ref()
-                    .lerp_frame_at_duration(Duration::from_secs_f32(*phase / frame_rate))
+                    .lerp_frame_at_duration(Duration::from_secs_f32(*phase))
                     .unwrap_or_default();
 
-                *phase += freq / *C5_FREQ;
+                *phase += freq / *C5_FREQ / frame_rate;
 
                 let left_amp = volume.value() * pan.left_volume().value();
                 let right_amp = volume.value() * pan.right_volume().value();
