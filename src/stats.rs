@@ -108,7 +108,7 @@ impl Statistics {
             model::Command::ClearChannels => String::from("ClearChannels"),
         };
         let event_str = match event {
-            Event::KeyPressed(_) => String::from("KeyPressed"),
+            Event::KeyPressed(_, _) => String::from("KeyPressed"),
             Event::Text(_) => String::from("Text"),
             Event::State(c) => format!("State({})", command_str_mapper(c)),
             Event::AudioCallback(c) => format!("AudioCallback({})", command_str_mapper(c)),

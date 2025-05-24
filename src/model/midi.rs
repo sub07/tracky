@@ -4,7 +4,7 @@ use joy_value_object::mk_vo;
 
 use super::pattern::{NoteName, OctaveValue};
 
-// Make static when note_to_freq can be made static
+// TODO: make const when note_to_freq can be made const
 pub static C5_FREQ: LazyLock<f32> =
     LazyLock::new(|| note_to_freq(NoteName::C, OctaveValue::OCTAVE_5));
 
@@ -32,15 +32,15 @@ impl From<(NoteName, OctaveValue)> for MidiValue {
 // fixed_note_freq_reference = 440
 // fixed_note_midi_value_reference = 69
 // midi_value_to_be_converted = midi_value
+// TODO: make fn const when exp2 is const
 pub fn midi_to_freq(midi_value: MidiValue) -> f32 {
     let midi_value = midi_value.value() as f32;
     const A4_FREQ: f32 = 440.0;
     const A4_MIDI: f32 = 69.0;
 
     let b_pow = (midi_value - A4_MIDI) / 12.0;
-    let b = 2.0f32.powf(b_pow);
 
-    A4_FREQ * b
+    A4_FREQ * b_pow.exp2()
 }
 
 impl From<MidiValue> for f32 {

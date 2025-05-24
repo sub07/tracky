@@ -17,7 +17,7 @@ use winit::application::ApplicationHandler;
 use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, KeyEvent, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy};
-use winit::keyboard::{Key, PhysicalKey};
+use winit::keyboard::{Key, ModifiersState, PhysicalKey};
 use winit::window::{Fullscreen, Window, WindowAttributes};
 
 mod audio;
@@ -37,6 +37,7 @@ struct App<'d> {
     backend: Option<Terminal<WgpuBackend<'d, 'static, AspectPreservingDefaultPostProcessor>>>,
     tracky: Tracky,
     event_tx: EventSender,
+    modifiers_state: ModifiersState,
 }
 
 impl ApplicationHandler<Event> for App<'_> {
@@ -94,12 +95,15 @@ impl ApplicationHandler<Event> for App<'_> {
         };
 
         match event {
+            WindowEvent::ModifiersChanged(modifers) => self.modifiers_state = modifers.state(),
             WindowEvent::KeyboardInput {
                 device_id: _,
                 event,
                 is_synthetic: _,
             } if event.state == ElementState::Pressed => {
-                self.event_tx.send_event(Event::KeyPressed(event)).unwrap();
+                self.event_tx
+                    .send_event(Event::KeyPressed(self.modifiers_state, event))
+                    .unwrap();
             }
             WindowEvent::Resized(new_size) => {
                 terminal
@@ -148,13 +152,13 @@ impl ApplicationHandler<Event> for App<'_> {
         }
 
         match event {
-            Event::KeyPressed(key_event) => {
+            Event::KeyPressed(modifiers_state, key_event) => {
                 if let PhysicalKey::Code(key_code) = key_event.physical_key {
-                    if let Some(event) = self
-                        .tracky
-                        .keybindings
-                        .action(key_code, self.tracky.input_context())
-                    {
+                    if let Some(event) = self.tracky.keybindings.action(
+                        modifiers_state,
+                        key_code,
+                        self.tracky.input_context(),
+                    ) {
                         send!(event);
                         return;
                     }
@@ -322,6 +326,7 @@ fn main() -> anyhow::Result<()> {
         backend: None,
         window: None,
         event_tx,
+        modifiers_state: ModifiersState::empty(),
     };
     event_loop.set_control_flow(ControlFlow::Wait);
     event_loop.run_app(&mut app)?;

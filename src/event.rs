@@ -1,4 +1,4 @@
-use winit::event::KeyEvent;
+use winit::{event::KeyEvent, keyboard::ModifiersState};
 
 use crate::{
     audio::device::{ConfiguredDevice, Devices},
@@ -11,7 +11,7 @@ use crate::{
 
 #[derive(Debug)]
 pub enum Event {
-    KeyPressed(KeyEvent),
+    KeyPressed(ModifiersState, KeyEvent),
     Text(Text),
     State(model::Command),
     AudioCallback(model::Command),
