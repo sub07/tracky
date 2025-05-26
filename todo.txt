@@ -1,4 +1,4 @@
-- display and control global volume (with input popup?)
+- display global volume
 - display global octave
 - display instrument panel
 - explore simd for audio callback mixing add operation

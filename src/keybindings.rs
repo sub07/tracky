@@ -132,6 +132,7 @@ impl Default for KeyBindings {
                 (ModifiersState::empty(), KeyCode::F2) => b!(Event::ChangeScreen(Screen::SongEditor)),
                 (ModifiersState::empty(), KeyCode::F11) => b!(Event::Action(event::Action::ToggleFullscreen)),
                 (ModifiersState::empty(), KeyCode::F8) => b!(Event::Action(event::Action::KillNotes)),
+                (ModifiersState::ALT, KeyCode::KeyV) => b!(Event::Action(event::Action::ShowVolumePopup)),
                 (ModifiersState::empty(), KeyCode::PageDown) => b!(Event::Action(event::Action::ChangeSelectedInstrument { increment: 1 })),
                 (ModifiersState::empty(), KeyCode::PageUp) => b!(Event::Action(event::Action::ChangeSelectedInstrument { increment: -1 })),
             ),

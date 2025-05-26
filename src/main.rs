@@ -4,12 +4,14 @@ use std::{env, panic, thread};
 
 use ::log::{error, info, warn};
 use audio::device::{self, Devices};
+use audio::Volume;
 use event::{Action, AsyncAction, Event, EventAware, Text};
 use model::pattern::{HexDigit, NoteName};
 use ratatui::Terminal;
 use ratatui_wgpu::shaders::AspectPreservingDefaultPostProcessor;
 use ratatui_wgpu::WgpuBackend;
 use tracky::Tracky;
+use view::popup::{self, slider, Popup};
 use view::render_root;
 use view::screen::{device_selection, Screen};
 use view::theme::THEME;
@@ -36,7 +38,7 @@ struct App<'d> {
     window: Option<Arc<Window>>,
     backend: Option<Terminal<WgpuBackend<'d, 'static, AspectPreservingDefaultPostProcessor>>>,
     tracky: Tracky,
-    event_tx: EventSender,
+    event_sender: EventSender,
     modifiers_state: ModifiersState,
 }
 
@@ -86,7 +88,7 @@ impl ApplicationHandler<Event> for App<'_> {
         event: winit::event::WindowEvent,
     ) {
         if let WindowEvent::CloseRequested = event {
-            self.event_tx.send_event(Event::ExitApp).unwrap();
+            self.event_sender.send_event(Event::ExitApp).unwrap();
             return;
         }
 
@@ -101,7 +103,7 @@ impl ApplicationHandler<Event> for App<'_> {
                 event,
                 is_synthetic: _,
             } if event.state == ElementState::Pressed => {
-                self.event_tx
+                self.event_sender
                     .send_event(Event::KeyPressed(self.modifiers_state, event))
                     .unwrap();
             }
@@ -129,11 +131,11 @@ impl ApplicationHandler<Event> for App<'_> {
 
         macro_rules! send {
             ($e:expr) => {
-                self.event_tx.send_event($e).unwrap()
+                self.event_sender.send_event($e).unwrap()
             };
         }
         if let Some(popup) = &mut self.tracky.current_popup {
-            if let Some(unprocessed_event) = popup.handle_event(event, self.event_tx.clone()) {
+            if let Some(unprocessed_event) = popup.handle_event(event, self.event_sender.clone()) {
                 event = unprocessed_event;
             } else {
                 return;
@@ -142,7 +144,9 @@ impl ApplicationHandler<Event> for App<'_> {
 
         match &mut self.tracky.current_screen {
             Screen::DeviceSelection(state) => {
-                if let Some(unprocessed_event) = state.handle_event(event, self.event_tx.clone()) {
+                if let Some(unprocessed_event) =
+                    state.handle_event(event, self.event_sender.clone())
+                {
                     event = unprocessed_event;
                 } else {
                     return;
@@ -207,7 +211,7 @@ impl ApplicationHandler<Event> for App<'_> {
                 Action::Confirm => {}
                 Action::RequestChangeScreenToDeviceSelection => {
                     send!(Event::StartLoading);
-                    let event_tx_clone = self.event_tx.clone();
+                    let event_tx_clone = self.event_sender.clone();
                     thread::spawn(move || {
                         event_tx_clone
                             .send_event(Event::LoadingDone(
@@ -234,6 +238,27 @@ impl ApplicationHandler<Event> for App<'_> {
                     send!(Event::State(model::Command::ChangeSelectedInstrument {
                         increment
                     }))
+                }
+                Action::ShowVolumePopup => {
+                    let initial_value = (self.tracky.state.global_volume.value() * 100.0) as i32;
+                    self.tracky.open_popup(Popup::Slider(slider::Popup::new(
+                        "Global volume".into(),
+                        initial_value,
+                        0,
+                        100,
+                        1,
+                        |value, event_sender| {
+                            let value = value as f32 / 100.0;
+                            event_sender
+                                .send_event(Event::Composite(vec![
+                                    Event::State(model::Command::ChangeGlobalVolume {
+                                        volume: Volume::new_unchecked(value),
+                                    }),
+                                    Event::ClosePopup,
+                                ]))
+                                .unwrap();
+                        },
+                    )));
                 }
             },
             Event::Panic(error) => {
@@ -269,7 +294,7 @@ impl ApplicationHandler<Event> for App<'_> {
                 self.tracky.teardown();
                 event_loop.exit();
             }
-            Event::StartAudioPlayer => self.tracky.start_audio_player(self.event_tx.clone()),
+            Event::StartAudioPlayer => self.tracky.start_audio_player(self.event_sender.clone()),
             Event::RequestRedraw => {}
             Event::StopAudioPlayer(error) => {
                 if let Some(err) = error {
@@ -283,9 +308,7 @@ impl ApplicationHandler<Event> for App<'_> {
                     .handle_command(model::Command::StopSongPlayback);
             }
             Event::Text(_) => unreachable!(),
-            Event::TextSubmitted(id, value) => {
-                info!("Text submitted: {value} with id: {id}");
-            }
+
             Event::ChangeScreen(screen) => {
                 self.tracky.change_screen(screen);
             }
@@ -325,7 +348,7 @@ fn main() -> anyhow::Result<()> {
         tracky,
         backend: None,
         window: None,
-        event_tx,
+        event_sender: event_tx,
         modifiers_state: ModifiersState::empty(),
     };
     event_loop.set_control_flow(ControlFlow::Wait);

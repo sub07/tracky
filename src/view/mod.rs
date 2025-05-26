@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 use theme::THEME;
-use widget::header::Header;
+use widget::{header::Header, slider::Slider};
 
 use crate::tracky::Tracky;
 
@@ -126,12 +126,13 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
 
     for popup in app.current_popup.iter_mut() {
         match popup {
-            popup::Popup::Input(popup) => popup.render(area, frame.buffer_mut()),
+            // TODO: use frame instead of buffer
+            popup::Popup::Slider(popup) => popup.render(area, frame.buffer_mut()),
         }
     }
 
     if app.loader_count > 0 {
-        // TODO remove buffer usage, use Frame for consistency
+        // TODO: use frame instead of buffer
         popup::loading::render(area, frame.buffer_mut());
     }
 }

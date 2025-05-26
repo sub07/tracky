@@ -27,11 +27,11 @@ plotters = "0.3"
 builder-pattern = { version = "0", default-features = false }
 log = "0.4"
 tui-input = { version = "0", default-features = false }
-uid = "0"
 pretty_env_logger = "0.5"
 winit = "0.30"
 ratatui-wgpu = "0.2"
 futures-lite = "2.6"
+easy-ext = "1.0.2"
 
 [dev-dependencies]
 approx = "0.5"

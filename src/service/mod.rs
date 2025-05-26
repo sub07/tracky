@@ -55,6 +55,9 @@ impl model::State {
             model::Command::ChangeSelectedInstrument { increment } => {
                 self.change_selected_instrument(increment)
             }
+            model::Command::ChangeGlobalVolume { volume } => {
+                self.global_volume = volume;
+            }
         }
     }
 

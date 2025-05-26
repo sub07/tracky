@@ -106,6 +106,7 @@ impl Statistics {
             }
             model::Command::PerformPlaybacksStep => String::from("PerformPlaybacksStep"),
             model::Command::ClearChannels => String::from("ClearChannels"),
+            model::Command::ChangeGlobalVolume { .. } => String::from("ChangeGlobalVolume"),
         };
         let event_str = match event {
             Event::KeyPressed(_, _) => String::from("KeyPressed"),
@@ -124,7 +125,6 @@ impl Statistics {
             Event::StartAudioPlayer => String::from("StartAudioPlayer"),
             Event::StopAudioPlayer(_) => String::from("StopAudioPlayer"),
             Event::RequestRedraw => String::from("RequestRedraw"),
-            Event::TextSubmitted(_, _) => String::from("TextSubmitted"),
             Event::ExitApp => String::from("ExitApp"),
             Event::ChangeScreen(screen) => format!(
                 "ChangeScreen({})",

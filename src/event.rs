@@ -5,7 +5,7 @@ use crate::{
     keybindings::InputContext,
     model::{self},
     utils::Direction,
-    view::{popup::input::InputId, screen::Screen},
+    view::screen::Screen,
     EventSender,
 };
 
@@ -27,7 +27,6 @@ pub enum Event {
     StartAudioPlayer,
     StopAudioPlayer(Option<anyhow::Error>),
     RequestRedraw,
-    TextSubmitted(InputId, String),
     ChangeScreen(Screen),
     ExitApp,
 }
@@ -47,6 +46,7 @@ pub enum Action {
     Confirm,
     Cancel,
     RequestChangeScreenToDeviceSelection,
+    ShowVolumePopup,
     KillNotes,
     ChangeSelectedInstrument { increment: i32 },
 }

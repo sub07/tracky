@@ -85,6 +85,9 @@ pub enum Command {
     ChangeGlobalOctave {
         increment: i32,
     },
+    ChangeGlobalVolume {
+        volume: Volume,
+    },
     ChangeSelectedInstrument {
         increment: i32,
     },

@@ -777,6 +777,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "easy-ext"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc5d6d6a8504f8caedd7de14576464383900cd3840b7033a7a3dce5ac00121ca"
+
+[[package]]
 name = "either"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2673,6 +2679,7 @@ dependencies = [
  "audrey",
  "builder-pattern",
  "cpal",
+ "easy-ext",
  "futures-lite",
  "itertools 0.14.0",
  "joy-collection-utils",
@@ -2687,7 +2694,6 @@ dependencies = [
  "ratatui",
  "ratatui-wgpu",
  "tui-input",
- "uid",
  "winit",
 ]
 
@@ -2720,12 +2726,6 @@ name = "typed-arena"
 version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6af6ae20167a9ece4bcb41af5b80f8a1f1df981f6391189ce00fd257af04126a"
-
-[[package]]
-name = "uid"
-version = "0.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7041bb797d82c5728d3a4a40432809095d8acc59bdd9e67426a2529b3b80c9be"
 
 [[package]]
 name = "unicode-bidi"
