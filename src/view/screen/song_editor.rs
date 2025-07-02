@@ -34,12 +34,12 @@ fn compute_three_states_scrolling(
 ) -> usize {
     let half_height = (view_size as f32 / 2.0).round() as usize;
     let scroll_lower_bound = half_height;
-    let scroll_upper_bound = total_size - half_height;
+    let scroll_upper_bound = total_size.saturating_sub(half_height);
 
     if cursor_position < scroll_lower_bound {
         0
     } else if cursor_position >= scroll_upper_bound {
-        total_size - view_size
+        total_size.saturating_sub(view_size)
     } else {
         scroll_lower_bound.abs_diff(cursor_position) + 1
     }

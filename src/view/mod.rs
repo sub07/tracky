@@ -1,12 +1,13 @@
 use ratatui::{
+    buffer::Buffer,
     layout::{Constraint, Layout, Rect},
     style::{Color, Stylize},
     text::{Line, ToSpan},
-    widgets::Widget,
+    widgets::{Block, Clear, Widget},
     Frame,
 };
 use theme::THEME;
-use widget::{header::Header, slider::Slider};
+use widget::header::Header;
 
 use crate::tracky::Tracky;
 
@@ -72,6 +73,13 @@ fn clamp_layout_width(area: Rect, value: Constraint, min: Constraint, max: Const
     }
 }
 
+pub fn render_block_and_get_inner(block: Block, area: Rect, buf: &mut Buffer) -> Rect {
+    let inner = block.inner(area);
+    Clear.render(area, buf);
+    block.render(area, buf);
+    inner
+}
+
 pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
     let [header_area, area] =
         Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(frame.area());
@@ -127,7 +135,7 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
     for popup in app.current_popup.iter_mut() {
         match popup {
             // TODO: use frame instead of buffer
-            popup::Popup::Slider(popup) => popup.render(area, frame.buffer_mut()),
+            popup::Popup::ChangeVolume(popup) => popup.render(area, frame.buffer_mut()),
         }
     }
 

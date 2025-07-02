@@ -1,23 +1,21 @@
 use log::warn;
 use ratatui::{
-    layout::{Constraint, Layout},
     prelude::{Buffer, Rect},
     symbols,
-    text::ToLine,
-    widgets::{Gauge, LineGauge, Widget},
+    widgets::Widget,
 };
 
 use crate::{assert_log_bail, view::theme::THEME};
 
 pub struct Slider {
-    min: i32,
+    min: f32,
     // Inclusive
-    max: i32,
-    value: i32,
+    max: f32,
+    value: f32,
 }
 
 impl Slider {
-    pub fn new(min: i32, max: i32, value: i32) -> Self {
+    pub fn new(min: f32, max: f32, value: f32) -> Self {
         Slider { min, max, value }
     }
 }
@@ -29,7 +27,6 @@ impl Widget for Slider {
             "Slider with larger minimum than maximum is not possible"
         );
         let value = self.value.clamp(self.min, self.max);
-        let value_str = value.to_string();
         if self.value != value {
             warn!(
                 "Slider value {} is not in min / max bounds ([{}; {}]). Clamped to {}",
@@ -37,27 +34,18 @@ impl Widget for Slider {
             );
         }
 
-        let ratio = (value - self.min) as f64 / (self.max - self.min) as f64;
+        let ratio = (value - self.min) / (self.max - self.min);
 
-        let [bar_area, value_area] = Layout::horizontal([
-            Constraint::Fill(1),
-            Constraint::Length(self.max.to_string().len() as u16),
-        ])
-        .spacing(1)
-        .areas(area);
-
-        value_str.to_line().right_aligned().render(value_area, buf);
-
-        let filled_width = f64::from(bar_area.width) * ratio;
-        let end = bar_area.left() + filled_width.floor() as u16;
-        for y in bar_area.top()..bar_area.bottom() {
-            for x in bar_area.left()..end {
+        let filled_width = area.width as f32 * ratio;
+        let end = area.left() + filled_width.floor() as u16;
+        for y in area.top()..area.bottom() {
+            for x in area.left()..end {
                 buf[(x, y)]
                     .set_symbol(symbols::block::FULL)
                     .set_style(THEME.normal);
             }
             if ratio < 1.0 {
-                fn get_unicode_block<'a>(frac: f64) -> &'a str {
+                fn get_unicode_block<'a>(frac: f32) -> &'a str {
                     match (frac * 8.0).round() as u16 {
                         1 => symbols::block::ONE_EIGHTH,
                         2 => symbols::block::ONE_QUARTER,

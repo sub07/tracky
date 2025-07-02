@@ -5,7 +5,7 @@ use pattern::{HexDigit, NoteName, OctaveValue, Patterns};
 use playback::song;
 
 use crate::{
-    audio::{signal, Volume},
+    audio::{signal, Decibels, Volume},
     utils::Direction,
 };
 
@@ -42,7 +42,7 @@ impl Default for State {
             step_output: None,
             global_octave: Default::default(),
             line_per_second: 16.0,
-            global_volume: Volume::new_unchecked(0.1),
+            global_volume: Decibels::DEFAULT.volume(),
             song_playback: None,
             instruments: Default::default(),
             follow_playing: false,

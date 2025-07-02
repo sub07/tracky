@@ -1,61 +1,50 @@
 use crate::{
+    audio::Decibels,
     event::{self, Action, Event, EventAware},
     keybindings::InputContext,
     utils::Direction,
-    view::{centered_line, margin, responsive_centered_rect, theme::THEME, widget::slider::Slider},
+    view::{
+        centered_line, render_block_and_get_inner, responsive_centered_rect, widget::slider::Slider,
+    },
     EventSender,
 };
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
-    text::Line,
-    widgets::{Block, Clear, Gauge, Paragraph, Widget},
+    text::ToLine,
+    widgets::{Block, Widget},
 };
-use tui_input::{Input, InputRequest};
+
+const DECIBELS_STEP: f32 = 0.1;
 
 pub struct Popup {
-    label: String,
-    value: i32,
-    min: i32,
-    max: i32,
-    step: i32,
-    on_submit: Box<dyn Fn(i32, EventSender)>,
+    title: &'static str,
+    value: Decibels,
+    on_submit: Box<dyn Fn(Decibels, EventSender)>,
 }
 
 impl Popup {
     pub fn new<OnSubmitFn>(
-        label: String,
-        initial_value: i32,
-        min: i32,
-        max: i32,
-        step: i32,
+        title: &'static str,
+        initial_value: Decibels,
         on_submit: OnSubmitFn,
     ) -> Popup
     where
-        OnSubmitFn: Fn(i32, EventSender) + 'static,
+        OnSubmitFn: Fn(Decibels, EventSender) + 'static,
     {
         Self {
-            label,
             value: initial_value,
-            min,
-            max,
-            step,
             on_submit: Box::new(on_submit),
+            title,
         }
     }
 
     fn increment(&mut self) {
-        self.value = self
-            .value
-            .saturating_add(self.step)
-            .clamp(self.min, self.max);
+        self.value = self.value + DECIBELS_STEP;
     }
 
     fn decrement(&mut self) {
-        self.value = self
-            .value
-            .saturating_sub(self.step)
-            .clamp(self.min, self.max);
+        self.value = self.value - DECIBELS_STEP;
     }
 }
 
@@ -64,7 +53,7 @@ pub enum PopupEvent {
     Submit,
     Increment,
     Decrement,
-    Input(event::Text),
+    Input(event::Text), // TODO: accept input to set value
 }
 
 impl EventAware<PopupEvent> for Popup {
@@ -107,16 +96,15 @@ impl Popup {
             Constraint::Length(3),
         );
 
-        let block = Block::bordered().title("Global volume");
+        let area = render_block_and_get_inner(Block::bordered().title(self.title), area, buf);
 
-        let area = {
-            let inner = block.inner(area);
-            Clear.render(area, buf);
-            block.render(area, buf);
-            inner
-        };
+        let area = centered_line(area);
+        let [slider_area, text_area] =
+            Layout::horizontal([Constraint::Fill(1), Constraint::Length(7)]).areas(area);
+        Slider::new(Decibels::MIN_VALUE, Decibels::MAX_VALUE, self.value.value())
+            .render(slider_area, buf);
 
-        let slider_area = centered_line(area);
-        Slider::new(self.min, self.max, self.value).render(slider_area, buf);
+        let value_text = format!("{:.1}dB", self.value.value());
+        value_text.to_line().right_aligned().render(text_area, buf);
     }
 }

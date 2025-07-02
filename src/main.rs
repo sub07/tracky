@@ -4,14 +4,12 @@ use std::{env, panic, thread};
 
 use ::log::{error, info, warn};
 use audio::device::{self, Devices};
-use audio::Volume;
 use event::{Action, AsyncAction, Event, EventAware, Text};
 use model::pattern::{HexDigit, NoteName};
 use ratatui::Terminal;
-use ratatui_wgpu::shaders::AspectPreservingDefaultPostProcessor;
 use ratatui_wgpu::WgpuBackend;
 use tracky::Tracky;
-use view::popup::{self, slider, Popup};
+use view::popup::{change_volume, Popup};
 use view::render_root;
 use view::screen::{device_selection, Screen};
 use view::theme::THEME;
@@ -21,6 +19,8 @@ use winit::event::{ElementState, KeyEvent, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy};
 use winit::keyboard::{Key, ModifiersState, PhysicalKey};
 use winit::window::{Fullscreen, Window, WindowAttributes};
+
+use crate::utils::BackgroundColorEdgesPostProcessor;
 
 mod audio;
 mod event;
@@ -36,7 +36,7 @@ pub type EventSender = EventLoopProxy<Event>;
 
 struct App<'d> {
     window: Option<Arc<Window>>,
-    backend: Option<Terminal<WgpuBackend<'d, 'static, AspectPreservingDefaultPostProcessor>>>,
+    backend: Option<Terminal<WgpuBackend<'d, 'static, BackgroundColorEdgesPostProcessor>>>,
     tracky: Tracky,
     event_sender: EventSender,
     modifiers_state: ModifiersState,
@@ -56,18 +56,20 @@ impl ApplicationHandler<Event> for App<'_> {
         self.window = Some(window.clone());
         let window_size = window.inner_size();
         let font_size = 18.0 * window.scale_factor();
+        let bg_color = THEME.normal.bg.unwrap();
         self.backend = Some(
             Terminal::new(
                 futures_lite::future::block_on(
-                    ratatui_wgpu::Builder::from_font(
+                    ratatui_wgpu::Builder::from_font_and_user_data(
                         ratatui_wgpu::Font::new(include_bytes!(concat!(
                             env!("CARGO_MANIFEST_DIR"),
                             "/fonts/CascadiaMono.ttf"
                         )))
                         .unwrap(),
+                        bg_color,
                     )
                     .with_font_size_px(font_size as u32)
-                    .with_bg_color(THEME.normal.bg.unwrap())
+                    .with_bg_color(bg_color)
                     .with_fg_color(THEME.normal.fg.unwrap())
                     .with_width_and_height(ratatui_wgpu::Dimensions {
                         width: NonZeroU32::new(window_size.width).unwrap(),
@@ -240,25 +242,20 @@ impl ApplicationHandler<Event> for App<'_> {
                     }))
                 }
                 Action::ShowVolumePopup => {
-                    let initial_value = (self.tracky.state.global_volume.value() * 100.0) as i32;
-                    self.tracky.open_popup(Popup::Slider(slider::Popup::new(
-                        "Global volume".into(),
-                        initial_value,
-                        0,
-                        100,
-                        1,
-                        |value, event_sender| {
-                            let value = value as f32 / 100.0;
-                            event_sender
-                                .send_event(Event::Composite(vec![
-                                    Event::State(model::Command::ChangeGlobalVolume {
-                                        volume: Volume::new_unchecked(value),
-                                    }),
-                                    Event::ClosePopup,
-                                ]))
-                                .unwrap();
-                        },
-                    )));
+                    self.tracky
+                        .open_popup(Popup::ChangeVolume(change_volume::Popup::new(
+                            "Global volume",
+                            self.tracky.state.global_volume.db(),
+                            |value, event_sender| {
+                                let volume = dbg!(value.volume());
+                                event_sender
+                                    .send_event(Event::Composite(vec![
+                                        Event::State(model::Command::ChangeGlobalVolume { volume }),
+                                        Event::ClosePopup,
+                                    ]))
+                                    .unwrap();
+                            },
+                        )));
                 }
             },
             Event::Panic(error) => {
