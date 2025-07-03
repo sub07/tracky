@@ -160,12 +160,12 @@ impl ApplicationHandler<Event> for App<'_> {
         match event {
             Event::KeyPressed(modifiers_state, key_event) => {
                 if let PhysicalKey::Code(key_code) = key_event.physical_key {
-                    if let Some(event) = self.tracky.keybindings.action(
+                    if let Some(action) = self.tracky.keybindings.action(
                         modifiers_state,
                         key_code,
                         self.tracky.input_context(),
                     ) {
-                        send!(event);
+                        send!(Event::Action(action));
                         return;
                     }
                 }
@@ -241,7 +241,7 @@ impl ApplicationHandler<Event> for App<'_> {
                         increment
                     }))
                 }
-                Action::ShowVolumePopup => {
+                Action::ShowGlobalVolumePopup => {
                     self.tracky
                         .open_popup(Popup::ChangeVolume(change_volume::Popup::new(
                             "Global volume",
@@ -257,6 +257,35 @@ impl ApplicationHandler<Event> for App<'_> {
                             },
                         )));
                 }
+                Action::RequestChangeScreenToSongEditor => {
+                    send!(Event::ChangeScreen(Screen::SongEditor));
+                }
+                Action::ChangeGlobalOctave { increment } => {
+                    send!(Event::State(model::Command::ChangeGlobalOctave {
+                        increment
+                    }));
+                }
+                Action::SetNoteField {
+                    note,
+                    octave_modifier,
+                } => send!(Event::State(model::Command::SetNoteField {
+                    note,
+                    octave_modifier
+                })),
+                Action::SetNoteCut => send!(Event::State(model::Command::SetNoteCut)),
+                Action::ClearField => send!(Event::State(model::Command::ClearField)),
+                Action::SetOctaveField(octave_value) => {
+                    send!(Event::State(model::Command::SetOctaveField(octave_value)))
+                }
+                Action::SetHexField(hex_digit) => {
+                    send!(Event::State(model::Command::SetHexField(hex_digit)))
+                }
+                Action::CreateNewPattern => send!(Event::State(model::Command::CreateNewPattern)),
+                Action::GoToNextPattern => send!(Event::State(model::Command::GoToNextPattern)),
+                Action::GoToPreviousPattern => {
+                    send!(Event::State(model::Command::GoToPreviousPattern))
+                }
+                Action::Text(text) => send!(Event::Text(text)),
             },
             Event::Panic(error) => {
                 panic!("{error:?}");

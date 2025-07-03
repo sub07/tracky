@@ -35,7 +35,7 @@ impl model::State {
                 octave_modifier,
             } => self.set_note_field(note, octave_modifier),
             model::Command::MoveCursor(direction) => self.move_cursor(direction),
-            model::Command::SetNoteFieldToCut => self.set_note_field_to_cut(),
+            model::Command::SetNoteCut => self.set_note_cut(),
             model::Command::ClearField => self.clear_field(),
             model::Command::SetOctaveField(octave) => self.set_octave_field(octave),
             model::Command::SetHexField(digit) => self.set_hex_field(digit),
@@ -108,7 +108,7 @@ impl model::State {
         }
     }
 
-    fn set_note_field_to_cut(&mut self) {
+    fn set_note_cut(&mut self) {
         self.patterns
             .current_line_mut()
             .note

@@ -8,7 +8,7 @@ use crate::{
         player::{AudioPlayer, AudioPlayerBuilder},
     },
     event::{Event, EventAware},
-    keybindings::KeyBindings,
+    keybindings::Keybindings,
     model::{self, Command},
     stats::Statistics,
     view::{popup::Popup, screen::Screen},
@@ -23,7 +23,7 @@ pub struct AudioState {
 #[derive(Default)]
 pub struct Tracky {
     pub state: model::State,
-    pub keybindings: KeyBindings,
+    pub keybindings: Keybindings,
     pub selected_output_device: Option<ConfiguredDevice>,
     pub current_popup: Option<Popup>,
     pub current_screen: Screen,

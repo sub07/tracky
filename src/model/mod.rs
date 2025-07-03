@@ -6,6 +6,7 @@ use playback::song;
 
 use crate::{
     audio::{signal, Decibels, Volume},
+    model::pattern::NoteFieldValue,
     utils::Direction,
 };
 
@@ -95,8 +96,8 @@ pub enum Command {
         note: NoteName,
         octave_modifier: i32,
     },
+    SetNoteCut,
     MoveCursor(Direction),
-    SetNoteFieldToCut,
     ClearField,
     SetOctaveField(OctaveValue),
     SetHexField(HexDigit),

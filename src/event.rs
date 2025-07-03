@@ -3,7 +3,10 @@ use winit::{event::KeyEvent, keyboard::ModifiersState};
 use crate::{
     audio::device::{ConfiguredDevice, Devices},
     keybindings::InputContext,
-    model::{self},
+    model::{
+        self,
+        pattern::{HexDigit, NoteFieldValue, NoteName, OctaveValue},
+    },
     utils::Direction,
     view::screen::Screen,
     EventSender,
@@ -12,7 +15,6 @@ use crate::{
 #[derive(Debug)]
 pub enum Event {
     KeyPressed(ModifiersState, KeyEvent),
-    Text(Text),
     State(model::Command),
     AudioCallback(model::Command),
     Panic(anyhow::Error),
@@ -27,6 +29,7 @@ pub enum Event {
     StartAudioPlayer,
     StopAudioPlayer(Option<anyhow::Error>),
     RequestRedraw,
+    Text(Text),
     ChangeScreen(Screen),
     ExitApp,
 }
@@ -36,19 +39,37 @@ pub enum AsyncAction {
     GetDevices(Devices),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Action {
     Move(Direction),
     Forward,
     Backward,
-    TogglePlay,
-    ToggleFullscreen,
     Confirm,
     Cancel,
+    TogglePlay,
+    ToggleFullscreen,
     RequestChangeScreenToDeviceSelection,
-    ShowVolumePopup,
+    RequestChangeScreenToSongEditor,
+    ShowGlobalVolumePopup,
     KillNotes,
-    ChangeSelectedInstrument { increment: i32 },
+    ChangeGlobalOctave {
+        increment: i32,
+    },
+    ChangeSelectedInstrument {
+        increment: i32,
+    },
+    SetNoteField {
+        note: NoteName,
+        octave_modifier: i32,
+    },
+    SetNoteCut,
+    ClearField,
+    SetOctaveField(OctaveValue),
+    SetHexField(HexDigit),
+    CreateNewPattern,
+    GoToNextPattern,
+    GoToPreviousPattern,
+    Text(Text),
 }
 
 #[derive(Debug, Clone)]

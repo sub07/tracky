@@ -89,7 +89,7 @@ impl Statistics {
                 octave_modifier: _,
             } => String::from("SetNoteField"),
             model::Command::MoveCursor(_) => String::from("MoveCursor"),
-            model::Command::SetNoteFieldToCut => String::from("SetNoteFieldToCut"),
+            model::Command::SetNoteCut => String::from("SetNoteCut"),
             model::Command::ClearField => String::from("ClearField"),
             model::Command::SetOctaveField(_) => String::from("SetOctaveField"),
             model::Command::SetHexField(_) => String::from("SetHexField"),
