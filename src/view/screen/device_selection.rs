@@ -12,7 +12,7 @@ use crate::{
         device::{sample_format_bit_count, Config, Devices},
         Device,
     },
-    event::{self, Action, EventAware},
+    event::{self, Action, HandleAction},
     keybindings::InputContext,
     utils::Direction,
     view::{centered_line, theme::THEME},
@@ -56,47 +56,26 @@ impl From<Devices> for State {
     }
 }
 
-impl EventAware<Event> for State {
-    fn map_event(&self, event: &event::Event) -> Option<Event> {
-        match (&self.current_panel, event) {
-            (Panel::Device, event::Event::Action(Action::Move(Direction::Down))) => {
-                Some(Event::SelectNextDevice)
-            }
-            (Panel::Device, event::Event::Action(Action::Move(Direction::Up))) => {
-                Some(Event::SelectPreviousDevice)
-            }
-
-            (Panel::Config, event::Event::Action(Action::Move(Direction::Down))) => {
-                Some(Event::SelectNextConfig)
-            }
-            (Panel::Config, event::Event::Action(Action::Move(Direction::Up))) => {
-                Some(Event::SelectPreviousConfig)
-            }
-
-            (Panel::BufferSize, event::Event::Action(Action::Move(Direction::Down))) => {
-                Some(Event::SelectNextBufferSize)
-            }
-            (Panel::BufferSize, event::Event::Action(Action::Move(Direction::Up))) => {
+impl HandleAction<Event> for State {
+    fn map_action(&self, action: &Action) -> Option<Event> {
+        match (&self.current_panel, action) {
+            (Panel::Device, Action::Move(Direction::Down)) => Some(Event::SelectNextDevice),
+            (Panel::Device, Action::Move(Direction::Up)) => Some(Event::SelectPreviousDevice),
+            (Panel::Config, Action::Move(Direction::Down)) => Some(Event::SelectNextConfig),
+            (Panel::Config, Action::Move(Direction::Up)) => Some(Event::SelectPreviousConfig),
+            (Panel::BufferSize, Action::Move(Direction::Down)) => Some(Event::SelectNextBufferSize),
+            (Panel::BufferSize, Action::Move(Direction::Up)) => {
                 Some(Event::SelectPreviousBufferSize)
             }
-
-            (Panel::Device, event::Event::Action(Action::Move(Direction::Right))) => {
-                Some(Event::SetPanel(Panel::Config))
-            }
-
-            (Panel::Config, event::Event::Action(Action::Move(Direction::Left))) => {
-                Some(Event::SetPanel(Panel::Device))
-            }
-            (Panel::Config, event::Event::Action(Action::Move(Direction::Right))) => {
+            (Panel::Device, Action::Move(Direction::Right)) => Some(Event::SetPanel(Panel::Config)),
+            (Panel::Config, Action::Move(Direction::Left)) => Some(Event::SetPanel(Panel::Device)),
+            (Panel::Config, Action::Move(Direction::Right)) => {
                 Some(Event::SetPanel(Panel::BufferSize))
             }
-
-            (Panel::BufferSize, event::Event::Action(Action::Move(Direction::Left))) => {
+            (Panel::BufferSize, Action::Move(Direction::Left)) => {
                 Some(Event::SetPanel(Panel::Config))
             }
-
-            (Panel::BufferSize, event::Event::Action(Action::Confirm)) => Some(Event::PickDevice),
-
+            (Panel::BufferSize, Action::Confirm) => Some(Event::PickDevice),
             _ => None,
         }
     }

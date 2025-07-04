@@ -80,16 +80,13 @@ pub enum Text {
     MoveCursorRight,
 }
 
-pub trait EventAware<InternalEvent> {
-    fn map_event(&self, event: &Event) -> Option<InternalEvent>;
-    fn update(&mut self, event: InternalEvent, event_tx: EventSender);
+pub trait HandleAction<InternalAction> {
+    fn map_action(&self, action: &Action) -> Option<InternalAction>;
+    fn update(&mut self, event: InternalAction, event_tx: EventSender);
     fn input_context(&self) -> InputContext;
-    fn handle_event(&mut self, event: Event, event_tx: EventSender) -> Option<Event> {
-        if let Some(popup_event) = self.map_event(&event) {
+    fn handle_action(&mut self, action: Action, event_tx: EventSender) {
+        if let Some(popup_event) = self.map_action(&action) {
             self.update(popup_event, event_tx);
-            None
-        } else {
-            Some(event)
         }
     }
 }

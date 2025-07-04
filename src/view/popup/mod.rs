@@ -1,5 +1,5 @@
 use crate::{
-    event::{Event, EventAware},
+    event::{Action, HandleAction},
     keybindings::InputContext,
     EventSender,
 };
@@ -13,9 +13,11 @@ pub enum Popup {
 
 // TODO: Use macro to auto impl those methods
 impl Popup {
-    pub fn handle_event(&mut self, event: Event, event_tx: EventSender) -> Option<Event> {
+    pub fn handle_event(&mut self, action: Action, event_tx: EventSender) {
         match self {
-            Popup::ChangeVolume(popup) => popup.handle_event(event, event_tx),
+            Popup::ChangeVolume(popup) => {
+                popup.handle_action(action, event_tx);
+            }
         }
     }
 

@@ -4,7 +4,7 @@ use std::{env, panic, thread};
 
 use ::log::{error, info, warn};
 use audio::device::{self, Devices};
-use event::{Action, AsyncAction, Event, EventAware, Text};
+use event::{Action, AsyncAction, Event, HandleAction, Text};
 use model::pattern::{HexDigit, NoteName};
 use ratatui::Terminal;
 use ratatui_wgpu::WgpuBackend;
@@ -127,7 +127,7 @@ impl ApplicationHandler<Event> for App<'_> {
         }
     }
 
-    fn user_event(&mut self, event_loop: &ActiveEventLoop, mut event: Event) {
+    fn user_event(&mut self, event_loop: &ActiveEventLoop, event: Event) {
         self.tracky.stats.record_event(&event);
         self.window.as_ref().unwrap().request_redraw();
 
@@ -135,26 +135,6 @@ impl ApplicationHandler<Event> for App<'_> {
             ($e:expr) => {
                 self.event_sender.send_event($e).unwrap()
             };
-        }
-        if let Some(popup) = &mut self.tracky.current_popup {
-            if let Some(unprocessed_event) = popup.handle_event(event, self.event_sender.clone()) {
-                event = unprocessed_event;
-            } else {
-                return;
-            }
-        }
-
-        match &mut self.tracky.current_screen {
-            Screen::DeviceSelection(state) => {
-                if let Some(unprocessed_event) =
-                    state.handle_event(event, self.event_sender.clone())
-                {
-                    event = unprocessed_event;
-                } else {
-                    return;
-                }
-            }
-            Screen::SongEditor => {}
         }
 
         match event {
@@ -199,94 +179,121 @@ impl ApplicationHandler<Event> for App<'_> {
                     _ => {}
                 }
             }
-            Event::Action(action) => match action {
-                Action::TogglePlay => {
-                    if self.tracky.state.is_song_playing() {
-                        send!(Event::State(model::Command::StopSongPlayback));
-                    } else if self.tracky.audio_state.is_some() {
-                        send!(Event::State(model::Command::StartSongPlaybackFromBeginning));
-                    } else {
-                        warn!("Select a device with F1 to play the song")
+            Event::Action(action) => {
+                match action {
+                    Action::RequestChangeScreenToDeviceSelection => {
+                        send!(Event::StartLoading);
+                        let event_tx_clone = self.event_sender.clone();
+                        thread::spawn(move || {
+                            event_tx_clone
+                                .send_event(Event::LoadingDone(AsyncAction::GetDevices(
+                                    Devices::load(),
+                                )))
+                                .unwrap();
+                        });
+                    }
+                    Action::RequestChangeScreenToSongEditor => {
+                        send!(Event::ChangeScreen(Screen::SongEditor));
+                    }
+                    action => {
+                        if let Some(popup) = &mut self.tracky.current_popup {
+                            let _ = popup.handle_event(action, self.event_sender.clone());
+                            return;
+                        }
+                        self.tracky
+                            .current_screen
+                            .handle_event(action, self.event_sender.clone());
                     }
                 }
-                Action::Cancel => {}
-                Action::Confirm => {}
-                Action::RequestChangeScreenToDeviceSelection => {
-                    send!(Event::StartLoading);
-                    let event_tx_clone = self.event_sender.clone();
-                    thread::spawn(move || {
-                        event_tx_clone
-                            .send_event(Event::LoadingDone(
-                                AsyncAction::GetDevices(Devices::load()),
-                            ))
-                            .unwrap();
-                    });
-                }
-                Action::Move(direction) => {
-                    send!(Event::State(model::Command::MoveCursor(direction)))
-                }
-                Action::Forward => todo!(),
-                Action::Backward => todo!(),
-                Action::ToggleFullscreen => {
-                    let window = self.window.as_ref().unwrap();
-                    if window.fullscreen().is_some() {
-                        window.set_fullscreen(None);
-                    } else {
-                        window.set_fullscreen(Some(Fullscreen::Borderless(None)));
+
+                match &mut self.tracky.current_screen {
+                    Screen::DeviceSelection(state) => {
+                        let _ = state.handle_action(action, self.event_sender.clone());
+                        return;
                     }
+                    Screen::SongEditor => match action {
+                        Action::TogglePlay => {
+                            if self.tracky.state.is_song_playing() {
+                                send!(Event::State(model::Command::StopSongPlayback));
+                            } else if self.tracky.audio_state.is_some() {
+                                send!(Event::State(model::Command::StartSongPlaybackFromBeginning));
+                            } else {
+                                warn!("Select a device with F1 to play the song")
+                            }
+                        }
+                        Action::Cancel => {}
+                        Action::Confirm => {}
+                        Action::Move(direction) => {
+                            send!(Event::State(model::Command::MoveCursor(direction)))
+                        }
+                        Action::Forward => todo!(),
+                        Action::Backward => todo!(),
+                        Action::ToggleFullscreen => {
+                            let window = self.window.as_ref().unwrap();
+                            if window.fullscreen().is_some() {
+                                window.set_fullscreen(None);
+                            } else {
+                                window.set_fullscreen(Some(Fullscreen::Borderless(None)));
+                            }
+                        }
+                        Action::KillNotes => send!(Event::State(model::Command::ClearChannels)),
+                        Action::ChangeSelectedInstrument { increment } => {
+                            send!(Event::State(model::Command::ChangeSelectedInstrument {
+                                increment
+                            }))
+                        }
+                        Action::ShowGlobalVolumePopup => {
+                            self.tracky
+                                .open_popup(Popup::ChangeVolume(change_volume::Popup::new(
+                                    "Global volume",
+                                    self.tracky.state.global_volume.db(),
+                                    |value, event_sender| {
+                                        let volume = dbg!(value.volume());
+                                        event_sender
+                                            .send_event(Event::Composite(vec![
+                                                Event::State(model::Command::ChangeGlobalVolume {
+                                                    volume,
+                                                }),
+                                                Event::ClosePopup,
+                                            ]))
+                                            .unwrap();
+                                    },
+                                )));
+                        }
+
+                        Action::ChangeGlobalOctave { increment } => {
+                            send!(Event::State(model::Command::ChangeGlobalOctave {
+                                increment
+                            }));
+                        }
+                        Action::SetNoteField {
+                            note,
+                            octave_modifier,
+                        } => send!(Event::State(model::Command::SetNoteField {
+                            note,
+                            octave_modifier
+                        })),
+                        Action::SetNoteCut => send!(Event::State(model::Command::SetNoteCut)),
+                        Action::ClearField => send!(Event::State(model::Command::ClearField)),
+                        Action::SetOctaveField(octave_value) => {
+                            send!(Event::State(model::Command::SetOctaveField(octave_value)))
+                        }
+                        Action::SetHexField(hex_digit) => {
+                            send!(Event::State(model::Command::SetHexField(hex_digit)))
+                        }
+                        Action::CreateNewPattern => {
+                            send!(Event::State(model::Command::CreateNewPattern))
+                        }
+                        Action::GoToNextPattern => {
+                            send!(Event::State(model::Command::GoToNextPattern))
+                        }
+                        Action::GoToPreviousPattern => {
+                            send!(Event::State(model::Command::GoToPreviousPattern))
+                        }
+                        Action::Text(text) => send!(Event::Text(text)),
+                    },
                 }
-                Action::KillNotes => send!(Event::State(model::Command::ClearChannels)),
-                Action::ChangeSelectedInstrument { increment } => {
-                    send!(Event::State(model::Command::ChangeSelectedInstrument {
-                        increment
-                    }))
-                }
-                Action::ShowGlobalVolumePopup => {
-                    self.tracky
-                        .open_popup(Popup::ChangeVolume(change_volume::Popup::new(
-                            "Global volume",
-                            self.tracky.state.global_volume.db(),
-                            |value, event_sender| {
-                                let volume = dbg!(value.volume());
-                                event_sender
-                                    .send_event(Event::Composite(vec![
-                                        Event::State(model::Command::ChangeGlobalVolume { volume }),
-                                        Event::ClosePopup,
-                                    ]))
-                                    .unwrap();
-                            },
-                        )));
-                }
-                Action::RequestChangeScreenToSongEditor => {
-                    send!(Event::ChangeScreen(Screen::SongEditor));
-                }
-                Action::ChangeGlobalOctave { increment } => {
-                    send!(Event::State(model::Command::ChangeGlobalOctave {
-                        increment
-                    }));
-                }
-                Action::SetNoteField {
-                    note,
-                    octave_modifier,
-                } => send!(Event::State(model::Command::SetNoteField {
-                    note,
-                    octave_modifier
-                })),
-                Action::SetNoteCut => send!(Event::State(model::Command::SetNoteCut)),
-                Action::ClearField => send!(Event::State(model::Command::ClearField)),
-                Action::SetOctaveField(octave_value) => {
-                    send!(Event::State(model::Command::SetOctaveField(octave_value)))
-                }
-                Action::SetHexField(hex_digit) => {
-                    send!(Event::State(model::Command::SetHexField(hex_digit)))
-                }
-                Action::CreateNewPattern => send!(Event::State(model::Command::CreateNewPattern)),
-                Action::GoToNextPattern => send!(Event::State(model::Command::GoToNextPattern)),
-                Action::GoToPreviousPattern => {
-                    send!(Event::State(model::Command::GoToPreviousPattern))
-                }
-                Action::Text(text) => send!(Event::Text(text)),
-            },
+            }
             Event::Panic(error) => {
                 panic!("{error:?}");
             }

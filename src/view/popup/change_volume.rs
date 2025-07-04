@@ -1,6 +1,6 @@
 use crate::{
     audio::Decibels,
-    event::{self, Action, Event, EventAware},
+    event::{self, Action, Event, HandleAction},
     keybindings::InputContext,
     utils::Direction,
     view::{
@@ -48,7 +48,7 @@ impl Popup {
     }
 }
 
-pub enum PopupEvent {
+pub enum PopupAction {
     Close,
     Submit,
     Increment,
@@ -56,28 +56,28 @@ pub enum PopupEvent {
     Input(event::Text), // TODO: accept input to set value
 }
 
-impl EventAware<PopupEvent> for Popup {
-    fn map_event(&self, event: &crate::event::Event) -> Option<PopupEvent> {
+impl HandleAction<PopupAction> for Popup {
+    fn map_action(&self, event: &Action) -> Option<PopupAction> {
         match event {
-            Event::Action(Action::Cancel) => Some(PopupEvent::Close),
-            Event::Action(Action::Confirm) => Some(PopupEvent::Submit),
-            Event::Action(Action::Move(direction)) => match direction {
-                Direction::Left => Some(PopupEvent::Decrement),
-                Direction::Right => Some(PopupEvent::Increment),
+            Action::Cancel => Some(PopupAction::Close),
+            Action::Confirm => Some(PopupAction::Submit),
+            Action::Move(direction) => match direction {
+                Direction::Left => Some(PopupAction::Decrement),
+                Direction::Right => Some(PopupAction::Increment),
                 _ => None,
             },
-            Event::Text(text_event) => None,
+            Action::Text(text_event) => None,
             _ => None,
         }
     }
 
-    fn update(&mut self, event: PopupEvent, event_sender: EventSender) {
+    fn update(&mut self, event: PopupAction, event_sender: EventSender) {
         match event {
-            PopupEvent::Close => event_sender.send_event(Event::ClosePopup).unwrap(),
-            PopupEvent::Input(text_event) => {}
-            PopupEvent::Submit => (self.on_submit)(self.value, event_sender),
-            PopupEvent::Increment => self.increment(),
-            PopupEvent::Decrement => self.decrement(),
+            PopupAction::Close => event_sender.send_event(Event::ClosePopup).unwrap(),
+            PopupAction::Input(text_event) => {}
+            PopupAction::Submit => (self.on_submit)(self.value, event_sender),
+            PopupAction::Increment => self.increment(),
+            PopupAction::Decrement => self.decrement(),
         }
     }
 

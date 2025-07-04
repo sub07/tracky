@@ -11,7 +11,6 @@ use crate::{
 
 #[derive(PartialEq, Eq, Debug, Hash, Clone, Copy)]
 pub enum InputContext {
-    Popup,
     Note,
     Octave,
     Hex,
@@ -108,15 +107,6 @@ impl Default for Keybindings {
                 KeyCode::Digit8 => Action::SetHexField(HexDigit::HEX_8),
                 KeyCode::Digit9 => Action::SetHexField(HexDigit::HEX_9),
             ),
-            InputContext::Popup => hash_map_of!(
-                KeyCode::ArrowDown => Action::Move(Direction::Down),
-                KeyCode::ArrowUp => Action::Move(Direction::Up),
-                KeyCode::ArrowLeft => Action::Move(Direction::Left),
-                KeyCode::ArrowRight => Action::Move(Direction::Right),
-                KeyCode::Tab => Action::Forward,
-                KeyCode::Enter => Action::Confirm,
-                KeyCode::Escape => Action::Cancel,
-            ),
             InputContext::Global => hash_map_of!(
                 KeyCode::ArrowDown => Action::Move(Direction::Down),
                 KeyCode::ArrowUp => Action::Move(Direction::Up),
@@ -128,6 +118,8 @@ impl Default for Keybindings {
                 KeyCode::Delete => Action::ClearField,
                 KeyCode::Space => Action::TogglePlay,
                 KeyCode::NumpadMultiply => Action::ChangeGlobalOctave { increment: 1 },
+                KeyCode::Tab => Action::Forward,
+                (ModifiersState::SHIFT, KeyCode::Tab) => Action::Backward,
                 KeyCode::NumpadDivide => Action::ChangeGlobalOctave { increment: -1 },
                 KeyCode::Escape => Action::Cancel,
                 KeyCode::Enter => Action::Confirm,

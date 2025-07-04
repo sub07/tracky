@@ -7,7 +7,7 @@ use crate::{
         device::ConfiguredDevice,
         player::{AudioPlayer, AudioPlayerBuilder},
     },
-    event::{Event, EventAware},
+    event::{Event, HandleAction},
     keybindings::Keybindings,
     model::{self, Command},
     stats::Statistics,
@@ -38,14 +38,10 @@ impl Tracky {
     }
 
     pub fn input_context(&self) -> crate::keybindings::InputContext {
-        if let Some(popup) = &self.current_popup {
-            popup.input_context()
-        } else {
-            match &self.current_screen {
-                Screen::DeviceSelection(state) => state.input_context(),
-                Screen::SongEditor => self.state.patterns.current_input_context(),
-            }
-        }
+        self.current_popup
+            .as_ref()
+            .map(Popup::input_context)
+            .unwrap_or(self.current_screen.input_context())
     }
 
     pub fn open_popup(&mut self, popup: Popup) {
