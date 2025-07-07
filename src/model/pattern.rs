@@ -12,6 +12,7 @@ mk_vo! {
     default: 0,
     min: 0,
     max: 0xF,
+    additional_derive: Hash, PartialEq, Eq
 }
 
 pub fn u8_to_hex_digit_pair(value: u8) -> (HexDigit, HexDigit) {
@@ -25,6 +26,7 @@ mk_vo! {
     default: 5,
     min: 0,
     max: 9,
+    additional_derive: Hash, PartialEq, Eq
 }
 
 mk_vo_consts! {
@@ -92,7 +94,7 @@ impl<T> Field<T> {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, EnumIter)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, EnumIter, Hash)]
 pub enum NoteName {
     C,
     CSharp,

@@ -3,8 +3,9 @@ use std::iter;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
-    text::Line,
+    text::{Line, ToLine},
     widgets::{Block, List, ListState, StatefulWidget, Widget},
+    Frame,
 };
 
 use crate::{
@@ -128,7 +129,7 @@ impl HandleAction<Event> for State {
         }
     }
 
-    fn input_context(&self) -> InputContext {
+    fn input_type(&self) -> InputContext {
         InputContext::Global
     }
 }
@@ -182,7 +183,7 @@ impl State {
             .map(|index| &self.get_selected_device().configs[index])
     }
 
-    pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
+    pub fn render(&mut self, frame: &mut Frame, area: Rect) {
         let [device_list_area, device_config_area, buffer_size_area] = Layout::horizontal([
             Constraint::Fill(1),
             Constraint::Fill(1),
@@ -212,7 +213,7 @@ impl State {
             ),
         };
 
-        StatefulWidget::render(
+        frame.render_stateful_widget(
             List::new(
                 self.devices
                     .0
@@ -222,11 +223,10 @@ impl State {
             .block(Block::bordered())
             .highlight_style(device_list_highlight_style),
             device_list_area,
-            buf,
             &mut self.device_list_state,
         );
 
-        StatefulWidget::render(
+        frame.render_stateful_widget(
             List::new(self.get_selected_device().configs.iter().map(|config| {
                 format!(
                     "{}Hz - {}bits({})",
@@ -238,7 +238,6 @@ impl State {
             .highlight_style(option_list_highlight_style)
             .block(Block::bordered()),
             device_config_area,
-            buf,
             &mut self.config_list_state,
         );
 
@@ -254,20 +253,18 @@ impl State {
                     &mut iter::once("Default".to_owned())
                 };
 
-            StatefulWidget::render(
+            frame.render_stateful_widget(
                 List::new(buffer_size_list_items)
                     .highlight_style(buffer_size_list_highlight_style)
                     .block(Block::bordered()),
                 buffer_size_area,
-                buf,
                 &mut self.buffer_size_list_state,
             );
         } else {
-            Widget::render(Block::bordered(), buffer_size_area, buf);
-            Widget::render(
-                Line::raw("Select a config").centered(),
+            frame.render_widget(Block::bordered(), buffer_size_area);
+            frame.render_widget(
+                "Select a config".to_line().centered(),
                 centered_line(buffer_size_area),
-                buf,
             );
         }
     }

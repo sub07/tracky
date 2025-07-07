@@ -13,6 +13,7 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     text::ToLine,
     widgets::{Block, Widget},
+    Frame,
 };
 
 const DECIBELS_STEP: f32 = 0.1;
@@ -81,13 +82,13 @@ impl HandleAction<PopupAction> for Popup {
         }
     }
 
-    fn input_context(&self) -> crate::keybindings::InputContext {
+    fn input_type(&self) -> crate::keybindings::InputContext {
         InputContext::Global
     }
 }
 
 impl Popup {
-    pub fn render(&self, area: Rect, buf: &mut Buffer) {
+    pub fn render(&self, frame: &mut Frame, area: Rect) {
         let area = responsive_centered_rect(
             area,
             Constraint::Percentage(30),
@@ -96,15 +97,17 @@ impl Popup {
             Constraint::Length(3),
         );
 
-        let area = render_block_and_get_inner(Block::bordered().title(self.title), area, buf);
+        let area = render_block_and_get_inner(Block::bordered().title(self.title), frame, area);
 
         let area = centered_line(area);
         let [slider_area, text_area] =
             Layout::horizontal([Constraint::Fill(1), Constraint::Length(7)]).areas(area);
-        Slider::new(Decibels::MIN_VALUE, Decibels::MAX_VALUE, self.value.value())
-            .render(slider_area, buf);
+        frame.render_widget(
+            Slider::new(Decibels::MIN_VALUE, Decibels::MAX_VALUE, self.value.value()),
+            slider_area,
+        );
 
         let value_text = format!("{:.1}dB", self.value.value());
-        value_text.to_line().right_aligned().render(text_area, buf);
+        frame.render_widget(value_text.to_line().right_aligned(), text_area);
     }
 }

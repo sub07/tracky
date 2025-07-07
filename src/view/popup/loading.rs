@@ -1,13 +1,13 @@
 use ratatui::{
-    buffer::Buffer,
     layout::{Constraint, Rect},
     text::ToLine,
-    widgets::{Block, Clear, Widget},
+    widgets::Block,
+    Frame,
 };
 
-use crate::view::{centered_line, responsive_centered_rect};
+use crate::view::{centered_line, render_block_and_get_inner, responsive_centered_rect};
 
-pub fn render(area: Rect, buf: &mut Buffer) {
+pub fn render(frame: &mut Frame, area: Rect) {
     let area = responsive_centered_rect(
         area,
         Constraint::Percentage(30),
@@ -16,15 +16,8 @@ pub fn render(area: Rect, buf: &mut Buffer) {
         Constraint::Percentage(30),
     );
 
-    let block = Block::bordered();
-
-    let area = {
-        let inner = block.inner(area);
-        Clear.render(area, buf);
-        block.render(area, buf);
-        inner
-    };
+    let area = render_block_and_get_inner(Block::bordered(), frame, area);
 
     let area = centered_line(area);
-    "Loading...".to_line().centered().render(area, buf);
+    frame.render_widget("Loading...".to_line().centered(), area);
 }

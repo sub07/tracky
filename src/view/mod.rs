@@ -73,10 +73,10 @@ fn clamp_layout_width(area: Rect, value: Constraint, min: Constraint, max: Const
     }
 }
 
-pub fn render_block_and_get_inner(block: Block, area: Rect, buf: &mut Buffer) -> Rect {
+pub fn render_block_and_get_inner(block: Block, frame: &mut Frame, area: Rect) -> Rect {
     let inner = block.inner(area);
-    Clear.render(area, buf);
-    block.render(area, buf);
+    frame.render_widget(Clear, area);
+    frame.render_widget(block, area);
     inner
 }
 
@@ -101,7 +101,7 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
         },
     ]);
 
-    let playback_state_text = Line::from(if app.state.is_song_playing() {
+    let playback_state_text = Line::from(if app.state().is_song_playing() {
         "Playing"
     } else {
         "Not playing"
@@ -123,24 +123,14 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
         header_area,
     );
 
-    match &mut app.current_screen {
-        screen::Screen::DeviceSelection(device_selection_screen_state) => {
-            device_selection_screen_state.render(area, frame.buffer_mut())
-        }
-        screen::Screen::SongEditor => {
-            screen::song_editor::render(frame, area, &app.state);
-        }
-    }
+    app.current_screen.render(frame, area);
 
-    for popup in app.current_popup.iter_mut() {
-        match popup {
-            // TODO: use frame instead of buffer
-            popup::Popup::ChangeVolume(popup) => popup.render(area, frame.buffer_mut()),
-        }
+    if let Some(popup) = app.current_popup.as_mut() {
+        popup.render(frame, area);
     }
 
     if app.loader_count > 0 {
         // TODO: use frame instead of buffer
-        popup::loading::render(area, frame.buffer_mut());
+        popup::loading::render(frame, area);
     }
 }

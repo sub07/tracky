@@ -1,3 +1,5 @@
+use ratatui::{layout::Rect, Frame};
+
 use crate::{
     event::{Action, HandleAction},
     keybindings::InputContext,
@@ -23,7 +25,13 @@ impl Popup {
 
     pub fn input_context(&self) -> InputContext {
         match self {
-            Popup::ChangeVolume(popup) => popup.input_context(),
+            Popup::ChangeVolume(popup) => popup.input_type(),
+        }
+    }
+
+    pub fn render(&mut self, frame: &mut Frame, area: Rect) {
+        match self {
+            Popup::ChangeVolume(popup) => popup.render(frame, area),
         }
     }
 }

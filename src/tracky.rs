@@ -1,4 +1,12 @@
-use std::sync::mpsc::{channel, Sender};
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    ops::Deref,
+    rc::Rc,
+    sync::{
+        mpsc::{channel, Sender},
+        Arc, RwLock, RwLockReadGuard, RwLockWriteGuard,
+    },
+};
 
 use log::error;
 
@@ -7,11 +15,14 @@ use crate::{
         device::ConfiguredDevice,
         player::{AudioPlayer, AudioPlayerBuilder},
     },
-    event::{Event, HandleAction},
+    event::{Action, Event},
     keybindings::Keybindings,
     model::{self, Command},
     stats::Statistics,
-    view::{popup::Popup, screen::Screen},
+    view::{
+        popup::Popup,
+        screen::{self, Screen},
+    },
     EventSender,
 };
 
@@ -34,14 +45,14 @@ pub struct Tracky {
 
 impl Tracky {
     pub fn new() -> Self {
-        Self::default()
+        Default::default()
     }
 
-    pub fn input_context(&self) -> crate::keybindings::InputContext {
+    pub fn input_type(&self) -> crate::keybindings::InputType {
         self.current_popup
             .as_ref()
             .map(Popup::input_context)
-            .unwrap_or(self.current_screen.input_context())
+            .unwrap_or(self.current_screen.input_location())
     }
 
     pub fn open_popup(&mut self, popup: Popup) {
@@ -60,6 +71,10 @@ impl Tracky {
         if let Some(audio_state) = self.audio_state.as_ref() {
             audio_state.state_event_tx.send(event).unwrap();
         }
+    }
+
+    pub fn update_screen(&mut self, action: Action, event_tx: EventSender) {
+        self.current_screen.update(self, action, event_tx);
     }
 
     pub fn start_audio_player(&mut self, event_tx: EventSender) {

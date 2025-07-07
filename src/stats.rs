@@ -132,7 +132,7 @@ impl Statistics {
                     crate::view::screen::Screen::DeviceSelection(_) => {
                         "DeviceSelection"
                     }
-                    crate::view::screen::Screen::SongEditor => "SongEditor",
+                    crate::view::screen::Screen::SongEditor(_) => "SongEditor",
                 }
             ),
         };

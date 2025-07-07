@@ -2,13 +2,14 @@ use winit::{event::KeyEvent, keyboard::ModifiersState};
 
 use crate::{
     audio::device::{ConfiguredDevice, Devices},
-    keybindings::InputContext,
+    keybindings::{InputContext, InputType},
     model::{
         self,
         pattern::{HexDigit, NoteFieldValue, NoteName, OctaveValue},
     },
+    tracky::Tracky,
     utils::Direction,
-    view::screen::Screen,
+    view::screen::{self, Screen},
     EventSender,
 };
 
@@ -31,6 +32,7 @@ pub enum Event {
     RequestRedraw,
     Text(Text),
     ChangeScreen(Screen),
+    ToggleFullscreen,
     ExitApp,
 }
 
@@ -39,40 +41,26 @@ pub enum AsyncAction {
     GetDevices(Devices),
 }
 
-#[derive(Debug, Clone)]
-pub enum Action {
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub enum GlobalAction {
     Move(Direction),
     Forward,
     Backward,
     Confirm,
     Cancel,
-    TogglePlay,
+    Text(Text),
     ToggleFullscreen,
     RequestChangeScreenToDeviceSelection,
     RequestChangeScreenToSongEditor,
-    ShowGlobalVolumePopup,
-    KillNotes,
-    ChangeGlobalOctave {
-        increment: i32,
-    },
-    ChangeSelectedInstrument {
-        increment: i32,
-    },
-    SetNoteField {
-        note: NoteName,
-        octave_modifier: i32,
-    },
-    SetNoteCut,
-    ClearField,
-    SetOctaveField(OctaveValue),
-    SetHexField(HexDigit),
-    CreateNewPattern,
-    GoToNextPattern,
-    GoToPreviousPattern,
-    Text(Text),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub enum Action {
+    Global(GlobalAction),
+    SongScreen(screen::song_editor::Action),
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Text {
     WriteDataAtCursor(char),
     RemoveCharAtCursor,
@@ -81,12 +69,6 @@ pub enum Text {
 }
 
 pub trait HandleAction<InternalAction> {
-    fn map_action(&self, action: &Action) -> Option<InternalAction>;
-    fn update(&mut self, event: InternalAction, event_tx: EventSender);
-    fn input_context(&self) -> InputContext;
-    fn handle_action(&mut self, action: Action, event_tx: EventSender) {
-        if let Some(popup_event) = self.map_action(&action) {
-            self.update(popup_event, event_tx);
-        }
-    }
+    fn update(&mut self, app: &Tracky, action: InternalAction, event_tx: EventSender);
+    fn input_type(&self) -> InputType;
 }

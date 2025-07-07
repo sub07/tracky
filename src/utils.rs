@@ -16,7 +16,7 @@ use ratatui_wgpu::{
     PostProcessor,
 };
 
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
+#[derive(Eq, PartialEq, Copy, Clone, Debug, Hash)]
 pub enum Direction {
     Up,
     Down,

@@ -20,7 +20,10 @@ use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy}
 use winit::keyboard::{Key, ModifiersState, PhysicalKey};
 use winit::window::{Fullscreen, Window, WindowAttributes};
 
+use crate::event::GlobalAction;
+use crate::keybindings::{InputContext, InputLocation, InputType};
 use crate::utils::BackgroundColorEdgesPostProcessor;
+use crate::view::screen::{self, song_editor, ScreenAction};
 
 mod audio;
 mod event;
@@ -139,49 +142,34 @@ impl ApplicationHandler<Event> for App<'_> {
 
         match event {
             Event::KeyPressed(modifiers_state, key_event) => {
+                let input_type = self.tracky.input_location();
                 if let PhysicalKey::Code(key_code) = key_event.physical_key {
-                    if let Some(action) = self.tracky.keybindings.action(
+                    let input_location = match self.tracky.current_screen {
+                        Screen::DeviceSelection(_) => InputLocation::Global,
+                        Screen::SongEditor(_) => InputLocation::SongEditor,
+                    };
+                    if let Some(action) = self.tracky.keybindings.action(InputContext(
+                        input_location,
+                        input_type,
                         modifiers_state,
                         key_code,
-                        self.tracky.input_context(),
-                    ) {
+                    )) {
                         send!(Event::Action(action));
                         return;
                     }
                 }
 
-                match self.tracky.input_context() {
-                    keybindings::InputContext::Hex => {
-                        if let KeyEvent {
-                            logical_key: Key::Character(c),
-                            ..
-                        } = key_event
-                        {
-                            let hex_digit = match c.as_str().to_lowercase().as_str() {
-                                "a" => HexDigit::HEX_A,
-                                "b" => HexDigit::HEX_B,
-                                "c" => HexDigit::HEX_C,
-                                "d" => HexDigit::HEX_D,
-                                "e" => HexDigit::HEX_E,
-                                "f" => HexDigit::HEX_F,
-                                _ => return,
-                            };
-                            send!(Event::State(model::Command::SetHexField(hex_digit)));
-                        }
+                if let InputType::Text = input_type {
+                    if let Some(text) = key_event.text {
+                        send!(Event::Text(Text::WriteDataAtCursor(
+                            text.chars().next().unwrap()
+                        )));
                     }
-                    keybindings::InputContext::Text => {
-                        if let Some(text) = key_event.text {
-                            send!(Event::Text(Text::WriteDataAtCursor(
-                                text.chars().next().unwrap()
-                            )));
-                        }
-                    }
-                    _ => {}
                 }
             }
-            Event::Action(action) => {
-                match action {
-                    Action::RequestChangeScreenToDeviceSelection => {
+            Event::Action(action) => match action {
+                Action::Global(ref global_action) => match global_action {
+                    GlobalAction::RequestChangeScreenToDeviceSelection => {
                         send!(Event::StartLoading);
                         let event_tx_clone = self.event_sender.clone();
                         thread::spawn(move || {
@@ -192,108 +180,26 @@ impl ApplicationHandler<Event> for App<'_> {
                                 .unwrap();
                         });
                     }
-                    Action::RequestChangeScreenToSongEditor => {
-                        send!(Event::ChangeScreen(Screen::SongEditor));
+                    GlobalAction::RequestChangeScreenToSongEditor => {
+                        self.tracky.current_screen =
+                            Screen::SongEditor(song_editor::State::default());
                     }
-                    action => {
-                        if let Some(popup) = &mut self.tracky.current_popup {
-                            let _ = popup.handle_event(action, self.event_sender.clone());
-                            return;
-                        }
-                        self.tracky
-                            .current_screen
-                            .handle_event(action, self.event_sender.clone());
+                    _ => self.tracky.current_screen.update(
+                        &self.tracky,
+                        action,
+                        self.event_sender.clone(),
+                    ),
+                },
+                Action::SongScreen(action) => {
+                    if let Screen::SongEditor(state) = self.tracky.current_screen {
+                        state.update(
+                            &self.tracky,
+                            ScreenAction::Screen(action),
+                            self.event_sender.clone(),
+                        )
                     }
                 }
-
-                match &mut self.tracky.current_screen {
-                    Screen::DeviceSelection(state) => {
-                        let _ = state.handle_action(action, self.event_sender.clone());
-                        return;
-                    }
-                    Screen::SongEditor => match action {
-                        Action::TogglePlay => {
-                            if self.tracky.state.is_song_playing() {
-                                send!(Event::State(model::Command::StopSongPlayback));
-                            } else if self.tracky.audio_state.is_some() {
-                                send!(Event::State(model::Command::StartSongPlaybackFromBeginning));
-                            } else {
-                                warn!("Select a device with F1 to play the song")
-                            }
-                        }
-                        Action::Cancel => {}
-                        Action::Confirm => {}
-                        Action::Move(direction) => {
-                            send!(Event::State(model::Command::MoveCursor(direction)))
-                        }
-                        Action::Forward => todo!(),
-                        Action::Backward => todo!(),
-                        Action::ToggleFullscreen => {
-                            let window = self.window.as_ref().unwrap();
-                            if window.fullscreen().is_some() {
-                                window.set_fullscreen(None);
-                            } else {
-                                window.set_fullscreen(Some(Fullscreen::Borderless(None)));
-                            }
-                        }
-                        Action::KillNotes => send!(Event::State(model::Command::ClearChannels)),
-                        Action::ChangeSelectedInstrument { increment } => {
-                            send!(Event::State(model::Command::ChangeSelectedInstrument {
-                                increment
-                            }))
-                        }
-                        Action::ShowGlobalVolumePopup => {
-                            self.tracky
-                                .open_popup(Popup::ChangeVolume(change_volume::Popup::new(
-                                    "Global volume",
-                                    self.tracky.state.global_volume.db(),
-                                    |value, event_sender| {
-                                        let volume = dbg!(value.volume());
-                                        event_sender
-                                            .send_event(Event::Composite(vec![
-                                                Event::State(model::Command::ChangeGlobalVolume {
-                                                    volume,
-                                                }),
-                                                Event::ClosePopup,
-                                            ]))
-                                            .unwrap();
-                                    },
-                                )));
-                        }
-
-                        Action::ChangeGlobalOctave { increment } => {
-                            send!(Event::State(model::Command::ChangeGlobalOctave {
-                                increment
-                            }));
-                        }
-                        Action::SetNoteField {
-                            note,
-                            octave_modifier,
-                        } => send!(Event::State(model::Command::SetNoteField {
-                            note,
-                            octave_modifier
-                        })),
-                        Action::SetNoteCut => send!(Event::State(model::Command::SetNoteCut)),
-                        Action::ClearField => send!(Event::State(model::Command::ClearField)),
-                        Action::SetOctaveField(octave_value) => {
-                            send!(Event::State(model::Command::SetOctaveField(octave_value)))
-                        }
-                        Action::SetHexField(hex_digit) => {
-                            send!(Event::State(model::Command::SetHexField(hex_digit)))
-                        }
-                        Action::CreateNewPattern => {
-                            send!(Event::State(model::Command::CreateNewPattern))
-                        }
-                        Action::GoToNextPattern => {
-                            send!(Event::State(model::Command::GoToNextPattern))
-                        }
-                        Action::GoToPreviousPattern => {
-                            send!(Event::State(model::Command::GoToPreviousPattern))
-                        }
-                        Action::Text(text) => send!(Event::Text(text)),
-                    },
-                }
-            }
+            },
             Event::Panic(error) => {
                 panic!("{error:?}");
             }
@@ -341,9 +247,16 @@ impl ApplicationHandler<Event> for App<'_> {
                     .handle_command(model::Command::StopSongPlayback);
             }
             Event::Text(_) => unreachable!(),
-
             Event::ChangeScreen(screen) => {
                 self.tracky.change_screen(screen);
+            }
+            Event::ToggleFullscreen => {
+                let window = self.window.as_ref().unwrap();
+                if window.fullscreen().is_some() {
+                    window.set_fullscreen(None);
+                } else {
+                    window.set_fullscreen(Some(Fullscreen::Borderless(None)));
+                }
             }
         }
     }
