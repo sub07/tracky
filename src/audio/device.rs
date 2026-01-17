@@ -1,9 +1,9 @@
 use cpal::{
     traits::{DeviceTrait, HostTrait},
-    SampleRate, SupportedBufferSize, SupportedStreamConfigRange, ALL_HOSTS,
+    SupportedBufferSize, SupportedStreamConfigRange, ALL_HOSTS,
 };
 use itertools::Itertools;
-use joy_error::ResultLogExt;
+use joy_error::log::ResultLogExt;
 use log::warn;
 
 const BUFFER_SIZES: &[u32] = &[8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
@@ -68,7 +68,7 @@ impl Device {
             sample_format: config.sample_format,
             config: cpal::StreamConfig {
                 channels: 2,
-                sample_rate: SampleRate(config.sample_rate),
+                sample_rate: config.sample_rate,
                 buffer_size,
             },
         }
@@ -129,20 +129,21 @@ fn map_config(config: SupportedStreamConfigRange) -> Option<Config> {
     if config.max_sample_rate() != config.min_sample_rate() {
         warn!(
             "min sample rate != max sample rate: min={} / max={}",
-            config.min_sample_rate().0,
-            config.max_sample_rate().0
+            config.min_sample_rate(),
+            config.max_sample_rate()
         );
     }
     Some(Config {
         buffer_sizes,
         sample_format: config.sample_format(),
-        sample_rate: config.max_sample_rate().0,
+        sample_rate: config.max_sample_rate(),
     })
 }
 
 fn map_device(host_name: String, device: cpal::Device) -> Option<Device> {
     let configs = device
         .supported_output_configs()
+        .error()
         .log_ok()?
         .filter_map(map_config)
         .collect_vec();
@@ -153,7 +154,10 @@ fn map_device(host_name: String, device: cpal::Device) -> Option<Device> {
 
     Some(Device {
         host_name,
-        name: device.name().unwrap_or("Unknown device".into()),
+        name: device
+            .description()
+            .map(|desc| desc.to_string())
+            .unwrap_or("Unknown device".into()),
         inner: device,
         configs,
     })
@@ -163,7 +167,7 @@ pub fn default_output() -> Option<ConfiguredDevice> {
     let device = cpal::default_host()
         .default_output_device()
         .and_then(|device| map_device(cpal::default_host().id().name().to_string(), device))?;
-    let config = device.inner.default_output_config().log_ok()?;
+    let config = device.inner.default_output_config().error().log_ok()?;
     Some(ConfiguredDevice {
         host_name: device.host_name,
         name: device.name,
@@ -179,11 +183,14 @@ impl Devices {
             ALL_HOSTS
                 .iter()
                 .filter_map(|host_id| {
-                    cpal::host_from_id(*host_id).log_ok().and_then(|host| {
-                        host.output_devices().log_ok().map(|devices| {
-                            devices.map(|device| (host_id.name().to_string(), device))
+                    cpal::host_from_id(*host_id)
+                        .error()
+                        .log_ok()
+                        .and_then(|host| {
+                            host.output_devices().error().log_ok().map(|devices| {
+                                devices.map(|device| (host_id.name().to_string(), device))
+                            })
                         })
-                    })
                 })
                 .flatten()
                 .filter_map(|(host_name, device)| map_device(host_name, device))

@@ -6,12 +6,13 @@ use ratatui_wgpu::{
         include_wgsl, AddressMode, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
         BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType, Buffer,
         BufferBindingType, BufferDescriptor, BufferUsages, Color, ColorTargetState, ColorWrites,
-        CommandEncoder, Device, FilterMode, FragmentState, LoadOp, MultisampleState, Operations,
-        PipelineCompilationOptions, PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology,
-        Queue, RenderBundle, RenderBundleDescriptor, RenderBundleEncoderDescriptor,
-        RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
-        Sampler, SamplerBindingType, SamplerDescriptor, ShaderStages, StoreOp,
-        SurfaceConfiguration, TextureSampleType, TextureView, TextureViewDimension, VertexState,
+        CommandEncoder, Device, FilterMode, FragmentState, LoadOp, MipmapFilterMode,
+        MultisampleState, Operations, PipelineCompilationOptions, PipelineLayoutDescriptor,
+        PrimitiveState, PrimitiveTopology, Queue, RenderBundle, RenderBundleDescriptor,
+        RenderBundleEncoderDescriptor, RenderPassColorAttachment, RenderPassDescriptor,
+        RenderPipeline, RenderPipelineDescriptor, Sampler, SamplerBindingType, SamplerDescriptor,
+        ShaderStages, StoreOp, SurfaceConfiguration, TextureSampleType, TextureView,
+        TextureViewDimension, VertexState,
     },
     PostProcessor,
 };
@@ -166,7 +167,7 @@ impl<const PRESERVE_ASPECT: bool> PostProcessor
             address_mode_w: AddressMode::ClampToEdge,
             mag_filter: FilterMode::Nearest,
             min_filter: FilterMode::Nearest,
-            mipmap_filter: FilterMode::Nearest,
+            mipmap_filter: MipmapFilterMode::Nearest,
             ..Default::default()
         });
 
@@ -207,7 +208,7 @@ impl<const PRESERVE_ASPECT: bool> PostProcessor
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: Some("Text Blit Layout"),
             bind_group_layouts: &[&layout],
-            push_constant_ranges: &[],
+            ..Default::default()
         });
 
         let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
@@ -235,7 +236,7 @@ impl<const PRESERVE_ASPECT: bool> PostProcessor
                     write_mask: ColorWrites::ALL,
                 })],
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
 
@@ -318,6 +319,7 @@ impl<const PRESERVE_ASPECT: bool> PostProcessor
                     load: LoadOp::Clear(Color::TRANSPARENT),
                     store: StoreOp::Store,
                 },
+                depth_slice: None,
             })],
             ..Default::default()
         });

@@ -130,7 +130,7 @@ fn create_stream<SampleType>(
 where
     SampleType: SizedSample + FromSample<f32>,
 {
-    let frame_rate = config.sample_rate.0 as f32;
+    let frame_rate = config.sample_rate as f32;
 
     assert!(config.channels == 2);
 

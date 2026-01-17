@@ -8,20 +8,16 @@ publish = false
 members = ["."]
 
 [dependencies]
-ratatui = { version = "0.29", default-features = false, features = [
-    "unstable-widget-ref",
-] }
-joy-value-object = { git = "https://github.com/sub07/rust-utils", version = "0.4.5" }
-joy-collection-utils = { git = "https://github.com/sub07/rust-utils", version = "0.2.0" }
-joy-macro = { git = "https://github.com/sub07/rust-utils", version = "0.3.6" }
-joy-vector = { git = "https://github.com/sub07/rust-utils", version = "0.1.9", features = [
-    "math",
-] }
-joy-iter = { git = "https://github.com/sub07/rust-utils", version = "0.1.0" }
-joy-error = { git = "https://github.com/sub07/rust-utils", version = "0.1.3" }
+ratatui = { version = "0.30", default-features = false }
+joy-value-object = { git = "https://github.com/sub07/rust-utils", rev = "a7103d4dacf67412b9e85678581b1387649a2897" }
+joy-collection-utils = { git = "https://github.com/sub07/rust-utils", rev = "a7103d4dacf67412b9e85678581b1387649a2897" }
+joy-macro = { git = "https://github.com/sub07/rust-utils", rev = "a7103d4dacf67412b9e85678581b1387649a2897" }
+joy-vector = { git = "https://github.com/sub07/rust-utils", rev = "9123d670af836d0568fdf0f64e0b8f26871828e1", features = ["math"] }
+joy-iter = { git = "https://github.com/sub07/rust-utils", rev = "a7103d4dacf67412b9e85678581b1387649a2897" }
+joy-error = { git = "https://github.com/sub07/rust-utils", rev = "a7103d4dacf67412b9e85678581b1387649a2897", features = ["log-crate"] }
 anyhow = "1"
 itertools = "0"
-cpal = { git = "https://github.com/rustaudio/cpal", rev = "df14a26a9a7c60b28826b921b3e7192f77ed3845" }
+cpal = "0.17"
 audrey = "0.3"
 plotters = "0.3"
 builder-pattern = { version = "0", default-features = false }
@@ -29,7 +25,7 @@ log = "0.4"
 tui-input = { version = "0", default-features = false }
 pretty_env_logger = "0.5"
 winit = "0.30"
-ratatui-wgpu = "0.3.1"
+ratatui-wgpu = { git = "https://github.com/sub07/ratatui-wgpu", rev = "84ed1ee4e8fb53a7ead40c8d22587bd45347e450" }
 futures-lite = "2.6"
 easy-ext = "1.0.2"
 bytemuck = "1"
