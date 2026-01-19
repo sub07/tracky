@@ -23,13 +23,13 @@ struct Keybinding(ModifiersState, KeyCode);
 
 impl From<KeyCode> for Keybinding {
     fn from(key: KeyCode) -> Self {
-        Keybinding(ModifiersState::empty(), key)
+        Self(ModifiersState::empty(), key)
     }
 }
 
 impl From<(ModifiersState, KeyCode)> for Keybinding {
     fn from((modifiers, key): (ModifiersState, KeyCode)) -> Self {
-        Keybinding(modifiers, key)
+        Self(modifiers, key)
     }
 }
 
@@ -138,6 +138,6 @@ impl Default for Keybindings {
             ),
         );
 
-        Keybindings { context_bindings }
+        Self { context_bindings }
     }
 }

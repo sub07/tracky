@@ -3,17 +3,16 @@ use std::sync::mpsc::Receiver;
 use anyhow::bail;
 use builder_pattern::Builder;
 use cpal::{
-    traits::{DeviceTrait, StreamTrait},
     Device, FromSample, Sample, SampleFormat, SizedSample, Stream, StreamConfig,
+    traits::{DeviceTrait, StreamTrait},
 };
 
 use log::{error, info, warn};
 
 use crate::{
-    assert_log_fail,
+    EventSender, assert_log_fail,
     event::Event,
     model::{self},
-    EventSender,
 };
 
 use super::device::ConfiguredDevice;
@@ -202,7 +201,9 @@ fn audio_callback<SampleType>(
                 }
             }
             Err(err) => {
-                assert_log_fail!("Error while reading produced sample from audio callback: {err:?}")
+                assert_log_fail!(
+                    "Error while reading produced sample from audio callback: {err:?}"
+                );
             }
         }
     }

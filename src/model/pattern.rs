@@ -12,6 +12,7 @@ mk_vo! {
     default: 0,
     min: 0,
     max: 0xF,
+    additional_derive: Eq,
 }
 
 pub fn u8_to_hex_digit_pair(value: u8) -> (HexDigit, HexDigit) {
@@ -25,6 +26,7 @@ mk_vo! {
     default: 5,
     min: 0,
     max: 9,
+    additional_derive: Eq,
 }
 
 mk_vo_consts! {
@@ -61,7 +63,7 @@ mk_vo_consts! {
     OCTAVE_9 => 0x9,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Field<T>(Option<T>);
 
 impl<T> Default for Field<T> {
@@ -80,11 +82,11 @@ impl<T> Field<T> {
     }
 
     pub fn set(&mut self, value: T) {
-        self.0 = Some(value)
+        self.0 = Some(value);
     }
 
     pub fn clear(&mut self) {
-        self.0 = None
+        self.0 = None;
     }
 
     pub fn value(&self) -> Option<&T> {
@@ -111,23 +113,23 @@ pub enum NoteName {
 impl fmt::Display for NoteName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            NoteName::C => write!(f, "C"),
-            NoteName::CSharp => write!(f, "C#"),
-            NoteName::D => write!(f, "D"),
-            NoteName::DSharp => write!(f, "D#"),
-            NoteName::E => write!(f, "E"),
-            NoteName::F => write!(f, "F"),
-            NoteName::FSharp => write!(f, "F#"),
-            NoteName::G => write!(f, "G"),
-            NoteName::GSharp => write!(f, "G#"),
-            NoteName::A => write!(f, "A"),
-            NoteName::ASharp => write!(f, "A#"),
-            NoteName::B => write!(f, "B"),
+            Self::C => write!(f, "C"),
+            Self::CSharp => write!(f, "C#"),
+            Self::D => write!(f, "D"),
+            Self::DSharp => write!(f, "D#"),
+            Self::E => write!(f, "E"),
+            Self::F => write!(f, "F"),
+            Self::FSharp => write!(f, "F#"),
+            Self::G => write!(f, "G"),
+            Self::GSharp => write!(f, "G#"),
+            Self::A => write!(f, "A"),
+            Self::ASharp => write!(f, "A#"),
+            Self::B => write!(f, "B"),
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NoteFieldValue {
     Note(NoteName, OctaveValue),
     Cut,
@@ -135,14 +137,14 @@ pub enum NoteFieldValue {
 
 macro_rules! declare_field {
     ($($snake_case:ident $pascal_case:ident $size:literal $ty:ty),* $(,)?) => {
-        #[derive(Default, Debug, Clone, PartialEq)]
+        #[derive(Default, Debug, Clone, PartialEq, Eq)]
         pub struct PatternLine {
             $(
                 pub $snake_case: Field<$ty>,
             )*
         }
 
-        #[derive(joy_macro::EnumIter, PartialEq, Debug, Clone, Copy)]
+        #[derive(joy_macro::EnumIter, PartialEq, Eq, Debug, Clone, Copy)]
         pub enum PatternLineDescriptor {
             $(
                 $pascal_case,
@@ -195,7 +197,7 @@ impl PatternLineDescriptor {
         field_cursor - Self::INDEX_BOUNDS[Self::field_index_by_cursor(field_cursor)].0
     }
 
-    pub fn field_by_cursor(field_cursor: i32) -> PatternLineDescriptor {
+    pub fn field_by_cursor(field_cursor: i32) -> Self {
         Self::VARIANTS[Self::field_index_by_cursor(field_cursor)]
     }
 }
@@ -212,7 +214,7 @@ pub struct Pattern {
 }
 
 impl Pattern {
-    pub fn new(channel_count: i32, channel_len: i32) -> Pattern {
+    pub fn new(channel_count: i32, channel_len: i32) -> Self {
         let len = (channel_count * channel_len) as usize;
         let mut lines = Vec::with_capacity(len);
         lines.resize_with(len, Default::default);
@@ -222,7 +224,7 @@ impl Pattern {
 
 #[derive(Clone)]
 pub struct Patterns {
-    patterns: Vec<Pattern>,
+    data: Vec<Pattern>,
     pub channel_len: i32,
     pub channel_count: i32,
     pub pattern_count: i32,
@@ -235,7 +237,7 @@ pub struct Patterns {
 impl Debug for Patterns {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Patterns")
-            .field("patterns", &"...")
+            .field("data", &"...")
             .field("channel_len", &self.channel_len)
             .field("channel_count", &self.channel_count)
             .field("pattern_count", &self.pattern_count)
@@ -252,12 +254,12 @@ impl Default for Patterns {
         let channel_count = 8;
         let channel_len = 32;
         let pattern_count = 1;
-        Patterns::new(channel_count, channel_len, pattern_count)
+        Self::new(channel_count, channel_len, pattern_count)
     }
 }
 
 impl Patterns {
-    pub fn new(channel_count: i32, channel_len: i32, pattern_count: i32) -> Patterns {
+    pub fn new(channel_count: i32, channel_len: i32, pattern_count: i32) -> Self {
         let mut patterns = Vec::with_capacity(pattern_count as usize);
         patterns.resize_with(pattern_count as usize, || {
             Pattern::new(channel_count, channel_len)
@@ -268,8 +270,8 @@ impl Patterns {
             patterns.len() as i32 * patterns.iter().map(|p| p.lines.len()).sum::<usize>() as i32
         );
 
-        Patterns {
-            patterns,
+        Self {
+            data: patterns,
             channel_len,
             channel_count,
             pattern_count,
@@ -282,7 +284,7 @@ impl Patterns {
 
     fn current_pattern(&self) -> &Pattern {
         let pattern_index = self.current_pattern;
-        self.patterns
+        self.data
             .get(pattern_index)
             .ok_or_else(|| anyhow!("Invalid state: {pattern_index}"))
             .unwrap()
@@ -290,7 +292,7 @@ impl Patterns {
 
     fn current_pattern_mut(&mut self) -> &mut Pattern {
         let pattern_index = self.current_pattern;
-        self.patterns
+        self.data
             .get_mut(pattern_index)
             .ok_or_else(|| anyhow!("Invalid state: {pattern_index}"))
             .unwrap()
@@ -303,7 +305,7 @@ impl Patterns {
             .chunks_exact(self.channel_len as usize)
     }
 
-    pub fn current_input_context(&self) -> keybindings::InputContext {
+    pub fn input_context(&self) -> keybindings::InputContext {
         match (
             PatternLineDescriptor::field_by_cursor(self.current_field),
             PatternLineDescriptor::local_field_cursor(self.current_field),
@@ -313,8 +315,9 @@ impl Patterns {
                 2 => keybindings::InputContext::Octave,
                 _ => unreachable!(),
             },
-            (PatternLineDescriptor::Velocity, _) => keybindings::InputContext::Hex,
-            (PatternLineDescriptor::Instrument, _) => keybindings::InputContext::Hex,
+            (PatternLineDescriptor::Velocity | PatternLineDescriptor::Instrument, _) => {
+                keybindings::InputContext::Hex
+            }
         }
     }
 

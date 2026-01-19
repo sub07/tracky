@@ -1,14 +1,17 @@
-use winit::{event::KeyEvent, keyboard::ModifiersState};
+use winit::{
+    event::KeyEvent,
+    keyboard::{ModifiersState, SmolStr},
+};
 
 use crate::{
+    app::view::screen::Screen,
     audio::device::{ConfiguredDevice, Devices},
     keybindings::InputContext,
     model::{
         self,
-        pattern::{HexDigit, NoteFieldValue, NoteName, OctaveValue},
+        pattern::{HexDigit, NoteName, OctaveValue},
     },
     utils::Direction,
-    view::screen::Screen,
     EventSender,
 };
 
@@ -21,7 +24,7 @@ pub enum Event {
     Action(Action),
     AsyncAction(AsyncAction),
     Resize { width: u16, height: u16 },
-    Composite(Vec<Event>),
+    Composite(Vec<Self>),
     StartLoading,
     LoadingDone(AsyncAction),
     ClosePopup,
@@ -74,7 +77,7 @@ pub enum Action {
 
 #[derive(Debug, Clone)]
 pub enum Text {
-    WriteDataAtCursor(char),
+    WriteDataAtCursor(SmolStr),
     RemoveCharAtCursor,
     MoveCursorLeft,
     MoveCursorRight,

@@ -41,10 +41,10 @@ impl Kind {
         frame_rate: f32,
     ) -> StereoFrame {
         match self {
-            Kind::Sine => synthesis::sine_wave(freq, volume, pan, phase, frame_rate),
-            Kind::Square => synthesis::square_wave(freq, volume, pan, phase, frame_rate),
-            Kind::Sawtooth => synthesis::sawtooth_wave(freq, volume, pan, phase, frame_rate),
-            Kind::Sample { signal, .. } => {
+            Self::Sine => synthesis::sine_wave(freq, volume, pan, phase, frame_rate),
+            Self::Square => synthesis::square_wave(freq, volume, pan, phase, frame_rate),
+            Self::Sawtooth => synthesis::sawtooth_wave(freq, volume, pan, phase, frame_rate),
+            Self::Sample { signal, .. } => {
                 let Vector([l, r]) = signal
                     .as_ref()
                     .lerp_frame_at_duration(Duration::from_secs_f32(*phase))
@@ -68,7 +68,7 @@ pub struct Instrument {
 
 impl From<Kind> for Instrument {
     fn from(value: Kind) -> Self {
-        Instrument {
+        Self {
             source: value,
             volume: Volume::DEFAULT,
         }
@@ -130,7 +130,7 @@ impl Instruments {
     }
 
     pub fn increment_selected(&mut self, increment: i32) {
-        let mut selected_index = self.selected_index as i32;
+        let mut selected_index = i32::from(self.selected_index);
         selected_index += increment;
         selected_index = selected_index.rem_euclid(const { MAX_SLOT_COUNT as i32 });
         self.selected_index = selected_index as u8;

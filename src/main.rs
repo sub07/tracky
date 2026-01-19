@@ -1,18 +1,28 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release builds
+#![warn(clippy::pedantic, clippy::nursery, clippy::dbg_macro)]
+#![allow(
+    clippy::missing_errors_doc,
+    clippy::cast_possible_truncation,
+    clippy::missing_const_for_fn,
+    clippy::needless_pass_by_value,
+    clippy::option_if_let_else,
+    clippy::default_trait_access,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap
+)]
+
 use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::{env, panic, thread};
 
-use ::log::{error, info, warn};
+use app::Tracky;
 use audio::device::{self, Devices};
-use event::{Action, AsyncAction, Event, HandleAction, Text};
+use event::{Action, AsyncAction, Event, Text};
+use log::{error, info, warn};
 use model::pattern::{HexDigit, NoteName};
 use ratatui::Terminal;
 use ratatui_wgpu::WgpuBackend;
-use tracky::Tracky;
-use view::popup::{change_volume, Popup};
-use view::render_root;
-use view::screen::{device_selection, Screen};
-use view::theme::THEME;
 use winit::application::ApplicationHandler;
 use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, KeyEvent, WindowEvent};
@@ -20,17 +30,20 @@ use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy}
 use winit::keyboard::{Key, ModifiersState, PhysicalKey};
 use winit::window::{Fullscreen, Window, WindowAttributes};
 
-use crate::utils::BackgroundColorEdgesPostProcessor;
+use crate::app::view::render_root;
+use crate::app::view::screen::{Screen, device_selection};
+use crate::app::view::theme::THEME;
+use crate::graphic_post_processor::BackgroundColorEdgesPostProcessor;
 
+mod app;
 mod audio;
 mod event;
+mod graphic_post_processor;
 mod keybindings;
 mod model;
 mod service;
 mod stats;
-mod tracky;
 mod utils;
-mod view;
 
 pub type EventSender = EventLoopProxy<Event>;
 
@@ -55,7 +68,7 @@ impl ApplicationHandler<Event> for App<'_> {
         );
         self.window = Some(window.clone());
         let window_size = window.inner_size();
-        let font_size = 18.0 * window.scale_factor();
+        let font_size = (18.0 * window.scale_factor()).round() as u32;
         let bg_color = THEME.normal.bg.unwrap();
         self.backend = Some(
             Terminal::new(
@@ -68,8 +81,8 @@ impl ApplicationHandler<Event> for App<'_> {
                         .unwrap(),
                         bg_color,
                     )
-                    .with_font_size_px(font_size as u32)
-                    .with_bg_color(bg_color.clone())
+                    .with_font_size_px(font_size)
+                    .with_bg_color(bg_color)
                     .with_fg_color(THEME.normal.fg.unwrap())
                     .with_width_and_height(ratatui_wgpu::Dimensions {
                         width: NonZeroU32::new(window_size.width).unwrap(),
@@ -89,7 +102,7 @@ impl ApplicationHandler<Event> for App<'_> {
         _: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
-        if let WindowEvent::CloseRequested = event {
+        if event == WindowEvent::CloseRequested {
             self.event_sender.send_event(Event::ExitApp).unwrap();
             return;
         }
@@ -139,15 +152,15 @@ impl ApplicationHandler<Event> for App<'_> {
 
         match event {
             Event::KeyPressed(modifiers_state, key_event) => {
-                if let PhysicalKey::Code(key_code) = key_event.physical_key {
-                    if let Some(action) = self.tracky.keybindings.action(
+                if let PhysicalKey::Code(key_code) = key_event.physical_key
+                    && let Some(action) = self.tracky.keybindings.action(
                         modifiers_state,
                         key_code,
                         self.tracky.input_context(),
-                    ) {
-                        send!(Event::Action(action));
-                        return;
-                    }
+                    )
+                {
+                    send!(Event::Action(action));
+                    return;
                 }
 
                 match self.tracky.input_context() {
@@ -171,9 +184,7 @@ impl ApplicationHandler<Event> for App<'_> {
                     }
                     keybindings::InputContext::Text => {
                         if let Some(text) = key_event.text {
-                            send!(Event::Text(Text::WriteDataAtCursor(
-                                text.chars().next().unwrap()
-                            )));
+                            send!(Event::Action(Action::Text(Text::WriteDataAtCursor(text))));
                         }
                     }
                     _ => {}
@@ -194,108 +205,16 @@ impl ApplicationHandler<Event> for App<'_> {
                 Action::RequestChangeScreenToSongEditor => {
                     send!(Event::ChangeScreen(Screen::SongEditor));
                 }
+                Action::ToggleFullscreen => {
+                    let window = self.window.as_ref().unwrap();
+                    if window.fullscreen().is_some() {
+                        window.set_fullscreen(None);
+                    } else {
+                        window.set_fullscreen(Some(Fullscreen::Borderless(None)));
+                    }
+                }
                 action => {
-                    if let Some(popup) = &mut self.tracky.current_popup {
-                        let _ = popup.handle_event(action.clone(), self.event_sender.clone());
-                        return;
-                    }
-                    self.tracky
-                        .current_screen
-                        .handle_event(action.clone(), self.event_sender.clone());
-
-                    match &mut self.tracky.current_screen {
-                        Screen::DeviceSelection(state) => {
-                            let _ = state.handle_action(action, self.event_sender.clone());
-                            return;
-                        }
-                        Screen::SongEditor => match action {
-                            Action::TogglePlay => {
-                                if self.tracky.state.is_song_playing() {
-                                    send!(Event::State(model::Command::StopSongPlayback));
-                                } else if self.tracky.audio_state.is_some() {
-                                    send!(Event::State(
-                                        model::Command::StartSongPlaybackFromBeginning
-                                    ));
-                                } else {
-                                    warn!("Select a device with F1 to play the song")
-                                }
-                            }
-                            Action::Cancel => {}
-                            Action::Confirm => {}
-                            Action::Move(direction) => {
-                                send!(Event::State(model::Command::MoveCursor(direction)))
-                            }
-                            Action::Forward => todo!(),
-                            Action::Backward => todo!(),
-                            Action::ToggleFullscreen => {
-                                let window = self.window.as_ref().unwrap();
-                                if window.fullscreen().is_some() {
-                                    window.set_fullscreen(None);
-                                } else {
-                                    window.set_fullscreen(Some(Fullscreen::Borderless(None)));
-                                }
-                            }
-                            Action::KillNotes => send!(Event::State(model::Command::ClearChannels)),
-                            Action::ChangeSelectedInstrument { increment } => {
-                                send!(Event::State(model::Command::ChangeSelectedInstrument {
-                                    increment
-                                }))
-                            }
-                            Action::ShowGlobalVolumePopup => {
-                                self.tracky.open_popup(Popup::ChangeVolume(
-                                    change_volume::Popup::new(
-                                        "Global volume",
-                                        self.tracky.state.global_volume.db(),
-                                        |value, event_sender| {
-                                            let volume = dbg!(value.volume());
-                                            event_sender
-                                                .send_event(Event::Composite(vec![
-                                                    Event::State(
-                                                        model::Command::ChangeGlobalVolume {
-                                                            volume,
-                                                        },
-                                                    ),
-                                                    Event::ClosePopup,
-                                                ]))
-                                                .unwrap();
-                                        },
-                                    ),
-                                ));
-                            }
-                            Action::ChangeGlobalOctave { increment } => {
-                                send!(Event::State(model::Command::ChangeGlobalOctave {
-                                    increment
-                                }));
-                            }
-                            Action::SetNoteField {
-                                note,
-                                octave_modifier,
-                            } => send!(Event::State(model::Command::SetNoteField {
-                                note,
-                                octave_modifier
-                            })),
-                            Action::SetNoteCut => send!(Event::State(model::Command::SetNoteCut)),
-                            Action::ClearField => send!(Event::State(model::Command::ClearField)),
-                            Action::SetOctaveField(octave_value) => {
-                                send!(Event::State(model::Command::SetOctaveField(octave_value)))
-                            }
-                            Action::SetHexField(hex_digit) => {
-                                send!(Event::State(model::Command::SetHexField(hex_digit)))
-                            }
-                            Action::CreateNewPattern => {
-                                send!(Event::State(model::Command::CreateNewPattern))
-                            }
-                            Action::GoToNextPattern => {
-                                send!(Event::State(model::Command::GoToNextPattern))
-                            }
-                            Action::GoToPreviousPattern => {
-                                send!(Event::State(model::Command::GoToPreviousPattern))
-                            }
-                            Action::Text(text) => send!(Event::Text(text)),
-                            Action::RequestChangeScreenToDeviceSelection => todo!(),
-                            Action::RequestChangeScreenToSongEditor => todo!(),
-                        },
-                    }
+                    self.tracky.handle_action(action);
                 }
             },
             Event::Panic(error) => {
@@ -311,7 +230,7 @@ impl ApplicationHandler<Event> for App<'_> {
                 event::AsyncAction::GetDevices(devices) => {
                     send!(Event::ChangeScreen(Screen::DeviceSelection(
                         device_selection::State::from(devices)
-                    )))
+                    )));
                 }
             },
             Event::StartLoading => self.tracky.loader_count += 1,
@@ -361,7 +280,10 @@ fn main() -> anyhow::Result<()> {
         .filter_module("ratatui_wgpu::utils::text_atlas", log::LevelFilter::Off)
         .init();
 
-    let mut tracky = Tracky::new();
+    let event_loop = EventLoop::<Event>::with_user_event().build()?;
+    let event_sender = event_loop.create_proxy();
+
+    let mut tracky = Tracky::new(event_sender.clone());
 
     tracky.state.handle_command(model::Command::SetNoteField {
         note: NoteName::A,
@@ -369,23 +291,20 @@ fn main() -> anyhow::Result<()> {
     });
     tracky.state.handle_command(model::Command::ClearChannels);
 
-    let event_loop = EventLoop::<Event>::with_user_event().build()?;
-    let event_tx = event_loop.create_proxy();
-
     if let Some(default_device) = device::default_output() {
-        event_tx
+        event_sender
             .send_event(Event::SetPlayingDevice(default_device))
             .unwrap();
-        event_tx.send_event(Event::StartAudioPlayer).unwrap();
+        event_sender.send_event(Event::StartAudioPlayer).unwrap();
     } else {
-        error!("Default device could not be found")
+        error!("Default device could not be found");
     }
 
     let mut app = App {
         tracky,
         backend: None,
         window: None,
-        event_sender: event_tx,
+        event_sender,
         modifiers_state: ModifiersState::empty(),
     };
     event_loop.set_control_flow(ControlFlow::Wait);

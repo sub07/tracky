@@ -1,6 +1,6 @@
 use std::iter;
 
-use crate::audio::{signal, Pan, Volume};
+use crate::audio::{Pan, Volume, signal};
 
 use super::{
     instrument::Instruments,
@@ -16,57 +16,54 @@ pub struct PlayingInstrument {
 
 #[derive(Clone, Debug)]
 pub struct Channel {
-    pub current_note: Option<(NoteName, OctaveValue)>,
-    pub current_volume: Option<Volume>,
-    pub current_instrument: Option<PlayingInstrument>,
+    pub note: Option<(NoteName, OctaveValue)>,
+    pub volume: Option<Volume>,
+    pub instrument: Option<PlayingInstrument>,
 }
 
 impl Channel {
-    pub fn new() -> Channel {
-        Channel {
-            current_note: None,
-            current_volume: None,
-            current_instrument: None,
+    pub fn new() -> Self {
+        Self {
+            note: None,
+            volume: None,
+            instrument: None,
         }
     }
 
     pub fn is_playing(&self) -> bool {
-        self.current_note.is_some() && self.current_instrument.is_some()
+        self.note.is_some() && self.instrument.is_some()
     }
 
     pub fn setup_line(&mut self, line: &PatternLine) {
         if let Some(note) = line.note.value().cloned() {
-            self.current_note = match note {
+            self.note = match note {
                 NoteFieldValue::Note(note, octave) => {
-                    if let Some((_, playing_instrument)) =
-                        self.current_note.zip(self.current_instrument.as_mut())
-                    {
+                    if let Some((_, playing_instrument)) = self.note.zip(self.instrument.as_mut()) {
                         playing_instrument.phase = 0.0;
                     }
                     Some((note, octave))
                 }
                 NoteFieldValue::Cut => {
-                    self.current_volume = None;
-                    self.current_instrument = None;
+                    self.volume = None;
+                    self.instrument = None;
                     None
                 }
             };
         }
         if let Some(volume) = line.velocity.get_percentage().map(Volume::new_unchecked) {
-            self.current_volume = Some(volume);
-        };
-        if let Some(new_index) = line.instrument.get_u8() {
-            if self
-                .current_instrument
+            self.volume = Some(volume);
+        }
+        if let Some(new_index) = line.instrument.get_u8()
+            && self
+                .instrument
                 .as_ref()
                 .is_none_or(|current_instrument| current_instrument.index != new_index)
-            {
-                self.current_instrument = Some(PlayingInstrument {
-                    phase: 0.0,
-                    index: new_index,
-                });
-            }
-        };
+        {
+            self.instrument = Some(PlayingInstrument {
+                phase: 0.0,
+                index: new_index,
+            });
+        }
     }
 
     pub fn collect_mix_in(
@@ -75,11 +72,9 @@ impl Channel {
         instruments: &Instruments,
         global_volume: Volume,
     ) {
-        if let (Some((note, octave)), volume, Some(PlayingInstrument { index, phase })) = (
-            self.current_note,
-            self.current_volume,
-            &mut self.current_instrument,
-        ) {
+        if let (Some((note, octave)), volume, Some(PlayingInstrument { index, phase })) =
+            (self.note, self.volume, &mut self.instrument)
+        {
             let freq = note_to_freq(note, octave);
             let frame_rate = output_signal.frame_rate;
 
@@ -115,10 +110,6 @@ mod test {
 
     // example line: "C#5 5F 03"
     fn make_line(line: &'static str) -> PatternLine {
-        assert_eq!(
-            line.len(),
-            PatternLineDescriptor::LINE_LEN as usize + PatternLineDescriptor::COUNT - 1
-        );
         fn parse_note(note: &'static str) -> Option<NoteFieldValue> {
             assert_eq!(PatternLineDescriptor::Note.field_len(), note.len());
             if note == "CUT" {
@@ -185,10 +176,6 @@ mod test {
             if hex == ".." {
                 None
             } else {
-                let mut chars = hex.chars();
-                let hex_1 = chars.next().unwrap();
-                let hex_2 = chars.next().unwrap();
-
                 fn parse_digit(c: char) -> HexDigit {
                     match c {
                         'A' => HexDigit::HEX_A,
@@ -210,9 +197,17 @@ mod test {
                         _ => panic!("Illegal character"),
                     }
                 }
+                let mut chars = hex.chars();
+                let hex_1 = chars.next().unwrap();
+                let hex_2 = chars.next().unwrap();
                 Some((parse_digit(hex_1), parse_digit(hex_2)))
             }
         }
+
+        assert_eq!(
+            line.len(),
+            PatternLineDescriptor::LINE_LEN as usize + PatternLineDescriptor::COUNT - 1
+        );
 
         let note = parse_note(&line[0..3]).map_or_else(Field::empty, Field::new);
         let velocity = parse_hex(&line[4..6]).map_or_else(Field::empty, Field::new);
@@ -225,23 +220,18 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "invalid empty line"]
     fn test_make_line_1() {
         make_line("");
     }
 
     #[test]
     fn test_make_line_2() {
-        assert_eq!(
-            PatternLine {
-                ..Default::default()
-            },
-            make_line("... .. ..")
-        );
+        assert_eq!(PatternLine::default(), make_line("... .. .."));
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "dot between C and 5 is not allowed"]
     fn test_make_line_3() {
         make_line("C.5 .. ..");
     }
@@ -272,7 +262,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "Incomplete volume"]
     fn test_make_line_6() {
         assert_eq!(
             PatternLine {
@@ -359,13 +349,13 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "no space between fields"]
     fn test_make_line_12() {
         make_line("...........");
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "invalid line len"]
     fn test_make_line_13() {
         make_line("..");
     }
@@ -376,19 +366,14 @@ mod test {
         instrument: Option<u8>,
         channel: &Channel,
     ) {
-        assert_eq!(note, channel.current_note);
-        assert_eq!(volume.is_some(), channel.current_volume.is_some());
-        if volume.is_some() && channel.current_volume.is_some() {
-            approx::assert_relative_eq!(
-                volume.unwrap(),
-                channel.current_volume.unwrap().value(),
-                epsilon = 0.001
-            );
+        assert_eq!(note, channel.note);
+        assert_eq!(volume.is_some(), channel.volume.is_some());
+        if let Some(volume) = volume
+            && channel.volume.is_some()
+        {
+            approx::assert_relative_eq!(volume, channel.volume.unwrap().value(), epsilon = 0.001);
         }
-        assert_eq!(
-            instrument,
-            channel.current_instrument.clone().map(|i| i.index)
-        );
+        assert_eq!(instrument, channel.instrument.clone().map(|i| i.index));
     }
 
     #[test]
@@ -489,7 +474,7 @@ mod test {
 
         assert_channel_state(
             Some((NoteName::D, OctaveValue::OCTAVE_8)),
-            Some(0.294117),
+            Some(0.294_117),
             Some(3),
             &channel,
         );
@@ -498,7 +483,7 @@ mod test {
 
         assert_channel_state(
             Some((NoteName::D, OctaveValue::OCTAVE_8)),
-            Some(0.294117),
+            Some(0.294_117),
             Some(165),
             &channel,
         );

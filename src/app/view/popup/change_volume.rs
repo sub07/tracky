@@ -1,11 +1,11 @@
 use crate::{
+    app::view::{
+        centered_line, render_block_and_get_inner, responsive_centered_rect, widget::slider::Slider,
+    },
     audio::Decibels,
     event::{self, Action, Event, HandleAction},
     keybindings::InputContext,
     utils::Direction,
-    view::{
-        centered_line, render_block_and_get_inner, responsive_centered_rect, widget::slider::Slider,
-    },
     EventSender,
 };
 use ratatui::{
@@ -28,7 +28,7 @@ impl Popup {
         title: &'static str,
         initial_value: Decibels,
         on_submit: OnSubmitFn,
-    ) -> Popup
+    ) -> Self
     where
         OnSubmitFn: Fn(Decibels, EventSender) + 'static,
     {

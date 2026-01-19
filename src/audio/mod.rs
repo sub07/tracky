@@ -1,7 +1,7 @@
 use std::path::Path;
 
-use anyhow::anyhow;
 use anyhow::Context;
+use anyhow::anyhow;
 pub use device::Device;
 
 use joy_value_object::{mk_vo, mk_vo_consts};
@@ -39,7 +39,7 @@ mk_vo! {
 
 impl Decibels {
     pub fn volume(self) -> Volume {
-        if (self.value() - Decibels::MIN_VALUE).abs() < 0.1f32 {
+        if (self.value() - Self::MIN_VALUE).abs() < 0.1f32 {
             Volume::MIN
         } else {
             Volume::new_clamped(10.0f32.powf(self.value() / 10.0))
@@ -61,11 +61,11 @@ mk_vo_consts! {
 }
 
 impl Pan {
-    pub fn left_volume(&self) -> Volume {
+    pub fn left_volume(self) -> Volume {
         Volume::new_unchecked(1.0 - self.value().clamp(0.0, 1.0))
     }
 
-    pub fn right_volume(&self) -> Volume {
+    pub fn right_volume(self) -> Volume {
         Volume::new_unchecked(1.0 + self.value().clamp(-1.0, 0.0))
     }
 }
@@ -83,7 +83,7 @@ where
 {
     let mut audio_file = audrey::open(path.as_ref())
         .map_err(|e| anyhow!(e))
-        .with_context(|| format!("{:?}", path.as_ref()))?;
+        .with_context(|| format!("{}", path.as_ref().display()))?;
 
     let desc = audio_file.description();
 

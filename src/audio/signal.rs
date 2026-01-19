@@ -8,7 +8,7 @@ use std::{
 use anyhow::ensure;
 use joy_vector::Vector;
 
-use crate::audio::dsp;
+use crate::{audio::dsp, utils::math::ApproxEq};
 
 use super::frame::Frame;
 
@@ -61,7 +61,7 @@ pub mod stereo {
 
     impl Owned {
         pub fn from_path<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
-            info!("Loaded {:?}", path.as_ref());
+            info!("Loaded {}", path.as_ref().display());
             let audio_data = load_samples_from_file(path)?;
 
             let samples: &mut dyn Iterator<Item = f32> = match audio_data.channel_count {
@@ -72,9 +72,9 @@ pub mod stereo {
 
             let samples = samples.collect_vec();
 
-            debug_assert!(samples.len() % 2 == 0);
+            debug_assert!(samples.len().is_multiple_of(2));
 
-            Owned::from_samples(samples, audio_data.frame_rate)
+            Self::from_samples(samples, audio_data.frame_rate)
         }
     }
 
@@ -83,7 +83,7 @@ pub mod stereo {
         pub fn plot<P: AsRef<Path>>(&self, path: P) -> anyhow::Result<()> {
             use plotters::prelude::*;
 
-            let root = SVGBackend::new(&path, (100000, 100000)).into_drawing_area();
+            let root = SVGBackend::new(&path, (100_000, 100_000)).into_drawing_area();
             root.fill(&WHITE)?;
             let mut chart = ChartBuilder::on(&root)
                 .build_cartesian_2d(0.0f32..self.duration().as_secs_f32(), -1.0f32..1.0)?;
@@ -119,21 +119,21 @@ impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
     }
 
     pub fn from_sample_count(sample_count: usize, frame_rate: f32) -> Self {
-        Owned {
+        Self {
             frames: vec![Frame::default(); sample_count / FRAME_SIZE],
             frame_rate,
         }
     }
 
     pub fn from_duration(duration: Duration, frame_rate: f32) -> Self {
-        Owned {
+        Self {
             frames: vec![Frame::default(); (duration.as_secs_f32() * frame_rate) as usize],
             frame_rate,
         }
     }
 
     pub fn from_frames(frames: Vec<Frame<FRAME_SIZE>>, frame_rate: f32) -> Self {
-        Owned { frames, frame_rate }
+        Self { frames, frame_rate }
     }
 
     pub fn from_samples(samples: Vec<f32>, frame_rate: f32) -> anyhow::Result<Self> {
@@ -141,13 +141,13 @@ impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
         let mut samples = ManuallyDrop::new(samples);
         let len = samples.len() / FRAME_SIZE;
         let cap = samples.capacity() / FRAME_SIZE;
-        let ptr = samples.as_mut_ptr() as *mut Vector<f32, FRAME_SIZE>;
+        let ptr = samples.as_mut_ptr().cast::<Vector<f32, FRAME_SIZE>>();
         let frames = unsafe { Vec::from_raw_parts(ptr, len, cap) };
         Ok(Self { frames, frame_rate })
     }
 
     #[inline]
-    pub fn as_ref(&self) -> Ref<FRAME_SIZE> {
+    pub fn as_ref(&self) -> Ref<'_, FRAME_SIZE> {
         Ref {
             frames: &self.frames,
             frame_rate: self.frame_rate,
@@ -155,7 +155,7 @@ impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
     }
 
     #[inline]
-    pub fn as_mut(&mut self) -> Mut<FRAME_SIZE> {
+    pub fn as_mut(&mut self) -> Mut<'_, FRAME_SIZE> {
         Mut {
             frames: &mut self.frames,
             frame_rate: self.frame_rate,
@@ -166,7 +166,7 @@ impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
         &mut self,
         start: Duration,
         end: Duration,
-    ) -> anyhow::Result<Mut<FRAME_SIZE>> {
+    ) -> anyhow::Result<Mut<'_, FRAME_SIZE>> {
         ensure!(
             start <= self.as_ref().duration(),
             "start can't exceed signal duration"
@@ -185,7 +185,7 @@ impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
         &self,
         start: Duration,
         end: Duration,
-    ) -> anyhow::Result<Ref<FRAME_SIZE>> {
+    ) -> anyhow::Result<Ref<'_, FRAME_SIZE>> {
         ensure!(
             start <= self.as_ref().duration(),
             "start can't exceed signal duration"
@@ -204,7 +204,7 @@ impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
         &self,
         start_index: usize,
         end_index: usize,
-    ) -> anyhow::Result<Ref<FRAME_SIZE>> {
+    ) -> anyhow::Result<Ref<'_, FRAME_SIZE>> {
         ensure!(start_index <= end_index);
         ensure!(end_index <= self.frames.len());
         Ok(Ref {
@@ -217,7 +217,7 @@ impl<const FRAME_SIZE: usize> Owned<FRAME_SIZE> {
         &mut self,
         start_index: usize,
         end_index: usize,
-    ) -> anyhow::Result<Mut<FRAME_SIZE>> {
+    ) -> anyhow::Result<Mut<'_, FRAME_SIZE>> {
         ensure!(start_index <= end_index);
         ensure!(end_index <= self.frames.len());
         Ok(Mut {
@@ -251,10 +251,10 @@ impl<const FRAME_SIZE: usize> Ref<'_, FRAME_SIZE> {
             return None;
         }
 
-        if frame_index == self.frames.len() - 1 {
-            if let [.., last_frame] = self.frames {
-                return Some(*last_frame);
-            }
+        if frame_index == self.frames.len() - 1
+            && let [.., last_frame] = self.frames
+        {
+            return Some(*last_frame);
         }
 
         Some(dsp::interpolation::linear(
@@ -264,7 +264,7 @@ impl<const FRAME_SIZE: usize> Ref<'_, FRAME_SIZE> {
         ))
     }
 
-    pub fn sub_signal(&self, range: RangeTo<usize>) -> Ref<FRAME_SIZE> {
+    pub fn sub_signal(&self, range: RangeTo<usize>) -> Ref<'_, FRAME_SIZE> {
         Ref {
             frames: &self.frames[range],
             frame_rate: self.frame_rate,
@@ -281,7 +281,7 @@ impl<const FRAME_SIZE: usize> Ref<'_, FRAME_SIZE> {
 }
 
 impl<const FRAME_SIZE: usize> Mut<'_, FRAME_SIZE> {
-    pub fn as_ref(&self) -> Ref<FRAME_SIZE> {
+    pub fn as_ref(&self) -> Ref<'_, FRAME_SIZE> {
         Ref {
             frames: self.frames,
             frame_rate: self.frame_rate,
@@ -298,7 +298,7 @@ impl<const FRAME_SIZE: usize> Mut<'_, FRAME_SIZE> {
         signal: &Self,
     ) -> anyhow::Result<()> {
         ensure!(
-            self.frame_rate == signal.frame_rate,
+            self.frame_rate.approx_eq(signal.frame_rate, 0.0001),
             "The two signal must have the same frame rate"
         );
         let (copy_start_index, _) = self.as_ref().frame_index_from_duration(duration);
@@ -311,14 +311,14 @@ impl<const FRAME_SIZE: usize> Mut<'_, FRAME_SIZE> {
         Ok(())
     }
 
-    pub fn sub_signal_mut(&mut self, range: RangeTo<usize>) -> Mut<FRAME_SIZE> {
+    pub fn sub_signal_mut(&mut self, range: RangeTo<usize>) -> Mut<'_, FRAME_SIZE> {
         Mut {
             frames: &mut self.frames[range],
             frame_rate: self.frame_rate,
         }
     }
 
-    pub fn sub_signal(&self, range: RangeTo<usize>) -> Ref<FRAME_SIZE> {
+    pub fn sub_signal(&self, range: RangeTo<usize>) -> Ref<'_, FRAME_SIZE> {
         Ref {
             frames: &self.frames[range],
             frame_rate: self.frame_rate,
@@ -408,7 +408,7 @@ mod test {
     #[test]
     fn test_iter_delegation() {
         let signal = get_signal();
-        let frames_from_iter = signal.iter().cloned().collect_vec();
-        assert_eq!(signal.frames, frames_from_iter)
+        let frames_from_iter = signal.iter().copied().collect_vec();
+        assert_eq!(signal.frames, frames_from_iter);
     }
 }

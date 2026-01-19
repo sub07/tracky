@@ -34,9 +34,9 @@ impl From<(NoteName, OctaveValue)> for MidiValue {
 // midi_value_to_be_converted = midi_value
 // TODO: make fn const when exp2 is const
 pub fn midi_to_freq(midi_value: MidiValue) -> f32 {
-    let midi_value = midi_value.value() as f32;
     const A4_FREQ: f32 = 440.0;
     const A4_MIDI: f32 = 69.0;
+    let midi_value = midi_value.value() as f32;
 
     let b_pow = (midi_value - A4_MIDI) / 12.0;
 
@@ -122,7 +122,7 @@ mod tests {
     #[test]
     fn a4_should_be_freq_440_0() {
         let freq = note_to_freq(NoteName::A, OctaveValue::OCTAVE_4);
-        assert_eq!(440.0, freq);
+        approx::assert_relative_eq!(440.0, freq, epsilon = 0.001);
     }
 
     #[test]

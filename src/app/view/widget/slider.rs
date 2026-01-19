@@ -5,7 +5,7 @@ use ratatui::{
     widgets::Widget,
 };
 
-use crate::{assert_log_bail, view::theme::THEME};
+use crate::{app::view::theme::THEME, assert_log_bail, utils::math::ApproxEq};
 
 pub struct Slider {
     min: f32,
@@ -16,7 +16,7 @@ pub struct Slider {
 
 impl Slider {
     pub fn new(min: f32, max: f32, value: f32) -> Self {
-        Slider { min, max, value }
+        Self { min, max, value }
     }
 }
 
@@ -27,7 +27,7 @@ impl Widget for Slider {
             "Slider with larger minimum than maximum is not possible"
         );
         let value = self.value.clamp(self.min, self.max);
-        if self.value != value {
+        if !self.value.approx_eq(value, 0.0001) {
             warn!(
                 "Slider value {} is not in min / max bounds ([{}; {}]). Clamped to {}",
                 self.value, self.min, self.max, value
@@ -36,7 +36,7 @@ impl Widget for Slider {
 
         let ratio = (value - self.min) / (self.max - self.min);
 
-        let filled_width = area.width as f32 * ratio;
+        let filled_width = f32::from(area.width) * ratio;
         let end = area.left() + filled_width.floor() as u16;
         for y in area.top()..area.bottom() {
             for x in area.left()..end {

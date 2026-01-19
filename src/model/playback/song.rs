@@ -19,6 +19,7 @@ impl fmt::Debug for Playback {
             .field("current_line", &self.current_line)
             .field("current_line_duration", &self.current_line_duration)
             .field("line_duration", &self.line_duration)
+            .field("is_playing", &self.is_playing)
             .finish()
     }
 }

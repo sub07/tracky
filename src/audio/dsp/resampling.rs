@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::audio::signal;
+use crate::{audio::signal, utils::math::ApproxEq};
 
 #[allow(dead_code)]
 pub fn linear<const FRAME_SIZE: usize>(
@@ -9,7 +9,7 @@ pub fn linear<const FRAME_SIZE: usize>(
 ) -> signal::Owned<FRAME_SIZE> {
     let target_frame_rate = target_sample_rate.round();
 
-    if src.frame_rate == target_frame_rate {
+    if src.frame_rate.approx_eq(target_frame_rate, 0.001) {
         return src.clone();
     }
 

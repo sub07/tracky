@@ -5,7 +5,7 @@ use ratatui::{
     widgets::{Block, Clear, Widget},
 };
 
-use crate::view::{centered_line, responsive_centered_rect};
+use crate::app::view::{centered_line, responsive_centered_rect};
 
 pub fn render(area: Rect, buf: &mut Buffer) {
     let area = responsive_centered_rect(

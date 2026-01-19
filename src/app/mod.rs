@@ -1,18 +1,20 @@
-use std::sync::mpsc::{channel, Sender};
+use std::sync::mpsc::{Sender, channel};
 
 use log::error;
 
+pub mod view;
+
 use crate::{
+    EventSender,
+    app::view::{popup::Popup, screen::Screen},
     audio::{
         device::ConfiguredDevice,
         player::{AudioPlayer, AudioPlayerBuilder},
     },
-    event::{Event, HandleAction},
+    event::{Action, Event},
     keybindings::Keybindings,
     model::{self, Command},
     stats::Statistics,
-    view::{popup::Popup, screen::Screen},
-    EventSender,
 };
 
 pub struct AudioState {
@@ -20,7 +22,6 @@ pub struct AudioState {
     pub state_event_tx: Sender<model::Command>,
 }
 
-#[derive(Default)]
 pub struct Tracky {
     pub state: model::State,
     pub keybindings: Keybindings,
@@ -30,30 +31,33 @@ pub struct Tracky {
     pub loader_count: usize,
     pub audio_state: Option<AudioState>,
     pub stats: Statistics,
+    pub event_sender: EventSender,
 }
 
 impl Tracky {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(event_sender: EventSender) -> Self {
+        Self {
+            state: Default::default(),
+            keybindings: Default::default(),
+            selected_output_device: Default::default(),
+            current_popup: Default::default(),
+            current_screen: Default::default(),
+            loader_count: Default::default(),
+            audio_state: Default::default(),
+            stats: Default::default(),
+            event_sender,
+        }
     }
 
     pub fn input_context(&self) -> crate::keybindings::InputContext {
-        self.current_popup
-            .as_ref()
-            .map(Popup::input_context)
-            .unwrap_or(self.current_screen.input_context())
+        self.popup_input_context()
+            .unwrap_or_else(|| self.screen_input_context())
     }
 
-    pub fn open_popup(&mut self, popup: Popup) {
-        self.current_popup = Some(popup);
-    }
-
-    pub fn close_popup(&mut self) {
-        self.current_popup = None;
-    }
-
-    pub fn change_screen(&mut self, screen: Screen) {
-        self.current_screen = screen;
+    pub fn handle_action(&mut self, action: Action) {
+        if let Some(action) = self.handle_action_on_popup(action) {
+            self.handle_action_on_screen(action);
+        }
     }
 
     pub fn send_player_state_event(&self, event: model::Command) {

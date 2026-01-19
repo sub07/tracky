@@ -6,7 +6,6 @@ use playback::song;
 
 use crate::{
     audio::{signal, Decibels, Volume},
-    model::pattern::NoteFieldValue,
     utils::Direction,
 };
 
@@ -66,7 +65,7 @@ impl State {
             .map(|playback| playback.current_line)
     }
 
-    pub fn output_samples(&self) -> anyhow::Result<signal::stereo::Ref> {
+    pub fn output_samples(&self) -> anyhow::Result<signal::stereo::Ref<'_>> {
         self.step_output
             .as_ref()
             .ok_or_else(|| anyhow!("Uninitialized state"))

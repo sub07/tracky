@@ -18,7 +18,7 @@ use crate::{
             PatternLineDescriptor,
         },
     },
-    utils::Direction,
+    utils::{math::ApproxEq, Direction},
 };
 
 ///
@@ -28,7 +28,7 @@ impl model::State {
     pub fn handle_command(&mut self, event: model::Command) {
         match event {
             model::Command::ChangeGlobalOctave { increment } => {
-                self.change_global_octave(increment)
+                self.change_global_octave(increment);
             }
             model::Command::SetNoteField {
                 note,
@@ -43,17 +43,17 @@ impl model::State {
             model::Command::GoToNextPattern => todo!(),
             model::Command::GoToPreviousPattern => todo!(),
             model::Command::StartSongPlaybackFromBeginning => {
-                self.start_song_playback_from_beginning()
+                self.start_song_playback_from_beginning();
             }
             model::Command::StopSongPlayback => self.stop_song_playback(),
             model::Command::UpdatePlaybackSampleCount(sample_count) => {
-                self.audio_stream_sample_count_changed(sample_count)
+                self.audio_stream_sample_count_changed(sample_count);
             }
             model::Command::PerformPlaybacksStep => self.perform_playbacks_step(),
             model::Command::InitializeAudio { frame_rate } => self.initialize_audio(frame_rate),
             model::Command::ClearChannels => self.clear_channels(),
             model::Command::ChangeSelectedInstrument { increment } => {
-                self.change_selected_instrument(increment)
+                self.change_selected_instrument(increment);
             }
             model::Command::ChangeGlobalVolume { volume } => {
                 self.global_volume = volume;
@@ -139,7 +139,9 @@ impl model::State {
         let field = match PatternLineDescriptor::field_by_cursor(current_field) {
             PatternLineDescriptor::Velocity => &mut line.velocity,
             PatternLineDescriptor::Instrument => &mut line.instrument,
-            _ => unreachable!(),
+            PatternLineDescriptor::Note => {
+                panic!("field_by_cursor should never return the note field in this function")
+            }
         };
         field.set_by_index(current_field, digit);
     }
@@ -191,7 +193,10 @@ impl model::State {
             return;
         };
 
-        assert_log!(song_playback.line_signal.frame_rate == step_output.frame_rate);
+        assert_log!(song_playback
+            .line_signal
+            .frame_rate
+            .approx_eq(step_output.frame_rate, 1.0));
 
         let frame_rate = step_output.frame_rate;
 
@@ -228,13 +233,8 @@ impl model::State {
             return;
         };
 
-        if !song_playback.is_playing {
-            for channel in self.channels.iter_mut() {
-                channel.collect_mix_in(step_output.as_mut(), &self.instruments, self.global_volume);
-            }
-            self.computed_frame_count = step_output.as_ref().frame_count();
-        } else {
-            if song_playback.current_line as i32 >= self.patterns.channel_len {
+        if song_playback.is_playing {
+            if song_playback.current_line >= self.patterns.channel_len as usize {
                 self.stop_song_playback();
                 return;
             }
@@ -243,13 +243,15 @@ impl model::State {
             let mut sub_step_start_duration = Duration::ZERO;
 
             while sub_step_start_duration < step_duration {
-                let sub_step_duration = (song_playback.line_duration
-                    - song_playback.current_line_duration)
-                    .min(step_duration - sub_step_start_duration);
+                let sub_step_duration = song_playback
+                    .line_duration
+                    .checked_sub(song_playback.current_line_duration)
+                    .unwrap()
+                    .min(step_duration.checked_sub(sub_step_start_duration).unwrap());
 
                 let sub_step_end_duration = sub_step_start_duration + sub_step_duration;
 
-                for channel in self.channels.iter_mut() {
+                for channel in &mut self.channels {
                     channel.collect_mix_in(
                         step_output
                             .sub_signal_from_duration_mut(
@@ -267,7 +269,7 @@ impl model::State {
                 song_playback.current_line_duration += sub_step_duration;
                 if song_playback.current_line_duration >= song_playback.line_duration {
                     song_playback.current_line += 1;
-                    if song_playback.current_line as i32 >= self.patterns.channel_len {
+                    if song_playback.current_line >= self.patterns.channel_len as usize {
                         break;
                     }
 
@@ -288,11 +290,16 @@ impl model::State {
 
             self.computed_frame_count =
                 (sub_step_start_duration.as_secs_f32() * step_output.frame_rate) as usize;
+        } else {
+            for channel in &mut self.channels {
+                channel.collect_mix_in(step_output.as_mut(), &self.instruments, self.global_volume);
+            }
+            self.computed_frame_count = step_output.as_ref().frame_count();
         }
     }
 
     fn clear_channels(&mut self) {
-        for channel in self.channels.iter_mut() {
+        for channel in &mut self.channels {
             *channel = Channel::new();
         }
     }

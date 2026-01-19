@@ -8,23 +8,23 @@ use ratatui::{
 };
 
 use crate::{
+    EventSender,
+    app::view::{centered_line, theme::THEME},
     audio::{
-        device::{sample_format_bit_count, Config, Devices},
         Device,
+        device::{Config, Devices, sample_format_bit_count},
     },
     event::{self, Action, HandleAction},
     keybindings::InputContext,
     utils::Direction,
-    view::{centered_line, theme::THEME},
-    EventSender,
 };
 
 #[derive(Debug)]
 pub struct State {
     devices: Devices,
-    device_list_state: ListState,
-    config_list_state: ListState,
-    buffer_size_list_state: ListState,
+    device_list: ListState,
+    config_list: ListState,
+    buffer_size_list: ListState,
     current_panel: Panel,
 }
 
@@ -83,32 +83,32 @@ impl HandleAction<Event> for State {
     fn update(&mut self, event: Event, event_tx: EventSender) {
         match event {
             Event::SelectNextDevice => {
-                self.device_list_state.select_next();
-                self.config_list_state = ListState::default();
-                self.buffer_size_list_state = ListState::default();
+                self.device_list.select_next();
+                self.config_list = ListState::default();
+                self.buffer_size_list = ListState::default();
             }
             Event::SelectPreviousDevice => {
-                self.device_list_state.select_previous();
-                self.config_list_state = ListState::default();
-                self.buffer_size_list_state = ListState::default();
+                self.device_list.select_previous();
+                self.config_list = ListState::default();
+                self.buffer_size_list = ListState::default();
             }
             Event::SelectNextConfig => {
-                self.config_list_state.select_next();
-                self.buffer_size_list_state = ListState::default();
+                self.config_list.select_next();
+                self.buffer_size_list = ListState::default();
             }
             Event::SelectPreviousConfig => {
-                self.config_list_state.select_previous();
-                self.buffer_size_list_state = ListState::default();
+                self.config_list.select_previous();
+                self.buffer_size_list = ListState::default();
             }
-            Event::SelectNextBufferSize => self.buffer_size_list_state.select_next(),
-            Event::SelectPreviousBufferSize => self.buffer_size_list_state.select_previous(),
+            Event::SelectNextBufferSize => self.buffer_size_list.select_next(),
+            Event::SelectPreviousBufferSize => self.buffer_size_list.select_previous(),
             Event::SetPanel(panel) => self.set_panel(panel),
             Event::PickDevice => {
                 if let (device, Some((config_index, buffer_size_index))) = (
                     self.get_selected_device(),
-                    self.config_list_state
+                    self.config_list
                         .selected()
-                        .zip(self.buffer_size_list_state.selected()),
+                        .zip(self.buffer_size_list.selected()),
                 ) {
                     let config = self.get_selected_config().unwrap();
                     let buffer_size = match buffer_size_index {
@@ -119,7 +119,7 @@ impl HandleAction<Event> for State {
 
                     event_tx
                         .send_event(event::Event::Composite(vec![
-                            event::Event::SetPlayingDevice(dbg!(device)),
+                            event::Event::SetPlayingDevice(device),
                             event::Event::StartAudioPlayer,
                         ]))
                         .unwrap();
@@ -136,10 +136,10 @@ impl HandleAction<Event> for State {
 impl State {
     fn new(devices: Devices) -> Self {
         let mut state = Self {
-            devices: dbg!(devices),
-            device_list_state: ListState::default(),
-            config_list_state: ListState::default(),
-            buffer_size_list_state: ListState::default(),
+            devices,
+            device_list: ListState::default(),
+            config_list: ListState::default(),
+            buffer_size_list: ListState::default(),
             current_panel: Panel::Device,
         };
 
@@ -151,21 +151,21 @@ impl State {
     fn set_panel(&mut self, panel: Panel) {
         match panel {
             Panel::Device => {
-                if self.device_list_state.selected().is_none() {
-                    self.device_list_state.select_first();
+                if self.device_list.selected().is_none() {
+                    self.device_list.select_first();
                 }
-                self.config_list_state = ListState::default();
-                self.buffer_size_list_state = ListState::default();
+                self.config_list = ListState::default();
+                self.buffer_size_list = ListState::default();
             }
             Panel::Config => {
-                if self.config_list_state.selected().is_none() {
-                    self.config_list_state.select_first();
+                if self.config_list.selected().is_none() {
+                    self.config_list.select_first();
                 }
-                self.buffer_size_list_state = ListState::default();
+                self.buffer_size_list = ListState::default();
             }
             Panel::BufferSize => {
-                if self.buffer_size_list_state.selected().is_none() {
-                    self.buffer_size_list_state.select_first();
+                if self.buffer_size_list.selected().is_none() {
+                    self.buffer_size_list.select_first();
                 }
             }
         }
@@ -173,11 +173,11 @@ impl State {
     }
 
     fn get_selected_device(&self) -> &Device {
-        &self.devices.0[self.device_list_state.selected().unwrap()]
+        &self.devices.0[self.device_list.selected().unwrap()]
     }
 
     fn get_selected_config(&self) -> Option<&Config> {
-        self.config_list_state
+        self.config_list
             .selected()
             .map(|index| &self.get_selected_device().configs[index])
     }
@@ -223,7 +223,7 @@ impl State {
             .highlight_style(device_list_highlight_style),
             device_list_area,
             buf,
-            &mut self.device_list_state,
+            &mut self.device_list,
         );
 
         StatefulWidget::render(
@@ -239,7 +239,7 @@ impl State {
             .block(Block::bordered()),
             device_config_area,
             buf,
-            &mut self.config_list_state,
+            &mut self.config_list,
         );
 
         if let Some(config) = self.get_selected_config() {
@@ -260,7 +260,7 @@ impl State {
                     .block(Block::bordered()),
                 buffer_size_area,
                 buf,
-                &mut self.buffer_size_list_state,
+                &mut self.buffer_size_list,
             );
         } else {
             Widget::render(Block::bordered(), buffer_size_area, buf);

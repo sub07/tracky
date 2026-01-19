@@ -6,8 +6,9 @@ impl Field<NoteFieldValue> {
     pub fn set_note_name(&mut self, note: NoteName, octave: OctaveValue) {
         match self.value() {
             Some(note_value) => match note_value {
-                NoteFieldValue::Note(_, _) => self.set(NoteFieldValue::Note(note, octave)),
-                NoteFieldValue::Cut => self.set(NoteFieldValue::Note(note, octave)),
+                NoteFieldValue::Note(_, _) | NoteFieldValue::Cut => {
+                    self.set(NoteFieldValue::Note(note, octave));
+                }
             },
             None => self.set(NoteFieldValue::Note(note, octave)),
         }
@@ -44,7 +45,7 @@ impl Field<(HexDigit, HexDigit)> {
     }
 
     pub fn get_percentage(&self) -> Option<f32> {
-        self.get_u8().map(|hex| hex as f32 / u8::MAX as f32)
+        self.get_u8().map(|hex| f32::from(hex) / f32::from(u8::MAX))
     }
 
     pub fn set_by_index(&mut self, field_index: i32, value: HexDigit) {

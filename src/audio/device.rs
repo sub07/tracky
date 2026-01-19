@@ -1,6 +1,6 @@
 use cpal::{
+    ALL_HOSTS, SupportedBufferSize, SupportedStreamConfigRange,
     traits::{DeviceTrait, HostTrait},
-    SupportedBufferSize, SupportedStreamConfigRange, ALL_HOSTS,
 };
 use itertools::Itertools;
 use joy_error::log::ResultLogExt;
@@ -10,15 +10,13 @@ const BUFFER_SIZES: &[u32] = &[8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
 
 fn get_buffer_sizes(min: u32, max: u32) -> Option<&'static [u32]> {
     let start = match BUFFER_SIZES.binary_search(&min) {
-        Ok(index) => index,
         Err(index) if index == BUFFER_SIZES.len() - 1 => return None,
-        Err(index) => index,
+        Ok(index) | Err(index) => index,
     };
 
     let end = match BUFFER_SIZES.binary_search(&max) {
-        Ok(index) => index,
         Err(0) => return None,
-        Err(index) => index,
+        Ok(index) | Err(index) => index,
     };
 
     if start >= end {
@@ -77,16 +75,10 @@ impl Device {
 
 pub fn sample_format_bit_count(sample_format: cpal::SampleFormat) -> usize {
     match sample_format {
-        cpal::SampleFormat::I8 => 8,
-        cpal::SampleFormat::I16 => 16,
-        cpal::SampleFormat::I32 => 32,
-        cpal::SampleFormat::I64 => 64,
-        cpal::SampleFormat::U8 => 8,
-        cpal::SampleFormat::U16 => 16,
-        cpal::SampleFormat::U32 => 32,
-        cpal::SampleFormat::U64 => 64,
-        cpal::SampleFormat::F32 => 32,
-        cpal::SampleFormat::F64 => 64,
+        cpal::SampleFormat::I8 | cpal::SampleFormat::U8 => 8,
+        cpal::SampleFormat::I16 | cpal::SampleFormat::U16 => 16,
+        cpal::SampleFormat::I32 | cpal::SampleFormat::U32 | cpal::SampleFormat::F32 => 32,
+        cpal::SampleFormat::I64 | cpal::SampleFormat::U64 | cpal::SampleFormat::F64 => 64,
         format => panic!("Unsupported sample format: {format}"),
     }
 }
@@ -97,7 +89,7 @@ impl std::fmt::Debug for Device {
             .field("host_name", &self.host_name)
             .field("name", &self.name)
             .field("configs", &self.configs)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -108,7 +100,7 @@ impl std::fmt::Debug for ConfiguredDevice {
             .field("name", &self.name)
             .field("sample_format", &self.sample_format)
             .field("config", &self.config)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -157,7 +149,9 @@ fn map_device(host_name: String, device: cpal::Device) -> Option<Device> {
         name: device
             .description()
             .map(|desc| desc.to_string())
-            .unwrap_or("Unknown device".into()),
+            .error()
+            .log_ok()
+            .unwrap_or_else(|| "Unknown device".into()),
         inner: device,
         configs,
     })
@@ -178,8 +172,8 @@ pub fn default_output() -> Option<ConfiguredDevice> {
 }
 
 impl Devices {
-    pub fn load() -> Devices {
-        Devices(
+    pub fn load() -> Self {
+        Self(
             ALL_HOSTS
                 .iter()
                 .filter_map(|host_id| {

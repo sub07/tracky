@@ -33,7 +33,7 @@ mod test {
         let start = 1.4;
         let end = 6.2;
         let res = linear(start, end, 0.0);
-        assert_eq!(start, res);
+        approx::assert_relative_eq!(start, res, epsilon = 0.001);
     }
 
     #[test]
@@ -41,7 +41,7 @@ mod test {
         let start = 1.4;
         let end = 6.2;
         let res = linear(start, end, 1.0);
-        assert_eq!(end, res);
+        approx::assert_relative_eq!(end, res, epsilon = 0.001);
     }
 
     #[test]
@@ -49,7 +49,7 @@ mod test {
         let start = 2.0;
         let end = 3.0;
         let res = linear(start, end, 0.5);
-        assert_eq!(2.5, res);
+        approx::assert_relative_eq!(2.5, res, epsilon = 0.001);
     }
 
     #[test]
@@ -57,7 +57,7 @@ mod test {
         let start = 2.0;
         let end = 3.0;
         let res = linear(start, end, 0.25);
-        assert_eq!(2.25, res);
+        approx::assert_relative_eq!(2.25, res, epsilon = 0.001);
     }
 
     #[test]
@@ -65,6 +65,6 @@ mod test {
         let start = 2.0;
         let end = 3.0;
         let res = linear(start, end, 0.75);
-        assert_eq!(2.75, res);
+        approx::assert_relative_eq!(2.75, res, epsilon = 0.001);
     }
 }

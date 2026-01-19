@@ -1,15 +1,15 @@
 use ratatui::{
+    Frame,
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
     style::{Color, Stylize},
     text::{Line, ToSpan},
     widgets::{Block, Clear, Widget},
-    Frame,
 };
 use theme::THEME;
 use widget::header::Header;
 
-use crate::tracky::Tracky;
+use crate::app::Tracky;
 
 pub mod popup;
 pub mod screen;
@@ -125,14 +125,14 @@ pub fn render_root(app: &mut Tracky, frame: &mut Frame) {
 
     match &mut app.current_screen {
         screen::Screen::DeviceSelection(device_selection_screen_state) => {
-            device_selection_screen_state.render(area, frame.buffer_mut())
+            device_selection_screen_state.render(area, frame.buffer_mut());
         }
         screen::Screen::SongEditor => {
             screen::song_editor::render(frame, area, &app.state);
         }
     }
 
-    for popup in app.current_popup.iter_mut() {
+    if let Some(popup) = &mut app.current_popup {
         match popup {
             // TODO: use frame instead of buffer
             popup::Popup::ChangeVolume(popup) => popup.render(area, frame.buffer_mut()),

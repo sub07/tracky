@@ -6,8 +6,8 @@ use ratatui::{
 };
 
 use crate::{
+    app::view::theme::THEME,
     model::pattern::{NoteFieldValue, NoteName, PatternLine, PatternLineDescriptor},
-    view::theme::THEME,
 };
 
 #[derive(New)]
@@ -67,10 +67,10 @@ impl Widget for PatternLineView<'_> {
 
         let (vel_char_1, vel_char_2) = if let Some((first, second)) = self.line.velocity.value() {
             (
-                char::from_digit(first.value() as u32, 16)
+                char::from_digit(u32::from(first.value()), 16)
                     .unwrap()
                     .to_ascii_uppercase(),
-                char::from_digit(second.value() as u32, 16)
+                char::from_digit(u32::from(second.value()), 16)
                     .unwrap()
                     .to_ascii_uppercase(),
             )
@@ -81,10 +81,10 @@ impl Widget for PatternLineView<'_> {
         let (instr_char_1, instr_char_2) =
             if let Some((first, second)) = self.line.instrument.value() {
                 (
-                    char::from_digit(first.value() as u32, 16)
+                    char::from_digit(u32::from(first.value()), 16)
                         .unwrap()
                         .to_ascii_uppercase(),
-                    char::from_digit(second.value() as u32, 16)
+                    char::from_digit(u32::from(second.value()), 16)
                         .unwrap()
                         .to_ascii_uppercase(),
                 )
@@ -93,14 +93,7 @@ impl Widget for PatternLineView<'_> {
             };
 
         Paragraph::new(format!(
-            "{}{}{} {}{} {}{}",
-            note_char_1,
-            note_char_2,
-            octave_char,
-            vel_char_1,
-            vel_char_2,
-            instr_char_1,
-            instr_char_2,
+            "{note_char_1}{note_char_2}{octave_char} {vel_char_1}{vel_char_2} {instr_char_1}{instr_char_2}",
         ))
         .style(if self.is_line_played {
             THEME.secondary_cursor

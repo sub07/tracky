@@ -1,15 +1,15 @@
 use itertools::izip;
 use ratatui::{
+    Frame,
     layout::{Constraint, Flex, Layout, Rect},
     style::Style,
     text::{Line, Text},
     widgets::Paragraph,
-    Frame,
 };
 
 use crate::{
+    app::view::{theme::THEME, widget::pattern_line::PatternLineView},
     assert_log, model,
-    view::{theme::THEME, widget::pattern_line::PatternLineView},
 };
 
 const CHANNEL_HEADER_HEIGHT: u16 = 1;
@@ -70,7 +70,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &model::State) {
 
     (vertical_offset..channel_len)
         .map(|line_number| {
-            Line::raw(format!("{}", line_number)).right_aligned().style(
+            Line::raw(format!("{line_number}")).right_aligned().style(
                 if currently_playing_row
                     .is_some_and(|current_playing_row| current_playing_row == line_number)
                 {
@@ -82,7 +82,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &model::State) {
         })
         .zip(line_numbers_area.rows())
         .for_each(|(line_widget, line_number_area)| {
-            frame.render_widget(line_widget, line_number_area)
+            frame.render_widget(line_widget, line_number_area);
         });
 
     let displayed_channel_count =
@@ -129,21 +129,18 @@ pub fn render(frame: &mut Frame, area: Rect, state: &model::State) {
                 Paragraph::new(Text::from(vec![
                     Line::from(format!(
                         "Instr:{}",
-                        match channel.current_instrument {
+                        match channel.instrument {
                             Some(ref instrument) => instrument.index.to_string(),
                             None => "-".to_string(),
                         }
                     )),
-                    Line::from(
-                        (match channel.current_instrument {
-                            Some(ref instrument) => instrument.phase.to_string(),
-                            None => "-".to_string(),
-                        })
-                        .to_string(),
-                    ),
+                    Line::from(match channel.instrument {
+                        Some(ref instrument) => instrument.phase.to_string(),
+                        None => "-".to_string(),
+                    }),
                     Line::from(format!(
                         "Note :{}",
-                        match channel.current_note {
+                        match channel.note {
                             Some((note, octave)) => format!("{note}{}", octave.value()),
                             None => "-".to_string(),
                         }

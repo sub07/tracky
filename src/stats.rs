@@ -5,36 +5,36 @@ use std::{
 
 use itertools::Itertools;
 
-use crate::{event::Event, model};
+use crate::{app::view::screen::Screen, event::Event, model};
 
 pub struct Rate {
-    rate: f32,
+    value: f32,
     acc: u64,
     last_time: Instant,
     global_rate_acc: f32,
     global_rate_count: u64,
-    rate_smoothing_len: u64,
+    smoothing_len: u64,
 }
 
 impl Rate {
-    fn new(rate_smoothing_len: u64) -> Rate {
-        Rate {
-            rate: 0.0,
+    fn new(rate_smoothing_len: u64) -> Self {
+        Self {
+            value: 0.0,
             acc: 0,
             last_time: Instant::now(),
             global_rate_acc: 0.0,
             global_rate_count: 0,
-            rate_smoothing_len,
+            smoothing_len: rate_smoothing_len,
         }
     }
 
     fn update(&mut self) {
         self.acc += 1;
-        if self.acc == self.rate_smoothing_len {
+        if self.acc == self.smoothing_len {
             let now = Instant::now();
             let since_last = now - self.last_time;
-            self.rate = 1.0 / (since_last.as_secs_f32() / self.acc as f32);
-            self.global_rate_acc += self.rate;
+            self.value = 1.0 / (since_last.as_secs_f32() / self.acc as f32);
+            self.global_rate_acc += self.value;
             self.global_rate_count += 1;
             self.acc = 0;
             self.last_time = now;
@@ -43,7 +43,7 @@ impl Rate {
 
     /// Smoothed rate over the last `rate_smoothing_len` frames.
     pub fn rate(&self) -> f32 {
-        self.rate
+        self.value
     }
 
     /// Smoothed rate over the whole app run time.
@@ -67,8 +67,8 @@ impl Default for Statistics {
 }
 
 impl Statistics {
-    pub fn new(rate_smoothing_len: u64) -> Statistics {
-        Statistics {
+    pub fn new(rate_smoothing_len: u64) -> Self {
+        Self {
             update_rate: Rate::new(rate_smoothing_len),
             render_rate: Rate::new(rate_smoothing_len),
             update_event_histogram: HashMap::new(),
@@ -129,10 +129,10 @@ impl Statistics {
             Event::ChangeScreen(screen) => format!(
                 "ChangeScreen({})",
                 match screen {
-                    crate::view::screen::Screen::DeviceSelection(_) => {
+                    Screen::DeviceSelection(_) => {
                         "DeviceSelection"
                     }
-                    crate::view::screen::Screen::SongEditor => "SongEditor",
+                    Screen::SongEditor => "SongEditor",
                 }
             ),
         };
@@ -174,7 +174,7 @@ impl Statistics {
         let total_event_count = self.update_event_histogram.values().sum::<u64>();
         println!("{total_event_count} events fired:");
         for (event, count) in self.update_event_histogram().collect_vec() {
-            println!("\t{}: {}", event, count);
+            println!("\t{event}: {count}");
         }
     }
 }
